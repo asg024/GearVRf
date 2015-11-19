@@ -9,18 +9,20 @@ import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRBitmapTexture;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMaterial;
+import org.gearvrf.GVRMaterial.GVRShaderType;
+import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
-import org.gearvrf.GVRMaterial.GVRShaderType;
 
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
+import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
 
 public class Widget {
@@ -47,6 +49,9 @@ public class Widget {
         public void onInit(GVRContext gvrContext, MainScene scene) {
             FocusManager.init(gvrContext);
             sGLThread = new WeakReference<Thread>(Thread.currentThread());
+            sDefaultTexture = gvrContext.loadTexture(new GVRAndroidResource(
+                    gvrContext, R.drawable.default_bkgd));
+            Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
         }
     };
 
@@ -57,6 +62,10 @@ public class Widget {
      */
     static public long getLongFocusTime() {
         return FocusManager.LONG_FOCUS_TIMEOUT;
+    }
+
+    static public GVRTexture getDefaultTexture() {
+        return sDefaultTexture;
     }
 
     /**
@@ -116,12 +125,12 @@ public class Widget {
 
     public Widget(final GVRContext context, final float width,
             final float height) {
-        mContext = context;
-        mSceneObject = new GVRSceneObject(context, width, height);
+        this(context, new GVRSceneObject(context, width, height));
 
         GVRRenderData renderedData = mSceneObject.getRenderData();
         GVRMaterial material = new GVRMaterial(mContext,
                 GVRShaderType.Texture.ID);
+        material.setMainTexture(sDefaultTexture);
         renderedData.setMaterial(material);
     }
 
@@ -323,13 +332,25 @@ public class Widget {
         setTexture(mContext.loadFutureTexture(resource));
     }
 
+    public float getWidth() {
+        return mWidth;
+    }
+
+    public float getHeight() {
+        return mHeight;
+    }
+
+    public float getDepth() {
+        return mDepth;
+    }
+
     /**
      * Get the X component of the widget's position.
      * 
      * @return 'X' component of the widget's position.
      */
     public float getPositionX() {
-        return getT().getPositionX();
+        return getTransform().getPositionX();
     }
 
     /**
@@ -338,7 +359,7 @@ public class Widget {
      * @return 'Y' component of the widget's position.
      */
     public float getPositionY() {
-        return getT().getPositionY();
+        return getTransform().getPositionY();
     }
 
     /**
@@ -347,7 +368,7 @@ public class Widget {
      * @return 'Z' component of the widget's position.
      */
     public float getPositionZ() {
-        return getT().getPositionZ();
+        return getTransform().getPositionZ();
     }
 
     /**
@@ -363,7 +384,7 @@ public class Widget {
      *            'Z' component of the absolute position.
      */
     public void setPosition(float x, float y, float z) {
-        getT().setPosition(x, y, z);
+        getTransform().setPosition(x, y, z);
     }
 
     /**
@@ -375,7 +396,7 @@ public class Widget {
      *            New 'X' component of the absolute position.
      */
     public void setPositionX(float x) {
-        getT().setPositionX(x);
+        getTransform().setPositionX(x);
     }
 
     /**
@@ -387,7 +408,7 @@ public class Widget {
      *            New 'Y' component of the absolute position.
      */
     public void setPositionY(float y) {
-        getT().setPositionY(y);
+        getTransform().setPositionY(y);
     }
 
     /**
@@ -399,7 +420,7 @@ public class Widget {
      *            New 'Z' component of the absolute position.
      */
     public void setPositionZ(float z) {
-        getT().setPositionZ(z);
+        getTransform().setPositionZ(z);
     }
 
     /**
@@ -408,7 +429,7 @@ public class Widget {
      * @return 'W' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationW() {
-        return getT().getRotationW();
+        return getTransform().getRotationW();
     }
 
     /**
@@ -417,7 +438,7 @@ public class Widget {
      * @return 'X' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationX() {
-        return getT().getRotationX();
+        return getTransform().getRotationX();
     }
 
     /**
@@ -426,7 +447,7 @@ public class Widget {
      * @return 'Y' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationY() {
-        return getT().getRotationY();
+        return getTransform().getRotationY();
     }
 
     /**
@@ -435,7 +456,7 @@ public class Widget {
      * @return 'Z' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationZ() {
-        return getT().getRotationZ();
+        return getTransform().getRotationZ();
     }
 
     /**
@@ -444,7 +465,7 @@ public class Widget {
      * @return The widget's current rotation around the 'Y' axis, in degrees.
      */
     public float getRotationYaw() {
-        return getT().getRotationYaw();
+        return getTransform().getRotationYaw();
     }
 
     /**
@@ -453,7 +474,7 @@ public class Widget {
      * @return The widget's rotation around the 'X' axis, in degrees.
      */
     public float getRotationPitch() {
-        return getT().getRotationPitch();
+        return getTransform().getRotationPitch();
     }
 
     /**
@@ -462,7 +483,7 @@ public class Widget {
      * @return The widget's rotation around the 'Z' axis, in degrees.
      */
     public float getRotationRoll() {
-        return getT().getRotationRoll();
+        return getTransform().getRotationRoll();
     }
 
     /**
@@ -485,7 +506,7 @@ public class Widget {
      *            'Z' component of the quaternion.
      */
     public void setRotation(float w, float x, float y, float z) {
-        getT().setRotation(w, x, y, z);
+        getTransform().setRotation(w, x, y, z);
     }
 
     /**
@@ -494,7 +515,7 @@ public class Widget {
      * @return The widget's current scaling on the 'X' axis.
      */
     public float getScaleX() {
-        return getT().getScaleX();
+        return getTransform().getScaleX();
     }
 
     /**
@@ -503,7 +524,7 @@ public class Widget {
      * @return The widget's current scaling on the 'Y' axis.
      */
     public float getScaleY() {
-        return getT().getScaleY();
+        return getTransform().getScaleY();
     }
 
     /**
@@ -512,7 +533,7 @@ public class Widget {
      * @return The widget's current scaling on the 'Z' axis.
      */
     public float getScaleZ() {
-        return getT().getScaleZ();
+        return getTransform().getScaleZ();
     }
 
     /**
@@ -526,7 +547,10 @@ public class Widget {
      *            Scaling factor on the 'Z' axis.
      */
     public void setScale(float x, float y, float z) {
-        getT().setScale(x, y, z);
+        mWidth = mBaseWidth * x;
+        mHeight = mBaseHeight * y;
+        mDepth = mBaseDepth * z;
+        getTransform().setScale(x, y, z);
     }
 
     /**
@@ -536,7 +560,8 @@ public class Widget {
      *            Scaling factor on the 'X' axis.
      */
     public void setScaleX(float x) {
-        getT().setScaleX(x);
+        mWidth = mBaseWidth * x;
+        getTransform().setScaleX(x);
     }
 
     /**
@@ -546,7 +571,8 @@ public class Widget {
      *            Scaling factor on the 'Y' axis.
      */
     public void setScaleY(float y) {
-        getT().setScaleY(y);
+        mHeight = mBaseHeight * y;
+        getTransform().setScaleY(y);
     }
 
     /**
@@ -556,7 +582,8 @@ public class Widget {
      *            Scaling factor on the 'Z' axis.
      */
     public void setScaleZ(float z) {
-        getT().setScaleZ(z);
+        mDepth = mBaseDepth * z;
+        getTransform().setScaleZ(z);
     }
 
     /**
@@ -566,7 +593,7 @@ public class Widget {
      *         OpenGL-compatible column-major format.
      */
     public float[] getModelMatrix() {
-        return getT().getModelMatrix();
+        return getTransform().getModelMatrix();
     }
 
     /**
@@ -581,7 +608,7 @@ public class Widget {
         if (mat.length != 16) {
             throw new IllegalArgumentException("Size not equal to 16.");
         }
-        getT().setModelMatrix(mat);
+        getTransform().setModelMatrix(mat);
     }
 
     /**
@@ -598,7 +625,7 @@ public class Widget {
      *            'Z' delta
      */
     public void translate(float x, float y, float z) {
-        getT().translate(x, y, z);
+        getTransform().translate(x, y, z);
     }
 
     /**
@@ -622,7 +649,7 @@ public class Widget {
      *            'Z' component of the axis.
      */
     public void setRotationByAxis(float angle, float x, float y, float z) {
-        getT().setRotationByAxis(angle, x, y, z);
+        getTransform().setRotationByAxis(angle, x, y, z);
     }
 
     /**
@@ -638,7 +665,7 @@ public class Widget {
      *            'Z' component of the quaternion.
      */
     public void rotate(float w, float x, float y, float z) {
-        getT().rotate(w, x, y, z);
+        getTransform().rotate(w, x, y, z);
     }
 
     /**
@@ -654,7 +681,7 @@ public class Widget {
      *            'Z' component of the axis.
      */
     public void rotateByAxis(float angle, float x, float y, float z) {
-        getT().rotateByAxis(angle, x, y, z);
+        getTransform().rotateByAxis(angle, x, y, z);
     }
 
     /**
@@ -678,8 +705,8 @@ public class Widget {
      */
     public void rotateByAxisWithPivot(float angle, float axisX, float axisY,
             float axisZ, float pivotX, float pivotY, float pivotZ) {
-        getT().rotateByAxisWithPivot(angle, axisX, axisY, axisZ, pivotX,
-                                     pivotY, pivotZ);
+        getTransform().rotateByAxisWithPivot(angle, axisX, axisY, axisZ,
+                                             pivotX, pivotY, pivotZ);
     }
 
     /**
@@ -690,7 +717,7 @@ public class Widget {
      * transform to an identity matrix.
      */
     public void reset() {
-        getT().reset();
+        getTransform().reset();
     }
 
     /**
@@ -726,6 +753,10 @@ public class Widget {
      */
     public Visibility getVisibility() {
         return mVisibility;
+    }
+
+    protected Widget(final GVRContext context, final GVRMesh mesh) {
+        this(context, new GVRSceneObject(context, mesh, sDefaultTexture));
     }
 
     /**
@@ -901,6 +932,11 @@ public class Widget {
     Widget(final GVRContext context, final GVRSceneObject sceneObject) {
         mContext = context;
         mSceneObject = sceneObject;
+        final float[] dimensions = LayoutHelpers
+                .calculateGeometricDimensions(sceneObject);
+        mBaseWidth = mWidth = dimensions[0];
+        mBaseHeight = mHeight = dimensions[1];
+        mBaseDepth = mDepth = dimensions[2];
     }
 
     /* package */
@@ -1038,7 +1074,7 @@ public class Widget {
     /**
      * @return The {@code Widget's} {@linkplain GVRTransform transform}.
      */
-    private GVRTransform getT() {
+    private GVRTransform getTransform() {
         return mSceneObject.getTransform();
     }
 
@@ -1054,6 +1090,12 @@ public class Widget {
     private boolean mIsTouchable = true;
     private Visibility mVisibility = Visibility.VISIBLE;
     private GroupWidget mParent;
+    private final float mBaseWidth;
+    private final float mBaseHeight;
+    private final float mBaseDepth;
+    private float mWidth;
+    private float mHeight;
+    private float mDepth;
 
     private final Set<OnFocusListener> mFocusListeners = new HashSet<OnFocusListener>();
     private final Set<OnTouchListener> mTouchListeners = new HashSet<OnTouchListener>();
@@ -1067,6 +1109,7 @@ public class Widget {
 
     private static WeakReference<Thread> sGLThread;
     private static WeakReference<TouchManager> sTouchManager;
+    private static GVRTexture sDefaultTexture;
 
     private static final String TAG = Widget.class.getSimpleName();
 }

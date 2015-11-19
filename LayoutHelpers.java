@@ -1,6 +1,7 @@
 package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRMesh;
+import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTransform;
 
@@ -104,7 +105,28 @@ final class LayoutHelpers {
      * @return The dimensions of {@code item}.
      */
     static float[] calculateGeometricDimensions(final GVRSceneObject item) {
-        GVRMesh boundingBox = item.getRenderData().getMesh().getBoundingBox();
+        final GVRRenderData renderData = item.getRenderData();
+        if (renderData != null) {
+            final GVRMesh mesh = renderData.getMesh();
+            if (mesh != null) {
+                final float[] dimensions = calculateGeometricDimensions(mesh);
+
+                GVRTransform transform = item.getTransform();
+
+                dimensions[0] *= transform.getScaleX();
+                dimensions[1] *= transform.getScaleY();
+                dimensions[2] *= transform.getScaleZ();
+
+                return dimensions;
+            }
+        }
+        return new float[] {
+                -1f, -1f, -1f
+        };
+    }
+
+    public static float[] calculateGeometricDimensions(final GVRMesh mesh) {
+        GVRMesh boundingBox = mesh.getBoundingBox();
         final float[] vertices = boundingBox.getVertices();
         final int numVertices = vertices.length / 3;
 
@@ -127,18 +149,8 @@ final class LayoutHelpers {
             maxZ = Math.max(maxZ, z);
         }
 
-        final float width = maxX - minX;
-        final float height = maxY - minY;
-        final float depth = maxZ - minZ;
-
-        GVRTransform transform = item.getTransform();
-
-        final float xScale = transform.getScaleX();
-        final float yScale = transform.getScaleY();
-        final float zScale = transform.getScaleZ();
-
         return new float[] {
-                width * xScale, height * yScale, depth * zScale
+                maxX - minX, maxY - minY, maxZ - minZ
         };
     }
 

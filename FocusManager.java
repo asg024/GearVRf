@@ -84,8 +84,9 @@ class FocusManager {
             Log.d(TAG, "onDrawFrame(): called at %05.2f", frameTime);
             Widget quad = getPickedFocusable();
             Widget focus = mFocusRef.get();
+//            Log.d(TAG, "onDrawFrame(): quad: %s, focus: %s", quad, focus);
             if (quad != focus) {
-                Log.d(TAG, "onDrawFrame(): focus changed");
+//                Log.d(TAG, "onDrawFrame(): focus changed");
                 final Widget oldFocus = focus;
                 mFocusRef.clear();
                 cancelLongFocusRunnable();

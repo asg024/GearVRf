@@ -17,7 +17,7 @@ public class SceneObjectWidget extends GroupWidget {
      * @param sceneObject
      *            The {@link GVRSceneObject} to wrap.
      */
-    SceneObjectWidget(final GVRContext context, final GVRSceneObject sceneObject) {
+    public SceneObjectWidget(final GVRContext context, final GVRSceneObject sceneObject) {
         super(context, sceneObject);
     }
 
