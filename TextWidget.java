@@ -1,6 +1,7 @@
 package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 
@@ -8,6 +9,20 @@ import android.graphics.drawable.Drawable;
 import android.widget.TextView;
 
 public class TextWidget extends Widget {
+
+    /**
+     * Construct a wrapper for an existing {@link GVRSceneObject}.
+     * 
+     * @param context
+     *            The current {@link GVRContext}.
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     */
+    public TextWidget(final GVRContext context, final GVRSceneObject sceneObject) {
+        super(context, sceneObject);
+        // TODO: Implement property fetching
+        mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
+    }
 
     /**
      * Shows a {@link TextView} on a {@linkplain Widget widget} with view's
@@ -164,5 +179,5 @@ public class TextWidget extends Widget {
         mTextViewSceneObject.setTextSize(size);
     }
 
-    private GVRTextViewSceneObject mTextViewSceneObject;
+    private final GVRTextViewSceneObject mTextViewSceneObject;
 }

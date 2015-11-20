@@ -3,6 +3,7 @@ package com.samsung.smcl.vr.widgets;
 import java.util.List;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRSceneObject;
 
 import com.samsung.smcl.utility.Log;
 
@@ -17,11 +18,31 @@ public class LinearLayout extends GroupWidget {
         HORIZONTAL, VERTICAL
     }
 
+    /**
+     * Construct a wrapper for an existing {@link GVRSceneObject}.
+     * 
+     * @param context
+     *            The current {@link GVRContext}.
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     */
+    public LinearLayout(GVRContext context, GVRSceneObject sceneObject) {
+        super(context, sceneObject);
+        mLayoutStrategy = getLayoutStrategy();
+    }
+
+    /**
+     * Construct a new {@link LinearLayout}.
+     * 
+     * @param context
+     *            A valid {@link GVRContext} instance.
+     * @param width
+     * @param height
+     */
     public LinearLayout(GVRContext gvrContext, float width, float height) {
         super(gvrContext, width, height);
         mWidth = width;
         mHeight = height;
-        setOrientation(Orientation.HORIZONTAL);
         mLayoutStrategy = getLayoutStrategy();
     }
 
@@ -217,8 +238,8 @@ public class LinearLayout extends GroupWidget {
         }
     }
 
-    private float mDividerPadding;
-    private Orientation mOrientation;
+    private float mDividerPadding = 0f;
+    private Orientation mOrientation = Orientation.HORIZONTAL;
     private float mWidth;
     private float mHeight;
     private LayoutStrategy mLayoutStrategy = new LinearLayoutStrategy();

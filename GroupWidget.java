@@ -1,14 +1,26 @@
 package com.samsung.smcl.vr.widgets;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
 public abstract class GroupWidget extends Widget {
+
+    /**
+     * Construct a wrapper for an existing {@link GVRSceneObject}.
+     * 
+     * @param context
+     *            The current {@link GVRContext}.
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     */
+    public GroupWidget(GVRContext context, GVRSceneObject sceneObject) {
+        super(context, sceneObject);
+    }
 
     /**
      * Construct a new {@link GroupWidget}.
@@ -47,12 +59,16 @@ public abstract class GroupWidget extends Widget {
         return removeChild(child, child.getSceneObject());
     }
 
+    public Widget findChild(final String name) {
+        return mChildren.get(name);
+    }
+
     /**
      * @return A copy of the list of {@link Widget widgets} that are children of
      *         this instance.
      */
     public List<Widget> getChildren() {
-        return new ArrayList<Widget>(mChildren);
+        return new ArrayList<Widget>(mChildren.values());
     }
 
     /**
@@ -76,12 +92,9 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean addChild(final Widget child,
             final GVRSceneObject childRootSceneObject) {
-        final boolean added = mChildren.add(child);
+        final boolean added = addChildInner(child, childRootSceneObject);
         if (added) {
-            if (child.getVisibility() == Visibility.VISIBLE) {
-                getSceneObject().addChildObject(childRootSceneObject);
-            }
-            child.doOnAttached(this);
+            layout();
         }
         return added;
     }
@@ -105,28 +118,33 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean removeChild(final Widget child,
             final GVRSceneObject childRootSceneObject) {
-        final boolean removed = mChildren.remove(child);
+        final boolean removed = mChildren.remove(child) != null;
         if (removed) {
             getSceneObject().removeChildObject(childRootSceneObject);
             child.doOnDetached();
+            layout();
         }
         return removed;
     }
 
     protected abstract void layout();
 
-    /* package */
-    /**
-     * <b>NOT FOR GENERAL USE!</b>
-     * <p>
-     * This is a passthrough constructor to enable {@link SceneObjectWidget}.
-     * 
-     * @param context
-     * @param sceneObject
-     */
-    GroupWidget(final GVRContext context, final GVRSceneObject sceneObject) {
-        super(context, sceneObject);
+    private boolean addChildInner(final Widget child) {
+        return addChildInner(child, child.getSceneObject());
     }
 
-    private final Set<Widget> mChildren = new LinkedHashSet<Widget>();
+    private boolean addChildInner(final Widget child,
+            final GVRSceneObject childRootSceneObject) {
+        final Widget previousChild = mChildren.put(child.getName(), child);
+        final boolean added = child != previousChild;
+        if (added) {
+            if (child.getVisibility() == Visibility.VISIBLE) {
+                getSceneObject().addChildObject(childRootSceneObject);
+            }
+            child.doOnAttached(this);
+        }
+        return added;
+    }
+
+    private final Map<String, Widget> mChildren = new LinkedHashMap<String, Widget>();
 }

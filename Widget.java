@@ -123,6 +123,24 @@ public class Widget {
         GONE
     }
 
+    /**
+     * Construct a wrapper for an existing {@link GVRSceneObject}.
+     * 
+     * @param context
+     *            The current {@link GVRContext}.
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     */
+    public Widget(final GVRContext context, final GVRSceneObject sceneObject) {
+        mContext = context;
+        mSceneObject = sceneObject;
+        final float[] dimensions = LayoutHelpers
+                .calculateGeometricDimensions(sceneObject);
+        mBaseWidth = mWidth = dimensions[0];
+        mBaseHeight = mHeight = dimensions[1];
+        mBaseDepth = mDepth = dimensions[2];
+    }
+
     public Widget(final GVRContext context, final float width,
             final float height) {
         this(context, new GVRSceneObject(context, width, height));
@@ -918,25 +936,6 @@ public class Widget {
      */
     protected boolean onTouch() {
         return false;
-    }
-
-    /* package */
-    /**
-     * <b>NOT FOR GENERAL USE!</b>
-     * <p>
-     * This constructor exists to enable {@link SceneObjectWidget}.
-     * 
-     * @param context
-     * @param sceneObject
-     */
-    Widget(final GVRContext context, final GVRSceneObject sceneObject) {
-        mContext = context;
-        mSceneObject = sceneObject;
-        final float[] dimensions = LayoutHelpers
-                .calculateGeometricDimensions(sceneObject);
-        mBaseWidth = mWidth = dimensions[0];
-        mBaseHeight = mHeight = dimensions[1];
-        mBaseDepth = mDepth = dimensions[2];
     }
 
     /* package */

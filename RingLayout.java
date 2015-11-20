@@ -1,10 +1,9 @@
 package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRTransform;
+import org.gearvrf.GVRSceneObject;
 
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
 
 /**
  * A specialized {@link LinearLayout} that lays its children out in an arc on
@@ -47,6 +46,18 @@ import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
  * <img src="ring-ring-layout-virtual-origin.png" />
  */
 public class RingLayout extends LinearLayout {
+
+    /**
+     * Construct a wrapper for an existing {@link GVRSceneObject}.
+     * 
+     * @param context
+     *            The current {@link GVRContext}.
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     */
+    public RingLayout(GVRContext context, GVRSceneObject sceneObject) {
+        super(context, sceneObject);
+    }
 
     public RingLayout(GVRContext context, float width, float height) {
         super(context, width, height);
@@ -119,8 +130,8 @@ public class RingLayout extends LinearLayout {
                 child.setPosition(0, 0, -(float) mRadius);
                 pivotZ = 0;
             }
-            child.rotateByAxisWithPivot(childOffset, xFactor, yFactor,
-                                            zFactor, 0, 0, pivotZ);
+            child.rotateByAxisWithPivot(childOffset, xFactor, yFactor, zFactor,
+                                        0, 0, pivotZ);
         }
     }
 
