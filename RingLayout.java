@@ -27,29 +27,29 @@ import com.samsung.smcl.utility.Utility;
  * Some illustration:<br>
  * Be default, {@code RingLayout} arranges its children around its local origin:
  * <br>
- * 
+ *
  * <img src="ring-layout-local-origin.png" />
  * <p>
  * Using a virtual origin, {@code RingLayout} arranges its children to the left
  * and right (for {@link Orientation#HORIZONTAL horizontal} orientation) of its
  * local origin, centered on the virtual origin; with enough children, the
  * left-most and right-most children will be next to each other:<br>
- * 
+ *
  * <img src="ring-layout-virtual-origin.png" />
  * <p>
  * As a child of another {@code RingLayout} using its local origin:<br>
- * 
+ *
  * <img src="ring-ring-layout-local-origin.png" />
  * <p>
  * As a child of another {@code RingLayout} using a virtual origin:<br>
- * 
+ *
  * <img src="ring-ring-layout-virtual-origin.png" />
  */
 public class RingLayout extends LinearLayout {
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
-     * 
+     *
      * @param context
      *            The current {@link GVRContext}.
      * @param sceneObject
@@ -57,6 +57,11 @@ public class RingLayout extends LinearLayout {
      */
     public RingLayout(GVRContext context, GVRSceneObject sceneObject) {
         super(context, sceneObject);
+    }
+
+    public RingLayout(GVRContext context, GVRSceneObject sceneObject,NodeEntry attributes)
+            throws InstantiationException {
+        super(context, sceneObject, attributes);
     }
 
     public RingLayout(GVRContext context, float width, float height) {

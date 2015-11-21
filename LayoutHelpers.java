@@ -22,12 +22,12 @@ final class LayoutHelpers {
      * of a specified radius, this method calculates by how many degrees a
      * previous object's trailing bounds and a subsequent object's leading
      * bounds must be separated so that neither one overlaps the given object.
-     * 
+     *
      * @see <a href="https://en.wikipedia.org/wiki/Angular_diameter">Angular
      *      diameter</a>
      * @see <a href="https://en.wikipedia.org/wiki/Visual_angle">Visual
      *      angle</a>
-     * 
+     *
      * @param item
      *            Scene object whose angular width to calculate.
      * @param radius
@@ -49,15 +49,15 @@ final class LayoutHelpers {
      * <p>
      * It is assumed that the {@code segment} is oriented perpendicularly to the
      * radius's origin and parallel to the y-axis.
-     * 
+     *
      * @see <a href="https://en.wikipedia.org/wiki/Angular_diameter">Angular
      *      diameter</a>
      * @see <a href="https://en.wikipedia.org/wiki/Visual_angle">Visual
      *      angle</a>
-     * 
+     *
      * @param segment
      *            The segment whose angular width to calculate.
-     * 
+     *
      * @param radius
      *            Distance between the origin and {@code item}.
      * @return The angular width of {@code item}, in degrees.
@@ -82,7 +82,7 @@ final class LayoutHelpers {
     /**
      * Calculates the "width", in degrees, of a widget from a distance of
      * {@code radius} units.
-     * 
+     *
      * @see #calculateAngularWidth(GVRSceneObject, double)
      * @param widget
      *            The {@link Widget} whose angular width to calculate.
@@ -99,7 +99,7 @@ final class LayoutHelpers {
      * {@linkplain GVRMesh#getBoundingBox() bounding box}. These lengths are
      * relative to the object itself, and have the object's scaling applied to
      * it. Rotations are not taken into account.
-     * 
+     *
      * @param item
      *            The {@link GVRSceneObject} to calculate with width for.
      * @return The dimensions of {@code item}.
@@ -121,7 +121,7 @@ final class LayoutHelpers {
             }
         }
         return new float[] {
-                -1f, -1f, -1f
+                0f, 0f, 0f
         };
     }
 
@@ -172,7 +172,7 @@ final class LayoutHelpers {
      * <p>
      * Convenience wrapper for
      * {@link #calculateGeometricDimensions(GVRSceneObject)}.
-     * 
+     *
      * @param item
      *            The {@link GVRSceneObject} to calculate height for.
      * @return The depth of {@code item}.
@@ -199,7 +199,7 @@ final class LayoutHelpers {
      * <p>
      * Convenience wrapper for
      * {@link #calculateGeometricDimensions(GVRSceneObject)}.
-     * 
+     *
      * @param item
      *            The {@link GVRSceneObject} to calculate height for.
      * @return The height of {@code item}.
@@ -223,7 +223,7 @@ final class LayoutHelpers {
      * x-axis. This length is relative to the object itself, and has the
      * object's {@linkplain GVRTransform#getScaleX() x-axis scaling} applied to
      * it. It does not, however, take into account any rotations.
-     * 
+     *
      * @param item
      *            The {@link GVRSceneObject} to calculate width for.
      * @return The width of {@code item}.
@@ -255,7 +255,7 @@ final class LayoutHelpers {
 
     /**
      * Calculates the angle of an arc.
-     * 
+     *
      * @param arcLength
      *            Length of the arc.
      * @param radius

@@ -12,7 +12,7 @@ public class TextWidget extends Widget {
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
-     * 
+     *
      * @param context
      *            The current {@link GVRContext}.
      * @param sceneObject
@@ -24,20 +24,69 @@ public class TextWidget extends Widget {
         mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
     }
 
+
+    /**
+     * A constructor for wrapping existing {@link GVRSceneLayout} instances.
+     * Deriving classes should override and do whatever processing is
+     * appropriate.
+     *
+     * @param context
+     *            The current {@link GVRContext}
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     * @param attributes
+     *            A set of class-specific attributes.
+     */
+    @SuppressWarnings("deprecation")
+    public TextWidget(GVRContext context, GVRSceneObject sceneObject,
+                      NodeEntry attributes) {
+        super(context, sceneObject, attributes);
+        String attribute = attributes.getProperty("text");
+        if (attribute != null) {
+            setText(attribute);
+        }
+        attribute = attributes.getProperty("text_size");
+        if (attribute != null) {
+            setTextSize(Float.parseFloat(attribute));
+        }
+        attribute = attributes.getProperty("background");
+        if (attribute != null) {
+            setBackGround(context.getContext().getResources()
+                          .getDrawable(Integer.parseInt(attribute)));
+        }
+        attribute = attributes.getProperty("background_color");
+        if (attribute != null) {
+            setBackgroundColor(Integer.parseInt(attribute));
+        }
+        attribute = attributes.getProperty("gravity");
+        if (attribute != null) {
+            setGravity(Integer.parseInt(attribute));
+        }
+        attribute = attributes.getProperty("refresh_freq");
+        if (attribute != null) {
+            setRefreshFrequency(IntervalFrequency.valueOf(attribute));
+        }
+        attribute = attributes.getProperty("text_color");
+        if (attribute != null) {
+            setTextColor(Integer.parseInt(attribute));
+        }
+        mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
+    }
+
     /**
      * Shows a {@link TextView} on a {@linkplain Widget widget} with view's
      * default height and width.
-     * 
+     *
      * @param gvrContext
      *            current {@link GVRContext}
      * @param width
      *            Widget height, in GVRF scene graph units.
-     * 
+     *
      *            Please note that your widget's size is independent of the size
      *            of the internal {@code TextView}: a large mismatch between the
      *            scene object's size and the view's size will result in
      *            'spidery' or 'blocky' text.
-     * 
+     *
      * @param height
      *            Widget width, in GVRF scene graph units.
      */
@@ -48,17 +97,17 @@ public class TextWidget extends Widget {
     /**
      * Shows a {@link TextView} on a {@linkplain Widget widget} with view's
      * default height and width.
-     * 
+     *
      * @param gvrContext
      *            current {@link GVRContext}
      * @param width
      *            Widget height, in GVRF scene graph units.
-     * 
+     *
      *            Please note that your widget's size is independent of the size
      *            of the internal {@code TextView}: a large mismatch between the
      *            scene object's size and the view's size will result in
      *            'spidery' or 'blocky' text.
-     * 
+     *
      * @param height
      *            Widget width, in GVRF scene graph units.
      * @param text
@@ -74,17 +123,17 @@ public class TextWidget extends Widget {
 
     /**
      * Shows a {@link TextView} on a {@linkplain Widget widget}.
-     * 
+     *
      * @param gvrContext
      *            current {@link GVRContext}
      * @param width
      *            Widget height, in GVRF scene graph units.
-     * 
+     *
      *            Please note that your widget's size is independent of the size
      *            of the internal {@code TextView}: a large mismatch between the
      *            scene object's size and the view's size will result in
      *            'spidery' or 'blocky' text.
-     * 
+     *
      * @param height
      *            Widget width, in GVRF scene graph units.
      * @param viewWidth
@@ -99,17 +148,17 @@ public class TextWidget extends Widget {
 
     /**
      * Shows a {@link TextView} on a {@linkplain Widget widget}.
-     * 
+     *
      * @param gvrContext
      *            current {@link GVRContext}
      * @param width
      *            Widget height, in GVRF scene graph units.
-     * 
+     *
      *            Please note that your widget's size, is independent of the
      *            size of the internal {@code TextView}: a large mismatch
      *            between the scene object's size and the view's size will
      *            result in 'spidery' or 'blocky' text.
-     * 
+     *
      * @param height
      *            Widget width, in GVRF scene graph units.
      * @param viewWidth

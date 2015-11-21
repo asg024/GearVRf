@@ -20,7 +20,7 @@ public class LinearLayout extends GroupWidget {
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
-     * 
+     *
      * @param context
      *            The current {@link GVRContext}.
      * @param sceneObject
@@ -31,9 +31,31 @@ public class LinearLayout extends GroupWidget {
         mLayoutStrategy = getLayoutStrategy();
     }
 
+    public LinearLayout(GVRContext gvrContext, GVRSceneObject sceneObject,
+                        NodeEntry attributes) throws InstantiationException {
+        super(gvrContext, sceneObject, attributes);
+
+        String attribute = attributes.getProperty("orientation");
+        if (attribute != null) {
+            mOrientation = Orientation.valueOf(attribute);
+        }
+        attribute = attributes.getProperty("divider_padding");
+        if (attribute != null) {
+            mDividerPadding = Float.parseFloat(attribute);
+        }
+    }
+
+    private static final String pattern = "\nLL attributes====== orientation = %s divider_padding = %f";
+
+    public String toString() {
+        return super.toString() + String.format(pattern, mOrientation, mDividerPadding);
+    }
+
+
+
     /**
      * Construct a new {@link LinearLayout}.
-     * 
+     *
      * @param context
      *            A valid {@link GVRContext} instance.
      * @param width
@@ -73,7 +95,7 @@ public class LinearLayout extends GroupWidget {
 
     /**
      * Set the amount of padding between child objects.
-     * 
+     *
      * @param padding
      */
     public void setDividerPadding(float padding) {
@@ -89,7 +111,7 @@ public class LinearLayout extends GroupWidget {
 
     /**
      * Set the {@link Orientation} of the layout.
-     * 
+     *
      * @param orientation
      *            One of the {@link Orientation} constants.
      */

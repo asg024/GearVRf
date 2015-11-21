@@ -12,7 +12,7 @@ public abstract class GroupWidget extends Widget {
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
-     * 
+     *
      * @param context
      *            The current {@link GVRContext}.
      * @param sceneObject
@@ -22,9 +22,22 @@ public abstract class GroupWidget extends Widget {
         super(context, sceneObject);
     }
 
+    public GroupWidget(final GVRContext context,
+                       final GVRSceneObject sceneObject, NodeEntry attributes)
+        throws InstantiationException {
+        super(context, sceneObject, attributes);
+        List<GVRSceneObject> children = sceneObject.getChildren();
+        for (GVRSceneObject sceneObjectChild : children) {
+            final Widget child = WidgetFactory.createWidget(context,
+                                                            sceneObjectChild);
+            addChildInner(child);
+        }
+//        layout();
+    }
+
     /**
      * Construct a new {@link GroupWidget}.
-     * 
+     *
      * @param context
      *            A valid {@link GVRContext} instance.
      * @param width
@@ -36,7 +49,7 @@ public abstract class GroupWidget extends Widget {
 
     /**
      * Add another {@link Widget} as a child of this one.
-     * 
+     *
      * @param child
      *            The {@code Widget} to add as a child.
      * @return {@code True} if {@code child} was added; {@code false} if
@@ -48,7 +61,7 @@ public abstract class GroupWidget extends Widget {
 
     /**
      * Remove a {@link Widget} as a child of this instance.
-     * 
+     *
      * @param child
      *            The {@code Widget} to remove.
      * @return {@code True} if {@code child} was a child of this instance and
@@ -59,7 +72,7 @@ public abstract class GroupWidget extends Widget {
         return removeChild(child, child.getSceneObject());
     }
 
-    public Widget findChild(final String name) {
+    public Widget findChildByName(final String name) {
         return mChildren.get(name);
     }
 
@@ -82,7 +95,7 @@ public abstract class GroupWidget extends Widget {
      * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
      * relationship between the child {@code Widget} and the alternative root
      * scene object.
-     * 
+     *
      * @param child
      *            The {@code Widget} to add as a child.
      * @param childRootSceneObject
@@ -108,7 +121,7 @@ public abstract class GroupWidget extends Widget {
      * Otherwise there may be dangling scene objects. It is the responsibility
      * of the caller to keep track of the relationship between the child
      * {@code Widget} and the alternative root scene object.
-     * 
+     *
      * @param child
      *            The {@code Widget} to remove.
      * @param childRootSceneObject
@@ -139,7 +152,9 @@ public abstract class GroupWidget extends Widget {
         final boolean added = child != previousChild;
         if (added) {
             if (child.getVisibility() == Visibility.VISIBLE) {
-                getSceneObject().addChildObject(childRootSceneObject);
+                if (childRootSceneObject.getParent() != getSceneObject()) {
+                    getSceneObject().addChildObject(childRootSceneObject);
+                }
             }
             child.doOnAttached(this);
         }
