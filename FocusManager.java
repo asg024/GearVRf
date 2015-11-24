@@ -81,7 +81,7 @@ class FocusManager {
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
-            Log.d(TAG, "onDrawFrame(): called at %05.2f", frameTime);
+//            Log.d(TAG, "onDrawFrame(): called at %05.2f", frameTime);
             Widget quad = getPickedFocusable();
             Widget focus = mFocusRef.get();
 //            Log.d(TAG, "onDrawFrame(): quad: %s, focus: %s", quad, focus);
