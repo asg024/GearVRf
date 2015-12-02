@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRSceneObject;
-import org.gearvrf.GVRTransform;
 
 import android.database.DataSetObserver;
 
@@ -20,7 +18,7 @@ import com.samsung.smcl.utility.Utility;
 // TODO: Add support for animation (in particular, we need to handle layout changes)
 // TODO: Scrolling (this is different from rotating, a la AppRing)
 // TODO: Selection
-public class RingList extends GVRSceneObject {
+public class RingList extends GroupWidget {
 
     /**
      * Construct a new {@code RingList} instance with a {@link #setRho(double)
@@ -29,8 +27,8 @@ public class RingList extends GVRSceneObject {
      * @param gvrContext
      *            The active {@link GVRContext}.
      */
-    public RingList(final GVRContext gvrContext) {
-        super(gvrContext);
+    public RingList(final GVRContext gvrContext, GVRSceneObject sceneObj) {
+        super(gvrContext, sceneObj);
     }
 
     /**
@@ -41,11 +39,25 @@ public class RingList extends GVRSceneObject {
      * @param rho
      *            The radius of the {@code RingList}.
      */
-    public RingList(final GVRContext gvrContext, final double rho) {
-        super(gvrContext);
+    public RingList(final GVRContext gvrContext, GVRSceneObject sceneObj,
+            final double rho) {
+        super(gvrContext, sceneObj);
         mRho = rho;
     }
-
+    
+    /**
+     * Construct a new {@code RingList} instance with the specified radius.
+     * 
+     * @param gvrContext
+     *            The active {@link GVRContext}.
+     * @param rho
+     *            The radius of the {@code RingList}.
+     */
+    public RingList(final GVRContext gvrContext, float width, float height,
+            final double rho) {
+        super(gvrContext, width, height);
+        mRho = rho;
+    }
     /**
      * Set the {@link Adapter} for the {@code RingList}. The list will
      * immediately attempt to load data from the adapter.
@@ -101,49 +113,15 @@ public class RingList extends GVRSceneObject {
         }
     }
 
-    private float calculateAngularWidth(final GVRSceneObject item) {
-        final float geometricWidth = calculateGeometricWidth(item);
-
-        // The item is perpendicular to the center of the ring at *its* center,
-        // like a "T". The triangle, then, is between the ring's center, the
-        // item's center, and the "edge" of the item's bounding box. The length
-        // of the "opposite" side, therefore, is only half the item's geometric
-        // width.
-        final double opposite = geometricWidth / 2;
-        final double tangent = opposite / mRho; // The rho is the "adjacent"
-                                                // side
-        final double radians = Math.atan(tangent);
-
-        // The previous calculation only gives us half the angular width, since
-        // it is reckoned from the item's center to its edge.
-        return (float) Math.toDegrees(radians) * 2;
-    }
-
-    private float calculateGeometricWidth(final GVRSceneObject item) {
-        GVRMesh boundingBox = item.getRenderData().getMesh().getBoundingBox();
-        final float[] vertices = boundingBox.getVertices();
-        final int numVertices = vertices.length / 3;
-        float minX = 0, maxX = 0;
-        for (int i = 0; i < numVertices; ++i) {
-            final float x = vertices[i * 3];
-            minX = Math.min(minX, x);
-            maxX = Math.max(maxX, x);
-        }
-        float width = maxX - minX;
-        GVRTransform transform = item.getTransform();
-        float xScale = transform.getScaleX();
-        return width * xScale;
-    }
-
     private void clear() {
-        List<GVRSceneObject> children = new ArrayList<GVRSceneObject>(getChildren());
+        List<Widget> children = new ArrayList<Widget>(getChildren());
         Log.d(TAG, "clear(): removing %d children", children.size());
-        for (GVRSceneObject child : children) {
-            removeChildObject(child);
+        for (Widget child : children) {
+            removeChild(child, true);
         }
     }
-
-    private void layout() {
+    @Override
+    protected void layout() {
         if (mItems.isEmpty()) {
             Log.d(TAG, "layout(): no items to layout!");
             return;
@@ -153,17 +131,14 @@ public class RingList extends GVRSceneObject {
         Log.d(TAG, "layout(): laying out %d items", numItems);
         final float[] angularWidths = new float[numItems];
         for (int i = 0; i < numItems; ++i) {
-            angularWidths[i] = calculateAngularWidth(mItems.get(i));
+            angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems.get(i), mRho);
             Log.d(TAG, "layout(): angular width at %d: %f", i, angularWidths[i]);
         }
         float phi = 0;
         for (int i = 0; i < numItems; ++i) {
             Log.d(TAG, "layout(): phi at %d: %f", i, phi);
-            GVRSceneObject item = mItems.get(i);
-            GVRTransform transform = item.getTransform();
-
-            transform.setPosition(0, 0, -(float) mRho);
-            transform.rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
+            mItems.get(i).setPosition(0, 0, -(float) mRho);
+            mItems.get(i).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
             phi -= angularWidths[i] + mItemPadding;
         }
     }
@@ -173,7 +148,7 @@ public class RingList extends GVRSceneObject {
     }
 
     private void onChanged(final Adapter adapter) {
-        getGVRContext().runOnGlThread(new Runnable() {
+        runOnGlThread(new Runnable() {
             @Override
             public void run() {
                 if (adapter != mAdapter) {
@@ -202,43 +177,44 @@ public class RingList extends GVRSceneObject {
 
         Log.d(TAG, "onChanged(): %d views", mItems.size());
         // Recycle any items we already have
+
         for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
-            mAdapter.getView(pos, mItems.get(pos), RingList.this);
+            mAdapter.getView(pos, mItems.get(pos),
+                    RingList.this);
         }
 
         // Get any additional items
         for (; pos < itemCount; ++pos) {
-            GVRSceneObject item = mAdapter
-                    .getView(pos, null, RingList.this);
+            Widget item = mAdapter.getView(pos, null, RingList.this);
             mItems.add(item);
             Log.d(TAG, "onChanged(): added item at %d", pos);
-            addChildObject(item);
+            addChild(item, true);
         }
 
         // Trim unused items
         Log.d(TAG, "onChanged(): trimming: %b", pos < mItems.size());
         for (; pos < mItems.size(); ++pos) {
-            GVRSceneObject item = mItems.remove(pos);
-            removeChildObject(item);
+            Widget item = mItems.remove(pos);
+            removeChild(item, true);
         }
 
         layout();
 
-        List<GVRSceneObject> children = getChildren();
+        List<Widget> children = getChildren();
         for (int i = 0; i < children.size(); ++i) {
-            GVRTransform transform = children.get(i).getTransform();
+            Widget child = children.get(i);
             Log.d(TAG,
-                  "layout(): item at %d {%05.2f, %05.2f, %05.2f}, {%05.2f, %05.2f, %05.2f}",
-                  i, transform.getPositionX(), transform.getPositionY(),
-                  transform.getPositionZ(), transform.getRotationX(),
-                  transform.getRotationY(), transform.getRotationZ());
+                    "layout(): item at %d {%05.2f, %05.2f, %05.2f}, {%05.2f, %05.2f, %05.2f}",
+                    i, child.getPositionX(), child.getPositionY(),
+                    child.getPositionZ(), child.getRotationX(),
+                    child.getRotationY(), child.getRotationZ());
         }
-        Log.d(TAG, "onChanged(): child objects: %d", getChildrenCount());
+        Log.d(TAG, "onChanged(): child objects: %d", this.getChildren().size());
     }
 
     private Adapter mAdapter;
     private float mItemPadding;
-    private List<GVRSceneObject> mItems = new ArrayList<GVRSceneObject>();
+    private List<Widget> mItems = new ArrayList<Widget>();
     private double mRho;
     private DataSetObserver mObserver = new DataSetObserver() {
         @Override

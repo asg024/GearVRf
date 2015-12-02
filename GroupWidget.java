@@ -45,6 +45,7 @@ public abstract class GroupWidget extends Widget {
      */
     public GroupWidget(GVRContext context, float width, float height) {
         super(context, width, height);
+
     }
 
     /**
@@ -60,6 +61,20 @@ public abstract class GroupWidget extends Widget {
     }
 
     /**
+     * Add another {@link Widget} as a child of this one.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    public boolean addChild(Widget child, boolean preventLayout) {
+        return addChild(child, child.getSceneObject(), preventLayout);
+    }
+
+    /**
      * Remove a {@link Widget} as a child of this instance.
      *
      * @param child
@@ -72,9 +87,25 @@ public abstract class GroupWidget extends Widget {
         return removeChild(child, child.getSceneObject());
     }
 
+    /**
+     * Remove a {@link Widget} as a child of this instance.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(Widget child, boolean preventLayout) {
+        return removeChild(child, child.getSceneObject(), preventLayout);
+    }
+
     public Widget findChildByName(final String name) {
         return mChildren.get(name);
     }
+
 
     /**
      * @return A copy of the list of {@link Widget widgets} that are children of
@@ -83,6 +114,8 @@ public abstract class GroupWidget extends Widget {
     public List<Widget> getChildren() {
         return new ArrayList<Widget>(mChildren.values());
     }
+
+    
 
     /**
      * Add another {@link Widget} as a child of this one.
@@ -136,6 +169,68 @@ public abstract class GroupWidget extends Widget {
             getSceneObject().removeChildObject(childRootSceneObject);
             child.doOnDetached();
             layout();
+        }
+        return removed;
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one.
+     * <p>
+     * A {@link GVRSceneObject} other than the one directly managed by the child
+     * {@code Widget} can be specified as the child's root. This is useful in
+     * cases where the parent object needs to insert additional scene objects
+     * between the child and its parent.
+     * <p>
+     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
+     * relationship between the child {@code Widget} and the alternative root
+     * scene object.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
+        final boolean added = addChildInner(child, childRootSceneObject);
+        if (added && !preventLayout) {
+            layout();
+        }
+        return added;
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance.
+     * <p>
+     * <b>NOTE:</b> if an alternative root scene object was used to
+     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
+     * {@code Widget}, the caller must pass the alternative root to this method.
+     * Otherwise there may be dangling scene objects. It is the responsibility
+     * of the caller to keep track of the relationship between the child
+     * {@code Widget} and the alternative root scene object.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param childRootSceneObject
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(final Widget child,
+            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
+        final boolean removed = mChildren.remove(child) != null;
+        if (removed) {
+            getSceneObject().removeChildObject(childRootSceneObject);
+            child.doOnDetached();
+            if (!preventLayout) {
+                layout();
+            }
         }
         return removed;
     }

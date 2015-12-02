@@ -83,7 +83,7 @@ public class Widget {
          *         focus change should take place; {@code false} to allow
          *         further processing.
          */
-        public boolean onFocus(boolean focused);
+        public boolean onFocus(boolean focused, Widget widget);
 
         /**
          * Called when a widget has had focus for more than
@@ -93,7 +93,7 @@ public class Widget {
          *         event should take place; {@code false} to allow further
          *         processing.
          */
-        public boolean onLongFocus();
+        public boolean onLongFocus(Widget widget);
     }
 
     /**
@@ -108,7 +108,7 @@ public class Widget {
          *         touch event should take place; {@code false} to allow further
          *         processing.
          */
-        public boolean onTouch();
+        public boolean onTouch(Widget widget);
     }
 
     /**
@@ -1045,7 +1045,7 @@ public class Widget {
      */
     void doOnFocus(boolean focused) {
         for (OnFocusListener listener : mFocusListeners) {
-            if (listener.onFocus(focused)) {
+            if (listener.onFocus(focused, this)) {
                 return;
             }
         }
@@ -1066,7 +1066,7 @@ public class Widget {
      */
     void doOnLongFocus() {
         for (OnFocusListener listener : mFocusListeners) {
-            if (listener.onLongFocus()) {
+            if (listener.onLongFocus(this)) {
                 return;
             }
         }
@@ -1074,13 +1074,13 @@ public class Widget {
     }
 
     /* package */
-    GVRSceneObject getSceneObject() {
+    public GVRSceneObject getSceneObject() {
         return mSceneObject;
     }
 
     private boolean doOnTouch() {
         for (OnTouchListener listener : mTouchListeners) {
-            if (listener.onTouch()) {
+            if (listener.onTouch(this)) {
                 return true;
             }
         }
