@@ -69,35 +69,29 @@ class FocusManager {
     private void cancelLongFocusRunnable() {
         if (mLongFocusEvent != null) {
             mLongFocusEvent.cancel();
+            mLongFocusEvent = null;
         }
     }
 
     private void postLongFocusRunnable() {
-        mLongFocusEvent = GVRPeriodicEngine.getInstance(mContext)
-                .runAfter(mLongFocusRunnable,
-                          (long) LONG_FOCUS_TIMEOUT / 1000.0f);
+        if (mCurrentFocus != null) {
+            LongFocusRunnable r = new LongFocusRunnable(mCurrentFocus);
+            mLongFocusEvent = GVRPeriodicEngine.getInstance(mContext)
+                    .runAfter(r, LONG_FOCUS_TIMEOUT / 1000.0f);
+        }
     }
 
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
-//            Log.d(TAG, "onDrawFrame(): called at %05.2f", frameTime);
             Widget quad = getPickedFocusable();
-            Widget focus = mFocusRef.get();
-//            Log.d(TAG, "onDrawFrame(): quad: %s, focus: %s", quad, focus);
-            if (quad != focus) {
-//                Log.d(TAG, "onDrawFrame(): focus changed");
-                final Widget oldFocus = focus;
-                mFocusRef.clear();
+            if (quad != mCurrentFocus) {
                 cancelLongFocusRunnable();
-                final Widget newFocus;
-                if (quad != null) {
-                    newFocus = (Widget) quad;
-                    mFocusRef = new WeakReference<Widget>(focus);
-                    postLongFocusRunnable();
-                } else {
-                    newFocus = null;
-                }
+                final Widget oldFocus = mCurrentFocus;
+                final Widget newFocus = quad;
+
+                mCurrentFocus = quad;
+                postLongFocusRunnable();
 
                 MainThread.runOnMainThread(new Runnable() {
                     @Override
@@ -115,17 +109,24 @@ class FocusManager {
     };
 
     private final GVRContext mContext;
-    private WeakReference<Widget> mFocusRef = new WeakReference<Widget>(null);
+    private Widget mCurrentFocus = null;
     private Map<GVRSceneObject, Widget> mWidgetMap = new WeakHashMap<GVRSceneObject, Widget>();
-    private Runnable mLongFocusRunnable = new Runnable() {
+
+    static class LongFocusRunnable implements Runnable {
+        Widget mWidget;
+
+        LongFocusRunnable(Widget widget) {
+            mWidget = widget;
+        }
+
         @Override
         public void run() {
-            final Widget focus = mFocusRef.get();
-            if (focus != null) {
-                focus.doOnLongFocus();
+            if (mWidget != null) {
+                mWidget.doOnLongFocus();
             }
         }
-    };
+    }
+
     private GVRPeriodicEngine.PeriodicEvent mLongFocusEvent;
 
     private static FocusManager sInstance;

@@ -23,7 +23,7 @@ public class RingList extends GroupWidget {
     /**
      * Construct a new {@code RingList} instance with a {@link #setRho(double)
      * radius} of zero.
-     * 
+     *
      * @param gvrContext
      *            The active {@link GVRContext}.
      */
@@ -33,7 +33,7 @@ public class RingList extends GroupWidget {
 
     /**
      * Construct a new {@code RingList} instance with the specified radius.
-     * 
+     *
      * @param gvrContext
      *            The active {@link GVRContext}.
      * @param rho
@@ -44,10 +44,10 @@ public class RingList extends GroupWidget {
         super(gvrContext, sceneObj);
         mRho = rho;
     }
-    
+
     /**
      * Construct a new {@code RingList} instance with the specified radius.
-     * 
+     *
      * @param gvrContext
      *            The active {@link GVRContext}.
      * @param rho
@@ -63,7 +63,7 @@ public class RingList extends GroupWidget {
      * immediately attempt to load data from the adapter.
      * {@link Adapter#getView(int, GVRSceneObject, GVRSceneObject)} is
      * guaranteed to be called from the GL thread.
-     * 
+     *
      * @param adapter
      *            An adapter or {@code null} to clear the list.
      */
@@ -82,7 +82,7 @@ public class RingList extends GroupWidget {
      * Sets the angular separation, in degrees, between items in the list. The
      * separation is between the right-most vertex of one item and the left-most
      * vertex of the next item in the list.
-     * 
+     *
      * @param itemPadding
      *            Separation between items, in degrees.
      */
@@ -102,7 +102,7 @@ public class RingList extends GroupWidget {
 
     /**
      * Set the radius of the {@code RingList}.
-     * 
+     *
      * @param rho
      *            The new radius.
      */

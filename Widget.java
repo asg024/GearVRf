@@ -1079,7 +1079,6 @@ public class Widget {
         onLongFocus();
     }
 
-    /* package */
     public GVRSceneObject getSceneObject() {
         return mSceneObject;
     }
