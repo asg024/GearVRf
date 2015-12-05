@@ -322,7 +322,11 @@ public class Widget {
      *         returned string will be empty.
      */
     public String getName() {
-        return mSceneObject.getName();
+        String name = mSceneObject.getName();
+        if (name == null || name.isEmpty()) {
+            name = mSceneObject.toString();
+        }
+        return name;
     }
 
     /**
