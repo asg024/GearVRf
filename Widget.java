@@ -119,6 +119,8 @@ public class Widget {
         VISIBLE,
         /** Hide the object, but include in layout calculations. */
         HIDDEN,
+        /** Hide the object, but extract the size for layout calculations. */
+        PLACEHOLDER,
         /** Hide the object, and do not include in layout calculations. */
         GONE
     }

@@ -8,6 +8,8 @@ import java.util.Set;
 
 import org.gearvrf.GVRSceneObject;
 
+
+
 public class NodeEntry {
     public static final String KEY_NAME = "name";
     public static final String KEY_CLASS_NAME = "class";
@@ -15,9 +17,13 @@ public class NodeEntry {
     public static final String ROOT_NODE_CLASS_NAME = "com.samsung.smcl.vr.widgets.AbsoluteLayout";
 
     protected static Set<String> mandatoryKeys = new HashSet<String>();
+    protected static Set<String> caseSensitiveKeys = new HashSet<String>();
 
     static {
         mandatoryKeys.add(KEY_NAME);
+
+        caseSensitiveKeys.add(KEY_NAME);
+        caseSensitiveKeys.add(KEY_CLASS_NAME);
     }
 
     protected String name;
@@ -60,17 +66,17 @@ public class NodeEntry {
     }
 
     static class NameDemangler {
-        public static final String ENTRY_SEPERATOR_REGEX = "--";
-        public static final String KEY_VALUE_SEPERATOR = "-";
-        public static final String KEY_VALUE_SEPERATOR_REGEX = "\\-";
+        public static final String ENTRY_SEPERATOR_REGEX = "__";
+        public static final String KEY_VALUE_SEPERATOR = "_";
+        public static final String KEY_VALUE_SEPERATOR_REGEX = "\\_";
 
         public static final String KEY_NAME = "name";
 
         /**
          * Returns a {@code Map<String, String>} containing key value pairs
          * from a mangled string. The format of the mangled string is
-         * "key1-value1--key2-value2". The values can be null: for example,
-         * "key1-value1--key3--key4" is also valid. Keys with null values
+         * "key1_value1__key2_value2". The values can be null: for example,
+         * "key1_value1__key3__key4" is also valid. Keys with null values
          * can be seen as tags.
          *
          * @param mangledString The mangled string.
@@ -93,7 +99,11 @@ public class NodeEntry {
                 // The value can be null
                 String value = keyValuePair.length >= 2 ? keyValuePair[1] : null;
 
-                res.put(key, value);
+                if (value != null && !caseSensitiveKeys.contains(key)) {
+                    value = value.toLowerCase();
+                }
+
+                res.put(key.toLowerCase(), value);
             }
 
             return res;
