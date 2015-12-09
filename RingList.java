@@ -137,6 +137,7 @@ public class RingList extends GroupWidget {
         float phi = 0;
         for (int i = 0; i < numItems; ++i) {
             Log.d(TAG, "layout(): phi at %d: %f", i, phi);
+            mItems.get(i).setRotation(1, 0, 0, 0);
             mItems.get(i).setPosition(0, 0, -(float) mRho);
             mItems.get(i).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
             phi -= angularWidths[i] + mItemPadding;

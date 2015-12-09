@@ -146,4 +146,5 @@ public interface Adapter {
      *            the object to unregister.
      */
     void unregisterDataSetObserver(DataSetObserver observer);
+
 }

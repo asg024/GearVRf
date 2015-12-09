@@ -1124,7 +1124,7 @@ public class Widget {
     /**
      * @return The {@code Widget's} {@linkplain GVRTransform transform}.
      */
-    private GVRTransform getTransform() {
+    public GVRTransform getTransform() {
         return mSceneObject.getTransform();
     }
 
