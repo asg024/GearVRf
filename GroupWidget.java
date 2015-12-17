@@ -2,9 +2,7 @@ package com.samsung.smcl.vr.widgets;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
@@ -29,12 +27,7 @@ public abstract class GroupWidget extends Widget {
             final GVRSceneObject sceneObject, NodeEntry attributes)
             throws InstantiationException {
         super(context, sceneObject, attributes);
-        List<GVRSceneObject> children = sceneObject.getChildren();
-        for (GVRSceneObject sceneObjectChild : children) {
-            final Widget child = WidgetFactory.createWidget(context,
-                                                            sceneObjectChild);
-            addChildInner(child);
-        }
+        createChildren(context, sceneObject);
         // layout();
     }
 
@@ -48,7 +41,6 @@ public abstract class GroupWidget extends Widget {
      */
     public GroupWidget(GVRContext context, float width, float height) {
         super(context, width, height);
-
     }
 
     /**
@@ -68,6 +60,20 @@ public abstract class GroupWidget extends Widget {
      *
      * @param child
      *            The {@code Widget} to add as a child.
+     * @param index
+     *            Position at which to add the child.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    public boolean addChild(final Widget child, int index) {
+        return addChild(child, child.getSceneObject(), index);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one.
+     * 
+     * @param child
+     *            The {@code Widget} to add as a child.
      * @param preventLayout
      *            The {@code Widget} whether to call layout().
      * @return {@code True} if {@code child} was added; {@code false} if
@@ -75,6 +81,22 @@ public abstract class GroupWidget extends Widget {
      */
     public boolean addChild(Widget child, boolean preventLayout) {
         return addChild(child, child.getSceneObject(), preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one.
+     * 
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param index
+     *            Position at which to add the child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    public boolean addChild(Widget child, int index, boolean preventLayout) {
+        return addChild(child, child.getSceneObject(), index, preventLayout);
     }
 
     /**
@@ -126,7 +148,7 @@ public abstract class GroupWidget extends Widget {
      *         this instance.
      */
     public List<Widget> getChildren() {
-        return new ArrayList<Widget>(mChildren.values());
+        return new ArrayList<Widget>(mChildren);
     }
 
     /**
@@ -150,7 +172,33 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean addChild(final Widget child,
             final GVRSceneObject childRootSceneObject) {
-        final boolean added = addChildInner(child, childRootSceneObject);
+        return addChild(child, childRootSceneObject, -1);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one.
+     * <p>
+     * A {@link GVRSceneObject} other than the one directly managed by the child
+     * {@code Widget} can be specified as the child's root. This is useful in
+     * cases where the parent object needs to insert additional scene objects
+     * between the child and its parent.
+     * <p>
+     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
+     * relationship between the child {@code Widget} and the alternative root
+     * scene object.
+     * 
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param index
+     *            Position at which to add the child.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+            final GVRSceneObject childRootSceneObject, final int index) {
+        final boolean added = addChildInner(child, childRootSceneObject, index);
         if (added) {
             layout();
         }
@@ -176,13 +224,7 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean removeChild(final Widget child,
             final GVRSceneObject childRootSceneObject) {
-        final boolean removed = mChildren.remove(child) != null;
-        if (removed) {
-            getSceneObject().removeChildObject(childRootSceneObject);
-            child.doOnDetached();
-            layout();
-        }
-        return removed;
+        return removeChild(child, childRootSceneObject, false);
     }
 
     /**
@@ -208,7 +250,36 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean addChild(final Widget child,
             final GVRSceneObject childRootSceneObject, boolean preventLayout) {
-        final boolean added = addChildInner(child, childRootSceneObject);
+        return addChild(child, childRootSceneObject, -1, preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one.
+     * <p>
+     * A {@link GVRSceneObject} other than the one directly managed by the child
+     * {@code Widget} can be specified as the child's root. This is useful in
+     * cases where the parent object needs to insert additional scene objects
+     * between the child and its parent.
+     * <p>
+     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
+     * relationship between the child {@code Widget} and the alternative root
+     * scene object.
+     * 
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param index
+     *            Position at which to add the child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+            final GVRSceneObject childRootSceneObject, final int index,
+            boolean preventLayout) {
+        final boolean added = addChildInner(child, childRootSceneObject, index);
         if (added && !preventLayout) {
             layout();
         }
@@ -236,7 +307,7 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean removeChild(final Widget child,
             final GVRSceneObject childRootSceneObject, boolean preventLayout) {
-        final boolean removed = mChildren.remove(child.getName()) != null;
+        final boolean removed = mChildren.remove(child);
         if (removed) {
             Log.d(TAG, "removeChild(): '%s' removed", child.getName());
             if (childRootSceneObject.getParent() != getSceneObject()) {
@@ -256,25 +327,60 @@ public abstract class GroupWidget extends Widget {
         return removed;
     }
 
+    /**
+     * Create a child {@link Widget} to wrap a {@link GVRSceneObject}. Deriving
+     * classes can override this method to handle creation of specific Widgets.
+     * 
+     * @param context
+     *            The current {@link GVRContext}.
+     * @param sceneObjectChild
+     *            The {@link GVRSceneObject} to wrap.
+     * @return
+     * @throws InstantiationException
+     */
+    protected Widget createChild(final GVRContext context,
+            GVRSceneObject sceneObjectChild) throws InstantiationException {
+        final Widget child = WidgetFactory.createWidget(sceneObjectChild);
+        return child;
+    }
+
+    protected void createChildren(final GVRContext context,
+            final GVRSceneObject sceneObject) throws InstantiationException {
+        Log.d(TAG, "GroupWidget(): creating children");
+        List<GVRSceneObject> children = sceneObject.getChildren();
+        Log.d(TAG, "GroupWidget(): child count: %d", children.size());
+        for (GVRSceneObject sceneObjectChild : children) {
+            Log.d(TAG, "GroupWidget(): creating child '%s'",
+                  sceneObjectChild.getName());
+            final Widget child = createChild(context, sceneObjectChild);
+            if (child != null) {
+                addChildInner(child);
+            }
+        }
+    }
+
     protected abstract void layout();
 
     private boolean addChildInner(final Widget child) {
-        return addChildInner(child, child.getSceneObject());
+        return addChildInner(child, child.getSceneObject(), -1);
     }
 
     private boolean addChildInner(final Widget child,
-            final GVRSceneObject childRootSceneObject) {
-
-        final Widget previousChild = mChildren.get(child.getName());
-        if (previousChild != null) {
-            removeChild(previousChild);
-        }
-        mChildren.put(child.getName(), child);
-        final boolean added = true;
+            final GVRSceneObject childRootSceneObject, int index) {
+        final boolean added = mChildren.indexOf(child) == -1;
         if (added) {
+            if (index == -1 || index > mChildren.size()) {
+                mChildren.add(child);
+            } else {
+                mChildren.add(index, child);
+            }
             if (child.getVisibility() == Visibility.VISIBLE) {
                 if (childRootSceneObject.getParent() != getSceneObject()) {
                     getSceneObject().addChildObject(childRootSceneObject);
+                } else {
+                    Log.d(TAG,
+                          "addChildInner(): child '%s' already attached to this Group ('%s')",
+                          child.getName(), getName());
                 }
             }
             child.doOnAttached(this);
@@ -330,7 +436,7 @@ public abstract class GroupWidget extends Widget {
      */
     static private Widget findChildByNameInOneGroup(final String name,
             final GroupWidget groupWidget, ArrayList<GroupWidget> groupChildren) {
-        Collection<Widget> children = groupWidget.mChildren.values();
+        Collection<Widget> children = groupWidget.mChildren;
         for (Widget child : children) {
             if (child.getName().equals(name)) {
                 return child;
@@ -343,7 +449,7 @@ public abstract class GroupWidget extends Widget {
         return null;
     }
 
-    private final Map<String, Widget> mChildren = new LinkedHashMap<String, Widget>();
+    private final List<Widget> mChildren = new ArrayList<Widget>();
 
     private static final String TAG = GroupWidget.class.getSimpleName();
 }

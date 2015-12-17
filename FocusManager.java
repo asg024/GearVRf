@@ -1,6 +1,5 @@
 package com.samsung.smcl.vr.widgets;
 
-import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -13,7 +12,6 @@ import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.periodic.GVRPeriodicEngine;
 
-import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.MainThread;
 
 /**
@@ -131,5 +129,6 @@ class FocusManager {
 
     private static FocusManager sInstance;
     static final int LONG_FOCUS_TIMEOUT = 5000;
+    @SuppressWarnings("unused")
     private static final String TAG = FocusManager.class.getSimpleName();
 }

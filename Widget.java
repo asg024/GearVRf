@@ -17,6 +17,7 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
 
+import android.content.Context;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
@@ -142,22 +143,23 @@ public class Widget {
         mBaseHeight = mHeight = dimensions[1];
         mBaseDepth = mDepth = dimensions[2];
 
-        Log.d(TAG, "Widget constructor: %s mWidth = %f mHeight = %f mDepth = %f",
-                sceneObject.getName(), mWidth, mHeight, mDepth);
+        Log.d(TAG,
+              "Widget constructor: %s mWidth = %f mHeight = %f mDepth = %f",
+              sceneObject.getName(), mWidth, mHeight, mDepth);
     }
 
-   /**
-    * A constructor for wrapping existing {@link GVRSceneLayout} instances.
-    * Deriving classes should override and do whatever processing is
-    * appropriate.
-    *
-    * @param context
-    *            The current {@link GVRContext}
-    * @param sceneObject
-    *            The {@link GVRSceneObject} to wrap.
-    * @param attributes
-    *            TODO
-    */
+    /**
+     * A constructor for wrapping existing {@link GVRSceneLayout} instances.
+     * Deriving classes should override and do whatever processing is
+     * appropriate.
+     * 
+     * @param context
+     *            The current {@link GVRContext}
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     * @param attributes
+     *            TODO
+     */
     public Widget(final GVRContext context, final GVRSceneObject sceneObject,
                   NodeEntry attributes) {
         this(context, sceneObject);
@@ -167,25 +169,27 @@ public class Widget {
         String attribute = attributes.getProperty("name");
         setName(attribute);
 
-
         attribute = attributes.getProperty("touchable");
         setTouchable(attribute != null &&
                      sceneObject.getRenderData() != null &&
                      attribute.compareToIgnoreCase("false") != 0);
 
-        attribute = attributes.getProperty("focus_enabled");
+        attribute = attributes.getProperty("focusenabled");
         setFocusEnabled(attribute != null &&
                         sceneObject.getRenderData() != null &&
                         attribute.compareToIgnoreCase("false") != 0);
         attribute = attributes.getProperty("visibility");
-        setVisibility(attribute != null ? Visibility.valueOf(attribute) : Visibility.VISIBLE);
+        setVisibility(attribute != null ? Visibility.valueOf(attribute.toUpperCase())
+                : Visibility.VISIBLE);
     }
 
-    private static final String pattern = Widget.class.getSimpleName() + "name : %s size = (%f, %f, %f) \n" +
-            "touchable = %b focus_enabled = %b Visibile = %s";
+    private static final String pattern = Widget.class.getSimpleName()
+            + "name : %s size = (%f, %f, %f) \n"
+            + "touchable = %b focus_enabled = %b Visibile = %s";
 
     public String toString() {
-        return String.format(pattern, getName(), mWidth, mHeight, mDepth, mIsTouchable, mFocusEnabled, mVisibility);
+        return String.format(pattern, getName(), mWidth, mHeight, mDepth,
+                             mIsTouchable, mFocusEnabled, mVisibility);
     }
 
     public Widget(final GVRContext context, final float width,
@@ -197,6 +201,13 @@ public class Widget {
                 GVRShaderType.Texture.ID);
         material.setMainTexture(sDefaultTexture);
         renderedData.setMaterial(material);
+    }
+
+    /**
+     * @return The Android {@link Context} this {@code Widget} is in.
+     */
+    public Context getContext() {
+        return getGVRContext().getContext();
     }
 
     /**
@@ -318,15 +329,10 @@ public class Widget {
     /**
      * Get the (optional) name of the {@link Widget}.
      *
-     * @return The name of the {@code Widget}. If no name as been assigned, the
-     *         returned string will be empty.
+     * @return The name of the {@code Widget}.
      */
     public String getName() {
-        String name = mSceneObject.getName();
-        if (name == null || name.isEmpty()) {
-            name = mSceneObject.toString();
-        }
-        return name;
+        return mName;
     }
 
     /**
@@ -335,8 +341,12 @@ public class Widget {
      *
      * @param name
      */
-    public void setName(final String name) {
-        mSceneObject.setName(name);
+    public void setName(String name) {
+        mName = name;
+    }
+
+    public String getMetadata() {
+        return mSceneObject.getName();
     }
 
     /**
@@ -738,6 +748,30 @@ public class Widget {
     }
 
     /**
+     * Modify the tranform's current rotation in quaternion terms, around a
+     * pivot other than the origin.
+     * 
+     * @param w
+     *            'W' component of the quaternion.
+     * @param x
+     *            'X' component of the quaternion.
+     * @param y
+     *            'Y' component of the quaternion.
+     * @param z
+     *            'Z' component of the quaternion.
+     * @param pivotX
+     *            'X' component of the pivot's location.
+     * @param pivotY
+     *            'Y' component of the pivot's location.
+     * @param pivotZ
+     *            'Z' component of the pivot's location.
+     */
+    public void rotateWithPivot(float w, float x, float y, float z,
+            float pivotX, float pivotY, float pivotZ) {
+        getTransform().rotateWithPivot(w, x, y, z, pivotX, pivotY, pivotZ);
+    }
+
+    /**
      * Modify the widget's current rotation in angle/axis terms.
      *
      * @param angle
@@ -809,6 +843,9 @@ public class Widget {
                             mParent.getSceneObject()
                                     .removeChildObject(mSceneObject);
                         }
+                        break;
+                    case PLACEHOLDER:
+                        getSceneObject().detachRenderData();
                         break;
                 }
             }
@@ -1145,6 +1182,7 @@ public class Widget {
     private float mWidth;
     private float mHeight;
     private float mDepth;
+    private String mName;
 
     private final Set<OnFocusListener> mFocusListeners = new HashSet<OnFocusListener>();
     private final Set<OnTouchListener> mTouchListeners = new HashSet<OnTouchListener>();
