@@ -391,6 +391,19 @@ public class Widget {
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
      *
+     * @param name
+     *            Name of the texture
+     * @param texture
+     *            The new texture.
+     */
+    public void setTexture(String name, final GVRTexture texture) {
+        getMaterial().setTexture(name, texture);
+    }
+
+    /**
+     * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
+     * of the {@link Widget}.
+     *
      * @param texture
      *            The new texture.
      */

@@ -1,30 +1,37 @@
 package com.samsung.smcl.vr.widgets;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
-import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 
 public class PageIndicatorWidget extends LinearLayout {
-
-    private int mCheckedChildIndex = 0;
+    private static final int DEFAULT_STATE = 0;
+    private int mCheckedChildIndex = -1;
 
     public PageIndicatorWidget(GVRContext context, GVRSceneObject sceneObject,
-            int[] resIds, float padding, int numIndicators,
+            int[] resIds, float padding, int numIndicators, int defaultPageNumber, int textureId,
             OnTouchListener listener, float indicatorWidth,
             float indicatorHeight) {
         super(context, sceneObject);
         setDividerPadding(padding);
         addIndicatorChildren(context, resIds, numIndicators, listener,
                 indicatorWidth, indicatorHeight);
+
+        // TODO: this is needed otherwise the children won't get onTouch
+        // Yes, we need to fix this.
+        setTouchable(false);
+
+        setCheckedId(defaultPageNumber, textureId);
     }
 
     public void setCheckedId(int index, int textureId) {
-        if (index != mCheckedChildIndex) {
+        if (mCheckedChildIndex != index) {
             clearCheck();
             mCheckedChildIndex = index;
             ButtonWidget child = (ButtonWidget) this.getChildren().get(
@@ -36,10 +43,14 @@ public class PageIndicatorWidget extends LinearLayout {
     }
 
     private void clearCheck() {
+        if (mCheckedChildIndex < 0) {
+            return;
+        }
+
         ButtonWidget child = (ButtonWidget) this.getChildren().get(
                 mCheckedChildIndex);
         if (child != null) {
-            child.setState(0);
+            child.setState(DEFAULT_STATE);
         }
     }
 
@@ -57,7 +68,7 @@ public class PageIndicatorWidget extends LinearLayout {
     }
 
     private class ButtonWidget extends Widget {
-        private int state = 0;
+        private int state = DEFAULT_STATE;
         private GVRContext mContext;
         private final String buttonWidgetTag = ButtonWidget.class
                 .getSimpleName();
@@ -66,8 +77,6 @@ public class PageIndicatorWidget extends LinearLayout {
                 final float height, int[] resourceIds) {
             super(context, width, height);
             this.mContext = context;
-            Helpers.setTextureMaterial(mContext, this.getSceneObject(),
-                    resourceIds[0], GVRRenderingOrder.TRANSPARENT);
             setAllTextures(resourceIds);
         }
 
@@ -79,30 +88,34 @@ public class PageIndicatorWidget extends LinearLayout {
                     getMaterial().setMainTexture(texture);
                 } else {
                     Log.d(buttonWidgetTag,
-                            "setState(%d): something wrong with textures",
+                            "setState(%d): something is wrong with textures",
                             state);
                 }
             }
         }
 
         private void setAllTextures(final int[] resourceIds) {
-            Runnable r = new Runnable() {
-                @Override
-                public void run() {
-
-                    for (int i = 0; i < resourceIds.length; ++i) {
-                        GVRTexture texture = mContext
-                                .loadTexture(new GVRAndroidResource(mContext,
-                                        resourceIds[i]));
-                        getMaterial().setTexture(Integer.toString(i), texture);
-                        if (i == 0) {
-                            getMaterial().setMainTexture(texture);
-                        }
-                    }
+            for (int i = 0; i < resourceIds.length; ++i) {
+                Future<GVRTexture> futureTexture = mContext
+                        .loadFutureTexture(new GVRAndroidResource(mContext,
+                                resourceIds[i]));
+                GVRTexture texture = null;
+                try {
+                    texture = futureTexture.get();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
                 }
-            };
 
-            runOnGlThread(r);
+                setTexture(Integer.toString(i), texture);
+
+                if (i == DEFAULT_STATE) {
+                    setTexture(texture);
+                }
+            }
         }
 
         private GVRTexture getStateTexture() {
