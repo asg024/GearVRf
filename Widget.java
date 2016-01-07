@@ -98,6 +98,23 @@ public class Widget {
     }
 
     /**
+     * Implement and {@link Widget#addBackKeyListener(OnBackKeyListener)
+     * register} this interface to listen for back key events on widgets.
+     */
+    public interface OnBackKeyListener {
+        /**
+         * Called when widget is target of back key event.
+         * 
+         * @param widget
+         *            {@link Widget} target by back key event.
+         * @return {@code True} to indicate that no further processing of the
+         *         touch event should take place; {@code false} to allow further
+         *         processing.
+         */
+        public boolean onBackKey(Widget widget);
+    }
+
+    /**
      * Implement and {@link Widget#addTouchListener(OnTouchListener) register}
      * this interface to listen for touch events on widgets.
      */
@@ -105,6 +122,9 @@ public class Widget {
         /**
          * Called when a widget is touched (tapped).
          *
+         * @param widget
+         *            {@link Widget} target by touch event.
+         * 
          * @return {@code True} to indicate that no further processing of the
          *         touch event should take place; {@code false} to allow further
          *         processing.
@@ -273,11 +293,12 @@ public class Widget {
     }
 
     /**
-     * Set whether or not an object can receive touch events. If enabled, the
-     * object will receive {@link #onTouch()} notifications and
-     * {@linkplain #addTouchListener(OnTouchListener) registered}
-     * {@linkplain OnTouchListener listeners} can also receive those
-     * notifications.
+     * Set whether or not the {@code Widget} can receive touch and back key
+     * events. If enabled, the object will receive {@link #onTouch()} and
+     * {@link #onBackKey()} notifications and registered
+     * {@linkplain #addTouchListener(OnTouchListener) touch} and
+     * {@linkplain #addBackKeyListener(OnBackKeyListener) back key} listeners
+     * can also receive those notifications.
      * <p>
      * Objects are touchable by default.
      *
@@ -293,10 +314,38 @@ public class Widget {
     }
 
     /**
-     * @return Whether touch events are enabled for this object.
+     * @return Whether touch and back key events are enabled for this object.
      */
     public boolean isTouchable() {
         return mIsTouchable;
+    }
+
+    /**
+     * Add a listener for {@linkplain OnBackKeyListener#onBackKey(Widget) back
+     * key} notifications for this object.
+     * 
+     * @param listener
+     *            An implementation of {@link OnBackKeyListener}.
+     * @return {@code True} if the listener was successfully registered,
+     *         {@code false} if the listener was already registered.
+     */
+    public boolean addBackKeyListener(final OnBackKeyListener listener) {
+        return mBackKeyListeners.add(listener);
+    }
+
+    /**
+     * Remove a previously {@linkplain #addBackKeyListener(OnBackKeyListener)
+     * registered} back key notification {@linkplain OnBackKeyListener listener}
+     * .
+     * 
+     * @param listener
+     *            An implementation of {@link OnBackKeyListener}
+     * @return {@code True} if the listener was successfully unregistered,
+     *         {@code false} if the specified listener was not previously
+     *         registered with this object.
+     */
+    public boolean removeBackKeyListener(final OnBackKeyListener listener) {
+        return mBackKeyListeners.remove(listener);
     }
 
     /**
@@ -1030,6 +1079,16 @@ public class Widget {
     }
 
     /**
+     * Hook method for handling back key events.
+     * 
+     * @return {@code True} if the back key event was successfully processed,
+     *         {@code false} otherwise.
+     */
+    protected boolean onBackKey() {
+        return false;
+    }
+
+    /**
      * Hook method for handling touch events.
      *
      * @return {@code True} if the touch event was successfully processed,
@@ -1133,6 +1192,15 @@ public class Widget {
         return mSceneObject;
     }
 
+    private boolean doOnBackKey() {
+        for (OnBackKeyListener listener : mBackKeyListeners) {
+            if (listener.onBackKey(this)) {
+                return true;
+            }
+        }
+        return onBackKey();
+    }
+
     private boolean doOnTouch() {
         for (OnTouchListener listener : mTouchListeners) {
             if (listener.onTouch(this)) {
@@ -1197,13 +1265,19 @@ public class Widget {
     private float mDepth;
     private String mName;
 
+    private final Set<OnBackKeyListener> mBackKeyListeners = new HashSet<OnBackKeyListener>();
     private final Set<OnFocusListener> mFocusListeners = new HashSet<OnFocusListener>();
     private final Set<OnTouchListener> mTouchListeners = new HashSet<OnTouchListener>();
 
-    private final TouchManager.OnTouch mTouchHandler = new TouchManager.OnTouch() {
+    private final TouchManager.OnTouch mTouchHandler = new TouchManager.OnBackKey() {
         @Override
         public boolean touch(GVRSceneObject sceneObject) {// , float[] hit) {
             return doOnTouch();
+        }
+    
+        @Override
+        public boolean onBackKey(GVRSceneObject sceneObject) {
+            return doOnBackKey();
         }
     };
 

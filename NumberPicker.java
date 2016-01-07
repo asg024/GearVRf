@@ -57,7 +57,7 @@ public class NumberPicker extends GVRSceneObject {
                                        public boolean touch(
                                                GVRSceneObject sceneObject) {
                                            setValue(getValue() - 1);
-                                           return false;
+                                           return true;
                                        }
                                    });
 
