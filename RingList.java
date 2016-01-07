@@ -71,6 +71,17 @@ public class RingList extends GroupWidget {
         onChanged(adapter);
     }
 
+    public boolean getBalanceLayout() {
+        return mBalanceLayout;
+    }
+    
+    public void setBalanceLayout(boolean balanceLayout) {
+        if (balanceLayout != mBalanceLayout) {
+            mBalanceLayout = balanceLayout;
+            layout();
+        }
+    }
+
     /**
      * @return The angular separation between list items, in degrees.
      */
@@ -141,13 +152,19 @@ public class RingList extends GroupWidget {
         final int numItems = mItems.size();
         Log.d(TAG, "layout(): laying out %d items", numItems);
         final float[] angularWidths = new float[numItems];
+        float totalAngularWidths = (numItems - 1) * mItemPadding;
         for (int i = 0; i < numItems; ++i) {
             angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems.get(i), mRho);
+            totalAngularWidths += angularWidths[i];
             Log.d(TAG, "layout(): angular width at %d: %f", i, angularWidths[i]);
         }
         float phi = 0;
+        if (mBalanceLayout && numItems > 0) {
+            phi = (totalAngularWidths / 2) - (angularWidths[0] / 2);
+        }
+
         for (int i = 0; i < numItems; ++i) {
-            Log.d(TAG, "layout(): phi at %d: %f", i, phi);
+            Log.d(TAG, "layout(%s): phi at %d: %f", getName(), i, phi);
             mItems.get(i).setRotation(1, 0, 0, 0);
             mItems.get(i).setPosition(0, 0, -(float) mRho);
             mItems.get(i).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
@@ -231,6 +248,7 @@ public class RingList extends GroupWidget {
     private float mItemPadding;
     private List<Widget> mItems = new ArrayList<Widget>();
     private double mRho;
+    private boolean mBalanceLayout;
     private DataSetObserver mObserver = new DataSetObserver() {
         @Override
         public void onChanged() {
