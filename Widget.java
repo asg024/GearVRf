@@ -189,15 +189,18 @@ public class Widget {
         String attribute = attributes.getProperty("name");
         setName(attribute);
 
+        final boolean hasRenderData = sceneObject.getRenderData() != null;
+
         attribute = attributes.getProperty("touchable");
         setTouchable(attribute != null &&
-                     sceneObject.getRenderData() != null &&
+                     hasRenderData &&
                      attribute.compareToIgnoreCase("false") != 0);
 
         attribute = attributes.getProperty("focusenabled");
         setFocusEnabled(attribute != null &&
-                        sceneObject.getRenderData() != null &&
+                        hasRenderData &&
                         attribute.compareToIgnoreCase("false") != 0);
+
         attribute = attributes.getProperty("visibility");
         setVisibility(attribute != null ? Visibility.valueOf(attribute.toUpperCase())
                 : Visibility.VISIBLE);
@@ -216,11 +219,13 @@ public class Widget {
             final float height) {
         this(context, new GVRSceneObject(context, width, height));
 
-        GVRRenderData renderedData = mSceneObject.getRenderData();
-        GVRMaterial material = new GVRMaterial(mContext,
-                GVRShaderType.Texture.ID);
-        material.setMainTexture(sDefaultTexture);
-        renderedData.setMaterial(material);
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            GVRMaterial material = new GVRMaterial(mContext,
+                    GVRShaderType.Texture.ID);
+            material.setMainTexture(sDefaultTexture);
+            renderData.setMaterial(material);
+        }
     }
 
     /**
@@ -413,8 +418,11 @@ public class Widget {
      * @param renderingOrder
      *            See {@link GVRRenderingOrder}.
      */
-    public final void setRenderingOrder(final int renderingOrder) {
-        mSceneObject.getRenderData().setRenderingOrder(renderingOrder);
+    public void setRenderingOrder(final int renderingOrder) {
+        final GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            renderData.setRenderingOrder(renderingOrder);
+        }
     }
 
     /**
@@ -422,7 +430,11 @@ public class Widget {
      * @see GVRRenderingOrder
      */
     public final int getRenderingOrder() {
-        return mSceneObject.getRenderData().getRenderingOrder();
+        final GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            return renderData.getRenderingOrder();
+        }
+        return -1;
     }
 
     /**
@@ -483,6 +495,92 @@ public class Widget {
 
     public float getDepth() {
         return mDepth;
+    }
+
+    /**
+     * Set the {@code GL_POLYGON_OFFSET_FILL} option
+     * 
+     * @param offset
+     *            {@code true} if {@code GL_POLYGON_OFFSET_FILL} should be
+     *            enabled, {@code false} if not.
+     */
+    public void setOffset(boolean offset) {
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            renderData.setOffset(offset);
+        }
+    }
+
+    /**
+     * @return {@code true} if {@code GL_POLYGON_OFFSET_FILL} is enabled,
+     *         {@code false} if not.
+     */
+    public boolean getOffset() {
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            return renderData.getOffset();
+        }
+        return false;
+    }
+
+    /**
+     * Set the {@code factor} value passed to {@code glPolygonOffset()} if
+     * {@code GL_POLYGON_OFFSET_FILL} is enabled.
+     * 
+     * @param offsetFactor
+     *            Per OpenGL docs: Specifies a scale factor that is used to
+     *            create a variable depth offset for each polygon. The initial
+     *            value is 0.
+     * @see #setOffset(boolean)
+     */
+    public void setOffsetFactor(float offsetFactor) {
+        GVRRenderData renderData = getRenderData();
+        renderData.setOffsetFactor(offsetFactor);
+        if (renderData != null) {
+        }
+    }
+
+    /**
+     * @return The {@code factor} value passed to {@code glPolygonOffset()} if
+     *         {@code GL_POLYGON_OFFSET_FILL} is enabled.
+     * @see #setOffset(boolean)
+     */
+    public float getOffsetFactor() {
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            return renderData.getOffsetFactor();
+        }
+        return 0;
+    }
+
+    /**
+     * Set the {@code units} value passed to {@code glPolygonOffset()} if
+     * {@code GL_POLYGON_OFFSET_FILL} is enabled.
+     * 
+     * @param offsetUnits
+     *            Per OpenGL docs: Is multiplied by an implementation-specific
+     *            value to create a constant depth offset. The initial value is
+     *            0.
+     * @see #setOffset(boolean)
+     */
+    public void setOffsetUnits(float offsetUnits) {
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            renderData.setOffsetUnits(offsetUnits);
+        }
+    }
+
+    /**
+     * @return The {@code units} value passed to {@code glPolygonOffset()} if
+     *         {@code GL_POLYGON_OFFSET_FILL} is enabled.
+     * @see #setOffset(boolean)
+     */
+    public float getOffsetUnits() {
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            return renderData.getOffsetUnits();
+        }
+        return 0;
     }
 
     /**
@@ -984,10 +1082,14 @@ public class Widget {
      * Get the {@link GVRMaterial material} for the underlying
      * {@link GVRSceneObject scene object}.
      *
-     * @return The scene object's material.
+     * @return The scene object's material or {@code null}.
      */
     protected GVRMaterial getMaterial() {
-        return mSceneObject.getRenderData().getMaterial();
+        final GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            return renderData.getMaterial();
+        }
+        return null;
     }
 
     /**
@@ -998,7 +1100,10 @@ public class Widget {
      *            The new material.
      */
     protected void setMaterial(final GVRMaterial material) {
-        mSceneObject.getRenderData().setMaterial(material);
+        final GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            renderData.setMaterial(material);
+        }
     }
 
     /**
@@ -1190,6 +1295,11 @@ public class Widget {
 
     public GVRSceneObject getSceneObject() {
         return mSceneObject;
+    }
+
+    /* package */
+    GVRRenderData getRenderData() {
+        return mSceneObject.getRenderData();
     }
 
     private boolean doOnBackKey() {
