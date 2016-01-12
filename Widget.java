@@ -1,7 +1,8 @@
 package com.samsung.smcl.vr.widgets;
 
 import java.lang.ref.WeakReference;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -202,7 +203,7 @@ public class Widget {
                         attribute.compareToIgnoreCase("false") != 0);
 
         attribute = attributes.getProperty("visibility");
-        setVisibility(attribute != null ? Visibility.valueOf(attribute.toUpperCase())
+        setVisibility(attribute != null ? Visibility.valueOf(attribute.toUpperCase(Locale.ENGLISH))
                 : Visibility.VISIBLE);
     }
 
@@ -252,6 +253,7 @@ public class Widget {
     public void setFocusEnabled(boolean enabled) {
         if (mFocusEnabled != enabled) {
             mFocusEnabled = enabled;
+            registerPickable();
         }
     }
 
@@ -1337,6 +1339,8 @@ public class Widget {
             }
             if (mFocusEnabled) {
                 FocusManager.getInstance().register(this);
+            } else {
+                FocusManager.getInstance().unregister(this);
             }
         } else {
             touchManager.removeHandlerFor(mSceneObject);
@@ -1375,9 +1379,9 @@ public class Widget {
     private float mDepth;
     private String mName;
 
-    private final Set<OnBackKeyListener> mBackKeyListeners = new HashSet<OnBackKeyListener>();
-    private final Set<OnFocusListener> mFocusListeners = new HashSet<OnFocusListener>();
-    private final Set<OnTouchListener> mTouchListeners = new HashSet<OnTouchListener>();
+    private final Set<OnBackKeyListener> mBackKeyListeners = new LinkedHashSet<OnBackKeyListener>();
+    private final Set<OnFocusListener> mFocusListeners = new LinkedHashSet<OnFocusListener>();
+    private final Set<OnTouchListener> mTouchListeners = new LinkedHashSet<OnTouchListener>();
 
     private final TouchManager.OnTouch mTouchHandler = new TouchManager.OnBackKey() {
         @Override
