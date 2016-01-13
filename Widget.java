@@ -105,7 +105,7 @@ public class Widget {
     public interface OnBackKeyListener {
         /**
          * Called when widget is target of back key event.
-         * 
+         *
          * @param widget
          *            {@link Widget} target by back key event.
          * @return {@code True} to indicate that no further processing of the
@@ -125,7 +125,7 @@ public class Widget {
          *
          * @param widget
          *            {@link Widget} target by touch event.
-         * 
+         *
          * @return {@code True} to indicate that no further processing of the
          *         touch event should take place; {@code false} to allow further
          *         processing.
@@ -173,7 +173,7 @@ public class Widget {
      * A constructor for wrapping existing {@link GVRSceneLayout} instances.
      * Deriving classes should override and do whatever processing is
      * appropriate.
-     * 
+     *
      * @param context
      *            The current {@link GVRContext}
      * @param sceneObject
@@ -330,7 +330,7 @@ public class Widget {
     /**
      * Add a listener for {@linkplain OnBackKeyListener#onBackKey(Widget) back
      * key} notifications for this object.
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnBackKeyListener}.
      * @return {@code True} if the listener was successfully registered,
@@ -344,7 +344,7 @@ public class Widget {
      * Remove a previously {@linkplain #addBackKeyListener(OnBackKeyListener)
      * registered} back key notification {@linkplain OnBackKeyListener listener}
      * .
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnBackKeyListener}
      * @return {@code True} if the listener was successfully unregistered,
@@ -501,7 +501,7 @@ public class Widget {
 
     /**
      * Set the {@code GL_POLYGON_OFFSET_FILL} option
-     * 
+     *
      * @param offset
      *            {@code true} if {@code GL_POLYGON_OFFSET_FILL} should be
      *            enabled, {@code false} if not.
@@ -528,7 +528,7 @@ public class Widget {
     /**
      * Set the {@code factor} value passed to {@code glPolygonOffset()} if
      * {@code GL_POLYGON_OFFSET_FILL} is enabled.
-     * 
+     *
      * @param offsetFactor
      *            Per OpenGL docs: Specifies a scale factor that is used to
      *            create a variable depth offset for each polygon. The initial
@@ -558,7 +558,7 @@ public class Widget {
     /**
      * Set the {@code units} value passed to {@code glPolygonOffset()} if
      * {@code GL_POLYGON_OFFSET_FILL} is enabled.
-     * 
+     *
      * @param offsetUnits
      *            Per OpenGL docs: Is multiplied by an implementation-specific
      *            value to create a constant depth offset. The initial value is
@@ -912,7 +912,7 @@ public class Widget {
     /**
      * Modify the tranform's current rotation in quaternion terms, around a
      * pivot other than the origin.
-     * 
+     *
      * @param w
      *            'W' component of the quaternion.
      * @param x
@@ -1216,7 +1216,7 @@ public class Widget {
 
     /**
      * Hook method for handling back key events.
-     * 
+     *
      * @return {@code True} if the back key event was successfully processed,
      *         {@code false} otherwise.
      */
@@ -1413,7 +1413,7 @@ public class Widget {
         public boolean touch(GVRSceneObject sceneObject) {// , float[] hit) {
             return doOnTouch();
         }
-    
+
         @Override
         public boolean onBackKey(GVRSceneObject sceneObject) {
             return doOnBackKey();
