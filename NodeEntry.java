@@ -2,13 +2,16 @@ package com.samsung.smcl.vr.widgets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IllegalFormatException;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.MissingFormatArgumentException;
 import java.util.Set;
 
 import org.gearvrf.GVRSceneObject;
 
-
+import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.Utility;
 
 public class NodeEntry {
     public static final String KEY_NAME = "name";
@@ -32,6 +35,7 @@ public class NodeEntry {
 
     public NodeEntry(GVRSceneObject sceneObject) throws IllegalFormatException {
         String name = sceneObject.getName();
+        Log.d(TAG, "NodeEntry(): %s", name);
         if (ROOT_NODE_NAME.equals(name)) {
             properties = new HashMap<String, String>();
             properties.put(KEY_CLASS_NAME, ROOT_NODE_CLASS_NAME);
@@ -63,6 +67,34 @@ public class NodeEntry {
 
     public String getProperty(String key) {
         return properties.get(key);
+    }
+
+    public String getProperty(Enum<?> key) {
+        return getProperty(key, true);
+    }
+    
+    public String getProperty(Enum<?> key, boolean lowerCase) {
+        final String keyName;
+        if (lowerCase) {
+            keyName = key.name().toLowerCase(Locale.ENGLISH);
+        } else {
+            keyName = key.name();
+        }
+        return properties.get(keyName);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        b.append("name: ").append(name).append(',');
+        b.append("className: ").append(className).append(',');
+        if (properties != null) {
+            for (Entry<String, String> entry : properties.entrySet()) {
+                b.append(entry.getKey()).append(": ").append(entry.getValue())
+                        .append(',');
+            }
+        }
+        return b.toString();
     }
 
     static class NameDemangler {
@@ -109,4 +141,6 @@ public class NodeEntry {
             return res;
         }
     }
+
+    private static final String TAG = NodeEntry.class.getSimpleName();
 }

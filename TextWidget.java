@@ -24,7 +24,6 @@ public class TextWidget extends Widget {
         mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
     }
 
-
     /**
      * A constructor for wrapping existing {@link GVRSceneLayout} instances.
      * Deriving classes should override and do whatever processing is
@@ -41,36 +40,44 @@ public class TextWidget extends Widget {
     public TextWidget(GVRContext context, GVRSceneObject sceneObject,
                       NodeEntry attributes) {
         super(context, sceneObject, attributes);
+
         String attribute = attributes.getProperty("text");
         if (attribute != null) {
             setText(attribute);
         }
+
         attribute = attributes.getProperty("text_size");
         if (attribute != null) {
             setTextSize(Float.parseFloat(attribute));
         }
+
         attribute = attributes.getProperty("background");
         if (attribute != null) {
             setBackGround(context.getContext().getResources()
-                          .getDrawable(Integer.parseInt(attribute)));
+                    .getDrawable(Integer.parseInt(attribute)));
         }
+
         attribute = attributes.getProperty("background_color");
         if (attribute != null) {
             setBackgroundColor(Integer.parseInt(attribute));
         }
+
         attribute = attributes.getProperty("gravity");
         if (attribute != null) {
             setGravity(Integer.parseInt(attribute));
         }
+
         attribute = attributes.getProperty("refresh_freq");
         if (attribute != null) {
             setRefreshFrequency(IntervalFrequency.valueOf(attribute));
         }
+
         attribute = attributes.getProperty("text_color");
         if (attribute != null) {
             setTextColor(Integer.parseInt(attribute));
         }
-        mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
+
+        mTextViewSceneObject = maybeWrap(sceneObject);
     }
 
     /**
@@ -226,6 +233,17 @@ public class TextWidget extends Widget {
 
     public void setTextSize(float size) {
         mTextViewSceneObject.setTextSize(size);
+    }
+
+    private GVRTextViewSceneObject maybeWrap(GVRSceneObject sceneObject) {
+        if (sceneObject instanceof GVRTextViewSceneObject) {
+            return (GVRTextViewSceneObject) sceneObject;
+        } else {
+            final float sizes[] = LayoutHelpers.calculateGeometricDimensions(sceneObject);
+            final GVRSceneObject temp = new GVRTextViewSceneObject(sceneObject.getGVRContext(), sizes[0], sizes[1], "");
+            sceneObject.addChildObject(temp);
+            return (GVRTextViewSceneObject) temp;
+        }
     }
 
     private final GVRTextViewSceneObject mTextViewSceneObject;

@@ -3,7 +3,6 @@ package com.samsung.smcl.vr.widgets;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
-import org.gearvrf.scene_objects.GVRTextViewSceneObject;
 
 import android.graphics.Color;
 import android.view.Gravity;
@@ -22,15 +21,16 @@ public class NumberPicker extends GVRSceneObject {
     public NumberPicker(GVRContext gvrContext, TouchManager touchManager,
             float width, float height) {
         super(gvrContext, width, height);
+        mWidgetWrapper = new AbsoluteLayout(gvrContext, this);
+
         final float selectionHeight = height / 3;
         final float buttonHeight = selectionHeight / 2;
         Log.d(TAG, "NumberPicker: height %.2f, childHeight: %.2f", height,
               selectionHeight);
         mUpButton = makeButton(buttonHeight, R.drawable.up_arrow_circle);
         mDownButton = makeButton(buttonHeight, R.drawable.down_arrow_circle);
-        mSelection = new GVRTextViewSceneObject(gvrContext,
-                gvrContext.getActivity(), width, selectionHeight,
-                Integer.toString(mValue));
+
+        mSelection = new TextWidget(gvrContext, width, selectionHeight, Integer.toString(mValue));
         mSelection.setGravity(Gravity.CENTER);
         mSelection.setTextSize(120);
         mSelection.setTextColor(Color.BLACK);
@@ -63,7 +63,7 @@ public class NumberPicker extends GVRSceneObject {
 
         addChildObject(mUpButton);
         addChildObject(mDownButton);
-        addChildObject(mSelection);
+        mWidgetWrapper.addChild((Widget) mSelection);
     }
 
     public int getMinValue() {
@@ -121,7 +121,8 @@ public class NumberPicker extends GVRSceneObject {
 
     private final GVRSceneObject mUpButton;
     private final GVRSceneObject mDownButton;
-    private final GVRTextViewSceneObject mSelection;
+    private final TextWidget mSelection;
+    private final AbsoluteLayout mWidgetWrapper;
     private int mMinValue = 0;
     private int mMaxValue = Integer.MAX_VALUE;
     private int mValue;

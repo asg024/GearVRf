@@ -402,6 +402,10 @@ public abstract class GroupWidget extends Widget {
      */
     static private Widget findChildByNameInAllGroups(final String name,
             List<GroupWidget> groups) {
+        if (groups.isEmpty()) {
+            return null;
+        }
+
         ArrayList<GroupWidget> groupChildren = new ArrayList<GroupWidget>();
         Widget result = null;
         for (GroupWidget group : groups) {
