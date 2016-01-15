@@ -986,6 +986,28 @@ public class Widget {
     }
 
     /**
+     * Set the widget's opacity. This is dependent on the shader; see
+     * {@link GVRMaterial#setOpacity(float)}.
+     * 
+     * @param opacity
+     *            Value between {@code 0.0f} and {@code 0.1f}, inclusive.
+     */
+    public void setOpacity(final float opacity) {
+        getMaterial().setOpacity(opacity);
+    }
+
+    /**
+     * Get the widget's opacity. This is dependent on the shader; see
+     * {@link GVRMaterial#setOpacity(float)}.
+     * 
+     * @return Current opacity value, between {@code 0.0f} and {@code 0.1f},
+     *         inclusive.
+     */
+    public float getOpacity() {
+        return getMaterial().getOpacity();
+    }
+
+    /**
      * Set the visibility of the object.
      *
      * @see Visibility
@@ -1009,6 +1031,9 @@ public class Widget {
                     case PLACEHOLDER:
                         getSceneObject().detachRenderData();
                         break;
+                }
+                if (mVisibility == Visibility.GONE || visibility == Visibility.GONE) {
+                    mParent.layout();
                 }
             }
             mVisibility = visibility;
@@ -1078,6 +1103,10 @@ public class Widget {
         } else {
             getGVRContext().runOnGlThread(r);
         }
+    }
+
+    protected final GVRContext getGVRContext() {
+        return mContext;
     }
 
     /**
@@ -1346,10 +1375,6 @@ public class Widget {
             touchManager.removeHandlerFor(mSceneObject);
             FocusManager.getInstance().unregister(this);
         }
-    }
-
-    private GVRContext getGVRContext() {
-        return mContext;
     }
 
     /**

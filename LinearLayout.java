@@ -122,6 +122,14 @@ public class LinearLayout extends GroupWidget {
         }
     }
 
+    public float getWidth() {
+        return mWidth;
+    }
+
+    public float getHeight() {
+        return mHeight;
+    }
+
     /**
      * Layout the object's children in the specified
      * {@linkplain #setOrientation(Orientation) orientation}.
