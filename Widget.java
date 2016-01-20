@@ -165,8 +165,8 @@ public class Widget {
         mBaseDepth = mDepth = dimensions[2];
 
         Log.d(TAG,
-              "Widget constructor: %s mWidth = %f mHeight = %f mDepth = %f",
-              sceneObject.getName(), mWidth, mHeight, mDepth);
+                "Widget constructor: %s mWidth = %f mHeight = %f mDepth = %f",
+                sceneObject.getName(), mWidth, mHeight, mDepth);
     }
 
     /**
@@ -182,7 +182,7 @@ public class Widget {
      *            TODO
      */
     public Widget(final GVRContext context, final GVRSceneObject sceneObject,
-                  NodeEntry attributes) {
+            NodeEntry attributes) {
         this(context, sceneObject);
 
         // This gives us the demangled name, which is the name we'll use to
@@ -193,18 +193,16 @@ public class Widget {
         final boolean hasRenderData = sceneObject.getRenderData() != null;
 
         attribute = attributes.getProperty("touchable");
-        setTouchable(attribute != null &&
-                     hasRenderData &&
-                     attribute.compareToIgnoreCase("false") != 0);
+        setTouchable(attribute != null && hasRenderData
+                && attribute.compareToIgnoreCase("false") != 0);
 
         attribute = attributes.getProperty("focusenabled");
-        setFocusEnabled(attribute != null &&
-                        hasRenderData &&
-                        attribute.compareToIgnoreCase("false") != 0);
+        setFocusEnabled(attribute != null && hasRenderData
+                && attribute.compareToIgnoreCase("false") != 0);
 
         attribute = attributes.getProperty("visibility");
-        setVisibility(attribute != null ? Visibility.valueOf(attribute.toUpperCase(Locale.ENGLISH))
-                : Visibility.VISIBLE);
+        setVisibility(attribute != null ? Visibility.valueOf(attribute
+                .toUpperCase(Locale.ENGLISH)) : Visibility.VISIBLE);
     }
 
     private static final String pattern = Widget.class.getSimpleName()
@@ -213,7 +211,7 @@ public class Widget {
 
     public String toString() {
         return String.format(pattern, getName(), mWidth, mHeight, mDepth,
-                             mIsTouchable, mFocusEnabled, mVisibility);
+                mIsTouchable, mFocusEnabled, mVisibility);
     }
 
     public Widget(final GVRContext context, final float width,
@@ -299,6 +297,39 @@ public class Widget {
         return mFocusListeners.remove(listener);
     }
 
+    FocusManager.Focusable focusableImpl = new FocusManager.Focusable() {
+
+        /**
+         * Hook method for handling changes in focus for this object.
+         *
+         * @param focused
+         *            {@code True} if the object has gained focus, {@code false}
+         *            if it has lost focus.
+         */
+        @Override
+        public boolean onFocus(boolean focused) {
+            return Widget.this.doOnFocus(focused);
+        }
+
+        /**
+         * Hook method for handling long focus events. Called when the object
+         * has held focus for longer than a certain period of time. This is
+         * similar to
+         * {@link android.View.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
+         * OnGestureListener.onLongPress()}.
+         */
+        @Override
+        public void onLongFocus() {
+            Widget.this.doOnLongFocus();
+        }
+
+        @Override
+        public boolean isFocusEnabled() {
+            return Widget.this.isFocusEnabled();
+        }
+
+    };
+
     /**
      * Set whether or not the {@code Widget} can receive touch and back key
      * events. If enabled, the object will receive {@link #onTouch()} and
@@ -313,6 +344,7 @@ public class Widget {
      *            {@code True} to enable touch events for this object,
      *            {@code false} to disable.
      */
+
     public void setTouchable(boolean touchable) {
         if (touchable != mIsTouchable) {
             mIsTouchable = touchable;
@@ -501,7 +533,7 @@ public class Widget {
 
     /**
      * Set the {@code GL_DEPTH_TEST} option
-     * 
+     *
      * @param depthTest
      *            {@code true} if {@code GL_DEPTH_TEST} should be enabled,
      *            {@code false} if not.
@@ -997,7 +1029,7 @@ public class Widget {
     public void rotateByAxisWithPivot(float angle, float axisX, float axisY,
             float axisZ, float pivotX, float pivotY, float pivotZ) {
         getTransform().rotateByAxisWithPivot(angle, axisX, axisY, axisZ,
-                                             pivotX, pivotY, pivotZ);
+                pivotX, pivotY, pivotZ);
     }
 
     /**
@@ -1014,7 +1046,7 @@ public class Widget {
     /**
      * Set the widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
-     * 
+     *
      * @param opacity
      *            Value between {@code 0.0f} and {@code 0.1f}, inclusive.
      */
@@ -1025,7 +1057,7 @@ public class Widget {
     /**
      * Get the widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
-     * 
+     *
      * @return Current opacity value, between {@code 0.0f} and {@code 0.1f},
      *         inclusive.
      */
@@ -1044,19 +1076,19 @@ public class Widget {
         if (visibility != mVisibility) {
             if (mParent != null) {
                 switch (visibility) {
-                    case VISIBLE:
-                        mParent.getSceneObject().addChildObject(mSceneObject);
-                        break;
-                    case HIDDEN:
-                    case GONE:
-                        if (mVisibility == Visibility.VISIBLE) {
-                            mParent.getSceneObject()
-                                    .removeChildObject(mSceneObject);
-                        }
-                        break;
-                    case PLACEHOLDER:
-                        getSceneObject().detachRenderData();
-                        break;
+                case VISIBLE:
+                    mParent.getSceneObject().addChildObject(mSceneObject);
+                    break;
+                case HIDDEN:
+                case GONE:
+                    if (mVisibility == Visibility.VISIBLE) {
+                        mParent.getSceneObject()
+                                .removeChildObject(mSceneObject);
+                    }
+                    break;
+                case PLACEHOLDER:
+                    getSceneObject().detachRenderData();
+                    break;
                 }
                 if (mVisibility == Visibility.GONE || visibility == Visibility.GONE) {
                     mParent.layout();
@@ -1219,8 +1251,8 @@ public class Widget {
      *            {@code True} if the object has gained focus, {@code false} if
      *            it has lost focus.
      */
-    protected void onFocus(boolean focused) {
-
+    protected boolean onFocus(boolean focused) {
+        return false;
     }
 
     /**
@@ -1320,13 +1352,13 @@ public class Widget {
      * listeners has completely handled the event, {@link #onFocus(boolean)} is
      * called.
      */
-    void doOnFocus(boolean focused) {
+    boolean doOnFocus(boolean focused) {
         for (OnFocusListener listener : mFocusListeners) {
             if (listener.onFocus(focused, this)) {
-                return;
+                return true;
             }
         }
-        onFocus(focused);
+        return onFocus(focused);
     }
 
     /* package */
@@ -1384,25 +1416,25 @@ public class Widget {
         final TouchManager touchManager = sTouchManager.get();
         if (touchManager == null) {
             Log.e(TAG,
-                  "Attempted to register widget as touchable with NULL TouchManager!");
+                    "Attempted to register widget as touchable with NULL TouchManager!");
             return;
         }
 
         if (mIsAttached && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
                 touchManager.makeTouchable(getGVRContext(), mSceneObject,
-                                           mTouchHandler);
+                        mTouchHandler);
             } else {
                 TouchManager.makePickable(getGVRContext(), mSceneObject);
             }
             if (mFocusEnabled) {
-                FocusManager.getInstance().register(this);
+                FocusManager.getInstance().register(getSceneObject(), focusableImpl);
             } else {
-                FocusManager.getInstance().unregister(this);
+                FocusManager.getInstance().unregister(getSceneObject());
             }
         } else {
             touchManager.removeHandlerFor(mSceneObject);
-            FocusManager.getInstance().unregister(this);
+            FocusManager.getInstance().unregister(getSceneObject());
         }
     }
 

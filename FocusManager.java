@@ -11,6 +11,7 @@ import org.gearvrf.GVRPicker.GVRPickedObject;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.periodic.GVRPeriodicEngine;
+import org.gearvrf.utility.Log;
 
 import com.samsung.smcl.vr.gvrf_launcher.MainThread;
 
@@ -22,7 +23,12 @@ import com.samsung.smcl.vr.gvrf_launcher.MainThread;
  * The long focus timeout is reset each time an object gains focus and is
  * stopped entirely when no object has line-of-sight focus.
  */
-class FocusManager {
+public class FocusManager {
+    public interface Focusable {
+        boolean isFocusEnabled();
+        boolean onFocus(boolean focused);
+        void onLongFocus();
+    }
 
     static void init(GVRContext context) {
         synchronized (FocusManager.class) {
@@ -32,36 +38,23 @@ class FocusManager {
         }
     }
 
-    static FocusManager getInstance() {
+    public static FocusManager getInstance() {
         return sInstance;
     }
 
-    void register(final Widget widget) {
-        mWidgetMap.put(widget.getSceneObject(), widget);
+    public void register(final GVRSceneObject sceneObject, final Focusable focusable) {
+        Log.d(TAG, "register sceneObject %s , focusable = %s", sceneObject, focusable);
+        mFocusableMap.put(sceneObject, focusable);
     }
 
-    void unregister(final Widget widget) {
-        mWidgetMap.remove(widget.getSceneObject());
+    public void unregister(final GVRSceneObject sceneObject) {
+        Log.d(TAG, "unregister sceneObject %s", sceneObject);
+        mFocusableMap.remove(sceneObject);
     }
 
     private FocusManager(GVRContext context) {
         mContext = context;
         context.registerDrawFrameListener(mDrawFrameListener);
-    }
-
-    private Widget getPickedFocusable() {
-        final GVRScene mainScene = mContext.getMainScene();
-        final List<GVRPickedObject> pickedObjectList = GVRPicker
-                .findObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
-        for (GVRPickedObject picked : pickedObjectList) {
-            final GVRSceneObject quad = picked.getHitObject();
-            final Widget widget = mWidgetMap.get(quad);
-            if (widget != null && widget.isFocusEnabled()) {
-                return widget;
-            }
-        }
-
-        return null;
     }
 
     private void cancelLongFocusRunnable() {
@@ -82,45 +75,84 @@ class FocusManager {
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
-            Widget quad = getPickedFocusable();
-            if (quad != mCurrentFocus) {
-                cancelLongFocusRunnable();
-                final Widget oldFocus = mCurrentFocus;
-                final Widget newFocus = quad;
+            MainThread.runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    final GVRScene mainScene = mContext.getMainScene();
+                    final List<GVRPickedObject> pickedObjectList = GVRPicker
+                            .findObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
 
-                mCurrentFocus = quad;
-                postLongFocusRunnable();
+                    // release old focus
+                    if (pickedObjectList == null ||
+                            pickedObjectList.isEmpty()) {
+                        releaseCurrentFocus();
+                        return;
+                    }
 
-                MainThread.runOnMainThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (oldFocus != null) {
-                            oldFocus.doOnFocus(false);
+                    for (GVRPickedObject picked : pickedObjectList) {
+                        final GVRSceneObject quad = picked.getHitObject();
+                        Focusable focusable = null;
+                        if (quad != null) {
+                            focusable = mFocusableMap.get(quad);
                         }
-                        if (newFocus != null) {
-                            newFocus.doOnFocus(true);
+
+                        // already has a focus - do nothing
+                        if (mCurrentFocus != null &&
+                            mCurrentFocus == focusable) {
+                            break;
+                        }
+
+                        releaseCurrentFocus();
+
+                        if (takeNewFocus(focusable)) {
+                            break;
                         }
                     }
-                });
-            }
+                }
+            });
         }
     };
 
+
+    private boolean releaseCurrentFocus() {
+        boolean ret = true;
+        if (mCurrentFocus != null) {
+            cancelLongFocusRunnable();
+            ret = mCurrentFocus.onFocus(false);
+            mCurrentFocus = null;
+        }
+        return ret;
+    }
+
+    private boolean takeNewFocus(final Focusable newFocusable) {
+        boolean ret = false;
+        if (newFocusable != null &&
+                newFocusable.isFocusEnabled()) {
+
+            ret = newFocusable.onFocus(true);
+            if (ret) {
+                mCurrentFocus = newFocusable;
+                postLongFocusRunnable();
+            }
+        }
+        return ret;
+    }
+
     private final GVRContext mContext;
-    private Widget mCurrentFocus = null;
-    private Map<GVRSceneObject, Widget> mWidgetMap = new WeakHashMap<GVRSceneObject, Widget>();
+    private Focusable mCurrentFocus = null;
+    private Map<GVRSceneObject, Focusable> mFocusableMap = new WeakHashMap<GVRSceneObject, Focusable>();
 
     static class LongFocusRunnable implements Runnable {
-        Widget mWidget;
+        Focusable mFocusable;
 
-        LongFocusRunnable(Widget widget) {
-            mWidget = widget;
+        LongFocusRunnable(Focusable focusable) {
+            mFocusable = focusable;
         }
 
         @Override
         public void run() {
-            if (mWidget != null) {
-                mWidget.doOnLongFocus();
+            if (mFocusable != null) {
+                mFocusable.onLongFocus();
             }
         }
     }
