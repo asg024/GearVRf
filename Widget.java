@@ -500,6 +500,32 @@ public class Widget {
     }
 
     /**
+     * Set the {@code GL_DEPTH_TEST} option
+     * 
+     * @param depthTest
+     *            {@code true} if {@code GL_DEPTH_TEST} should be enabled,
+     *            {@code false} if not.
+     */
+    public void setDepthTest(boolean depthTest) {
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            renderData.setDepthTest(depthTest);
+        }
+    }
+
+    /**
+     * @return {@code true} if {@code GL_DEPTH_TEST} is enabled, {@code false}
+     *         if not.
+     */
+    public boolean getDepthTest() {
+        GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            return renderData.getDepthTest();
+        }
+        return false;
+    }
+
+    /**
      * Set the {@code GL_POLYGON_OFFSET_FILL} option
      *
      * @param offset
@@ -1324,7 +1350,10 @@ public class Widget {
         onLongFocus();
     }
 
-    public GVRSceneObject getSceneObject() {
+    /* package */
+    // NOTE: If you find yourself wanting to make this public, don't! You're
+    // either working *against* Widget or Widget needs some extending.
+    GVRSceneObject getSceneObject() {
         return mSceneObject;
     }
 

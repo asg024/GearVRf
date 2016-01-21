@@ -132,16 +132,6 @@ public class RingList extends GroupWidget {
         }
     }
 
-    public interface LayoutListener {
-        void onLayoutItem(int itemIndex, int numItems, float phi, float rho);
-    }
-
-    LayoutListener mLayoutListener;
-
-    public void registerLayoutListener(LayoutListener listener) {
-        mLayoutListener = listener;
-    }
-
     @Override
     protected void layout() {
         if (mItems.isEmpty()) {
@@ -168,9 +158,6 @@ public class RingList extends GroupWidget {
             mItems.get(i).setRotation(1, 0, 0, 0);
             mItems.get(i).setPosition(0, 0, -(float) mRho);
             mItems.get(i).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
-            if (mLayoutListener != null) {
-                mLayoutListener.onLayoutItem(i, numItems, phi, -(float)mRho);
-            }
             phi -= angularWidths[i] + mItemPadding;
         }
     }
