@@ -11,9 +11,9 @@ import org.gearvrf.GVRPicker.GVRPickedObject;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.periodic.GVRPeriodicEngine;
-import org.gearvrf.utility.Log;
 
 import com.samsung.smcl.vr.gvrf_launcher.MainThread;
+import com.samsung.smcl.utility.Log;
 
 /**
  * A class for tracking line-of-sight focus for {@link Widget} instances. In
