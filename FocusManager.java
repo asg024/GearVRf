@@ -75,7 +75,7 @@ public class FocusManager {
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
-            MainThread.runOnMainThread(new Runnable() {
+            MainThread.get(mContext).runOnMainThread(new Runnable() {
                 @Override
                 public void run() {
                     final GVRScene mainScene = mContext.getMainScene();
