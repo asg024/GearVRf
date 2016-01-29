@@ -1,5 +1,6 @@
 package com.samsung.smcl.vr.widgets;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -42,9 +43,15 @@ public class FocusManager {
         return sInstance;
     }
 
+    /**
+     * The focus manager will not hold strong references to the sceneObject and the
+     * focusable.
+     * @param sceneObject
+     * @param focusable
+     */
     public void register(final GVRSceneObject sceneObject, final Focusable focusable) {
         Log.d(TAG, "register sceneObject %s , focusable = %s", sceneObject, focusable);
-        mFocusableMap.put(sceneObject, focusable);
+        mFocusableMap.put(sceneObject, new WeakReference<Focusable>(focusable));
     }
 
     public void unregister(final GVRSceneObject sceneObject) {
@@ -93,7 +100,13 @@ public class FocusManager {
                         final GVRSceneObject quad = picked.getHitObject();
                         Focusable focusable = null;
                         if (quad != null) {
-                            focusable = mFocusableMap.get(quad);
+                            WeakReference<Focusable> ref = mFocusableMap.get(quad);
+                            if (null != ref) {
+                                focusable = ref.get();
+                            } else {
+                                mFocusableMap.remove(quad);
+                                focusable = null;
+                            }
                         }
 
                         // already has a focus - do nothing
@@ -140,7 +153,7 @@ public class FocusManager {
 
     private final GVRContext mContext;
     private Focusable mCurrentFocus = null;
-    private Map<GVRSceneObject, Focusable> mFocusableMap = new WeakHashMap<GVRSceneObject, Focusable>();
+    private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<GVRSceneObject, WeakReference<Focusable>>();
 
     static class LongFocusRunnable implements Runnable {
         Focusable mFocusable;

@@ -39,32 +39,30 @@ public class NumberPicker extends GVRSceneObject {
         mUpButton.getTransform().setPositionY(selectionHeight);
         mDownButton.getTransform().setPositionY(-selectionHeight);
 
-        touchManager.makeTouchable(gvrContext, mUpButton,
-                                   new TouchManager.OnTouch() {
-
-                                       @Override
-                                       public boolean touch(
-                                               GVRSceneObject sceneObject) {
-                                           setValue(getValue() + 1);
-                                           return true;
-                                       }
-                                   });
-
-        touchManager.makeTouchable(gvrContext, mDownButton,
-                                   new TouchManager.OnTouch() {
-
-                                       @Override
-                                       public boolean touch(
-                                               GVRSceneObject sceneObject) {
-                                           setValue(getValue() - 1);
-                                           return true;
-                                       }
-                                   });
+        touchManager.makeTouchable(gvrContext, mUpButton, mTouchHandlerUp);
+        touchManager.makeTouchable(gvrContext, mDownButton, mTouchHandlerDown);
 
         addChildObject(mUpButton);
         addChildObject(mDownButton);
         mWidgetWrapper.addChild((Widget) mSelection);
     }
+
+    private final TouchManager.OnTouch mTouchHandlerUp = new TouchManager.OnTouch() {
+        @Override
+        public boolean touch(
+                GVRSceneObject sceneObject) {
+            setValue(getValue() + 1);
+            return true;
+        }
+    };
+    private final TouchManager.OnTouch mTouchHandlerDown = new TouchManager.OnTouch() {
+        @Override
+        public boolean touch(
+                GVRSceneObject sceneObject) {
+            setValue(getValue() - 1);
+            return true;
+        }
+    };
 
     public int getMinValue() {
         return mMinValue;
