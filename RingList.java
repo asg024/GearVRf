@@ -204,7 +204,16 @@ public class RingList extends GroupWidget {
 
         // Get any additional items
         for (; pos < itemCount; ++pos) {
-            Widget item = mAdapter.getView(pos, null, RingList.this);
+            Widget item = null;
+            try {
+                item = mAdapter.getView(pos, null, RingList.this);
+                if (item == null) {
+                    break;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                break;
+            }
             mItems.add(item);
             Log.d(TAG, "onChanged(): added item at %d", pos);
             addChild(item, true);
