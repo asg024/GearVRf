@@ -49,7 +49,7 @@ public class Widget {
     static public final OnInitListener onInitListener = new OnInitListener() {
         @Override
         public void onInit(GVRContext gvrContext, MainScene scene) {
-            FocusManager.init(gvrContext);
+            FocusManager.get(gvrContext).init(gvrContext);
             sGLThread = new WeakReference<Thread>(Thread.currentThread());
             sDefaultTexture = gvrContext.loadTexture(new GVRAndroidResource(
                     gvrContext, R.drawable.default_bkgd));
@@ -1422,19 +1422,19 @@ public class Widget {
 
         if (mIsAttached && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
-                touchManager.makeTouchable(getGVRContext(), mSceneObject,
+                TouchManager.get(getGVRContext()).makeTouchable(mSceneObject,
                         mTouchHandler);
             } else {
-                TouchManager.makePickable(getGVRContext(), mSceneObject);
+                TouchManager.get(getGVRContext()).makePickable(mSceneObject);
             }
             if (mFocusEnabled) {
-                FocusManager.getInstance().register(getSceneObject(), focusableImpl);
+                FocusManager.get(mContext).register(getSceneObject(), focusableImpl);
             } else {
-                FocusManager.getInstance().unregister(getSceneObject());
+                FocusManager.get(mContext).unregister(getSceneObject());
             }
         } else {
             touchManager.removeHandlerFor(mSceneObject);
-            FocusManager.getInstance().unregister(getSceneObject());
+            FocusManager.get(mContext).unregister(getSceneObject());
         }
     }
 

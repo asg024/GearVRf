@@ -18,7 +18,7 @@ public class NumberPicker extends GVRSceneObject {
         public void onValueChange(int oldValue, int newValue);
     }
 
-    public NumberPicker(GVRContext gvrContext, TouchManager touchManager,
+    public NumberPicker(GVRContext gvrContext,
             float width, float height) {
         super(gvrContext, width, height);
         mWidgetWrapper = new AbsoluteLayout(gvrContext, this);
@@ -39,8 +39,8 @@ public class NumberPicker extends GVRSceneObject {
         mUpButton.getTransform().setPositionY(selectionHeight);
         mDownButton.getTransform().setPositionY(-selectionHeight);
 
-        touchManager.makeTouchable(gvrContext, mUpButton, mTouchHandlerUp);
-        touchManager.makeTouchable(gvrContext, mDownButton, mTouchHandlerDown);
+        TouchManager.get(gvrContext).makeTouchable(mUpButton, mTouchHandlerUp);
+        TouchManager.get(gvrContext).makeTouchable(mDownButton, mTouchHandlerDown);
 
         addChildObject(mUpButton);
         addChildObject(mDownButton);

@@ -13,6 +13,9 @@ import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.periodic.GVRPeriodicEngine;
 
+import android.app.Activity;
+
+import com.samsung.smcl.vr.gvrf_launcher.Holder;
 import com.samsung.smcl.vr.gvrf_launcher.MainThread;
 import com.samsung.smcl.utility.Log;
 
@@ -31,17 +34,39 @@ public class FocusManager {
         void onLongFocus();
     }
 
-    static void init(GVRContext context) {
-        synchronized (FocusManager.class) {
-            if (sInstance == null) {
-                sInstance = new FocusManager(context);
-            }
+    static public FocusManager get(Activity activity) {
+        return ((Holder) activity).getFocusManager();
+    }
+
+    static public FocusManager get(GVRContext gvrContext) {
+        FocusManager focusManager = null;
+        if (gvrContext != null) {
+            Activity activity = gvrContext.getActivity();
+            focusManager = get(activity);
+        }
+        return focusManager;
+    }
+
+    /**
+     * Creates FocusManager
+     * An instance of {@link Holder} must be supplied and can only be associated
+     * with one {@link FocusManager}. If the supplied {@code Holder} instance has
+     * already been initialized, an {@link IllegalArgumentException} will be
+     * thrown.
+     *
+     * @param holder
+     *            An {@link Activity} that implements {@link Holder}.
+     * @throws IllegalArgumentException
+     *             if {@code holder} is {@code null} or is already holding
+     *             another instance of {@code FocusManager}.
+     */
+    public <T extends Activity & Holder> FocusManager(T holder) {
+        if (holder == null || holder.getFocusManager() != null) {
+            throw new IllegalArgumentException(
+                    "The holder already has a FocusManager instance!");
         }
     }
 
-    public static FocusManager getInstance() {
-        return sInstance;
-    }
 
     /**
      * The focus manager will not hold strong references to the sceneObject and the
@@ -59,9 +84,17 @@ public class FocusManager {
         mFocusableMap.remove(sceneObject);
     }
 
-    private FocusManager(GVRContext context) {
-        mContext = context;
-        context.registerDrawFrameListener(mDrawFrameListener);
+    void init(GVRContext context) {
+        if (mContext == null) {
+            mContext = context;
+            mContext.registerDrawFrameListener(mDrawFrameListener);
+        }
+    }
+
+    public void clear() {
+        if (mContext != null) {
+            mContext.unregisterDrawFrameListener(mDrawFrameListener);
+        }
     }
 
     private void cancelLongFocusRunnable() {
@@ -151,7 +184,7 @@ public class FocusManager {
         return ret;
     }
 
-    private final GVRContext mContext;
+    private GVRContext mContext;
     private Focusable mCurrentFocus = null;
     private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<GVRSceneObject, WeakReference<Focusable>>();
 
@@ -172,7 +205,6 @@ public class FocusManager {
 
     private GVRPeriodicEngine.PeriodicEvent mLongFocusEvent;
 
-    private static FocusManager sInstance;
     static final int LONG_FOCUS_TIMEOUT = 5000;
     @SuppressWarnings("unused")
     private static final String TAG = FocusManager.class.getSimpleName();
