@@ -8,6 +8,8 @@ import org.gearvrf.animation.GVRAnimation;
 import org.gearvrf.animation.GVRAnimationEngine;
 import org.gearvrf.animation.GVRInterpolator;
 import org.gearvrf.animation.GVROnFinish;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 
@@ -48,8 +50,7 @@ public abstract class Animation {
 
     public Animation(Widget target, float duration) {
         mTarget = target;
-        final Adapter animationAdapter = new Adapter(this,
-                target.getSceneObject(), duration);
+        final Adapter animationAdapter = new Adapter(target, duration);
         mAnimation = animationAdapter;
     }
 
@@ -198,10 +199,16 @@ public abstract class Animation {
         if (mIsRunning) {
             stop(engine);
             getAnimation().animate(mTarget.getSceneObject(), 1);
-            mOnFinish.finished((GVRAnimation) getAnimation());
+            if (mOnFinish != null) {
+                mOnFinish.finished((GVRAnimation) getAnimation());
+            }
             return true;
         }
         return false;
+    }
+
+    public void reset() {
+        getAnimation().reset();
     }
 
     public boolean isFinished() {
@@ -218,6 +225,10 @@ public abstract class Animation {
 
     public float getElapsedTime() {
         return getAnimation().getElapsedTime();
+    }
+
+    protected Animation(Widget target, JSONObject metadata) throws JSONException {
+        this(target, (float) metadata.getDouble("duration"));
     }
 
     protected abstract void animate(Widget target, float ratio);
@@ -253,6 +264,8 @@ public abstract class Animation {
 
         int getRepeatCount();
 
+        void reset();
+
         boolean isFinished();
 
         GVRAnimation setOnFinish(GVROnFinish onFinish);
@@ -264,8 +277,8 @@ public abstract class Animation {
 
     private class Adapter extends GVRAnimation implements AnimationAdapter {
 
-        public Adapter(Animation parent, GVRHybridObject target, float duration) {
-            super(target, duration);
+        public Adapter(Widget target, float duration) {
+            super(target.getSceneObject(), duration);
         }
 
         @Override

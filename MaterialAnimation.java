@@ -1,14 +1,20 @@
 package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
-import org.gearvrf.GVRSceneObject;
 import org.gearvrf.animation.GVRMaterialAnimation;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public abstract class MaterialAnimation extends Animation {
 
     protected MaterialAnimation(final Widget target, final float duration) {
         super(target);
-        mAdapter = new Adapter(target.getSceneObject(), duration);
+        mAdapter = new Adapter(target, duration);
+    }
+
+    protected MaterialAnimation(final Widget target, final JSONObject metadata) throws JSONException {
+        super(target);
+        mAdapter = new Adapter(target, (float) metadata.getDouble("duration"));
     }
 
     /* package */
@@ -24,8 +30,8 @@ public abstract class MaterialAnimation extends Animation {
 
     private class Adapter extends GVRMaterialAnimation implements
             Animation.AnimationAdapter {
-        public Adapter(GVRSceneObject target, float duration) {
-            super(target, duration);
+        public Adapter(final Widget target, float duration) {
+            super(target.getSceneObject(), duration);
         }
 
         @Override

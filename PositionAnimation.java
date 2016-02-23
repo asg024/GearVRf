@@ -2,6 +2,8 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRPositionAnimation;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class PositionAnimation extends TransformAnimation {
 
@@ -9,6 +11,16 @@ public class PositionAnimation extends TransformAnimation {
             final float x, final float y, final float z) {
         super(target);
         mAdapter = new Adapter(target, duration, x, y, z);
+    }
+
+    public PositionAnimation(final Widget target, final JSONObject parameters)
+            throws JSONException {
+        super(target);
+        mAdapter = new Adapter(target,
+                (float) parameters.getDouble("duration"),
+                (float) parameters.getDouble("x"),
+                (float) parameters.getDouble("y"),
+                (float) parameters.getDouble("z"));
     }
 
     @Override

@@ -2,6 +2,8 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRRotationByAxisWithPivotAnimation;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class RotationByAxisWithPivotAnimation extends TransformAnimation {
     /**
@@ -34,6 +36,19 @@ public class RotationByAxisWithPivotAnimation extends TransformAnimation {
         super(target);
         mAdapter = new Adapter(target, duration, angle, axisX, axisY, axisZ,
                 pivotX, pivotY, pivotZ);
+    }
+
+    public RotationByAxisWithPivotAnimation(final Widget target,
+            final JSONObject params) throws JSONException {
+        super(target);
+        mAdapter = new Adapter(target, (float) params.getDouble("duration"),
+                (float) params.getDouble("angle"),
+                (float) params.getDouble("axis_x"),
+                (float) params.getDouble("axis_y"),
+                (float) params.getDouble("axis_z"),
+                (float) params.getDouble("pivot_x"),
+                (float) params.getDouble("pivot_y"),
+                (float) params.getDouble("pivot_z"));
     }
 
     @Override

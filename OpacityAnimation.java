@@ -2,6 +2,8 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVROpacityAnimation;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class OpacityAnimation extends MaterialAnimation {
 
@@ -9,6 +11,14 @@ public class OpacityAnimation extends MaterialAnimation {
             final float opacity) {
         super(target);
         mAdapter = new Adapter(target, duration, opacity);
+    }
+
+    public OpacityAnimation(final Widget target, final JSONObject parameters)
+            throws JSONException {
+        super(target);
+        mAdapter = new Adapter(target,
+                (float) parameters.getDouble("duration"),
+                (float) parameters.getDouble("opacity"));
     }
 
     @Override

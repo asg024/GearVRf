@@ -232,7 +232,7 @@ public class WidgetFactory {
             NodeEntry attributes, Class<? extends Widget> widgetClass)
             throws InstantiationException {
         try {
-            Constructor<?> ctor = widgetClass
+            Constructor<? extends Widget> ctor = widgetClass
                     .getConstructor(GVRContext.class, GVRSceneObject.class,
                                     NodeEntry.class);
             Widget widget = (Widget) ctor.newInstance(sceneObject

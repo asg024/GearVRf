@@ -1,7 +1,13 @@
 package com.samsung.smcl.vr.widgets;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
+import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
+
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -17,11 +23,16 @@ import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.content.Context;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.UnmodifiableJSONObject;
+import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
@@ -30,21 +41,47 @@ import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
 public class Widget {
 
     /**
-     * Call to initialize the Widget infrastructure.
-     *
+     * Call to initialize the Widget infrastructure. Parses {@code objects.json}
+     * to load metadata for {@code Widgets}, as well as animation and material
+     * specs.
+     * 
+     * @param context
+     *            A valid Android {@link Context}.
      * @param touchManager
      *            The global {@link TouchManager} instance.
+     * @throws JSONException
+     *             if the {@code objects.json} file is invalid JSON
+     * @throws NoSuchMethodException
+     *             if a constructor can't be found for an animation type
+     *             specified in {@code objects.json}.
      */
-    static public void init(TouchManager touchManager) {
+    static public void init(Context context, TouchManager touchManager)
+            throws JSONException, NoSuchMethodException {
         // TODO: I have a change in the works to make TouchManager a singleton,
         // so this step will be unnecessary
         sTouchManager = new WeakReference<TouchManager>(touchManager);
+
+        String rawJson = Utility.readTextFile(context, "objects.json");
+        Log.d(TAG, "init(): raw JSON: %s", rawJson);
+        if (rawJson == null) {
+            rawJson = "";
+        }
+        final JSONObject json = new JSONObject(rawJson);
+        sObjectMetadata = new UnmodifiableJSONObject(
+                json.optJSONObject("objects"));
+        Log.d(TAG, "init(): loaded object metadata: %s",
+              sObjectMetadata.toString());
+
+        JSONObject animationMetadata = json.optJSONObject("animations");
+        AnimationFactory.init(animationMetadata);
+        Log.d(TAG, "init(): loaded animation metadata: %s",
+              animationMetadata.toString());
     }
 
     /**
      * Register this with LauncherViewManager. An alternative would be to have
-     * {@link #init(TouchManager) init()} do this work and just call it directly
-     * from LauncherViewManager.onInit().
+     * {@link #init(Context, TouchManager) init()} do this work and just call it
+     * directly from LauncherViewManager.onInit().
      */
     static public final OnInitListener onInitListener = new OnInitListener() {
         @Override
@@ -77,7 +114,7 @@ public class Widget {
     public interface OnFocusListener {
         /**
          * Called when a widget gains or loses focus.
-         *
+         * 
          * @param focused
          *            {@code True} is the widget has gained focus; {@code false}
          *            if the widget has lost focus.
@@ -90,7 +127,7 @@ public class Widget {
         /**
          * Called when a widget has had focus for more than
          * {@link Widget#getLongFocusTime()} milliseconds.
-         *
+         * 
          * @return {@code True} to indicate that no further processing of the
          *         event should take place; {@code false} to allow further
          *         processing.
@@ -105,7 +142,7 @@ public class Widget {
     public interface OnBackKeyListener {
         /**
          * Called when widget is target of back key event.
-         *
+         * 
          * @param widget
          *            {@link Widget} target by back key event.
          * @return {@code True} to indicate that no further processing of the
@@ -122,10 +159,10 @@ public class Widget {
     public interface OnTouchListener {
         /**
          * Called when a widget is touched (tapped).
-         *
+         * 
          * @param widget
          *            {@link Widget} target by touch event.
-         *
+         * 
          * @return {@code True} to indicate that no further processing of the
          *         touch event should take place; {@code false} to allow further
          *         processing.
@@ -149,7 +186,7 @@ public class Widget {
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
-     *
+     * 
      * @param context
      *            The current {@link GVRContext}.
      * @param sceneObject
@@ -165,24 +202,25 @@ public class Widget {
         mBaseDepth = mDepth = dimensions[2];
 
         Log.d(TAG,
-                "Widget constructor: %s mWidth = %f mHeight = %f mDepth = %f",
-                sceneObject.getName(), mWidth, mHeight, mDepth);
+              "Widget constructor: %s mWidth = %f mHeight = %f mDepth = %f",
+              sceneObject.getName(), mWidth, mHeight, mDepth);
     }
 
     /**
      * A constructor for wrapping existing {@link GVRSceneLayout} instances.
      * Deriving classes should override and do whatever processing is
      * appropriate.
-     *
+     * 
      * @param context
      *            The current {@link GVRContext}
      * @param sceneObject
      *            The {@link GVRSceneObject} to wrap.
      * @param attributes
      *            TODO
+     * @throws InstantiationException 
      */
     public Widget(final GVRContext context, final GVRSceneObject sceneObject,
-            NodeEntry attributes) {
+            NodeEntry attributes) throws InstantiationException {
         this(context, sceneObject);
 
         // This gives us the demangled name, which is the name we'll use to
@@ -203,6 +241,14 @@ public class Widget {
         attribute = attributes.getProperty("visibility");
         setVisibility(attribute != null ? Visibility.valueOf(attribute
                 .toUpperCase(Locale.ENGLISH)) : Visibility.VISIBLE);
+
+        createChildren(context, sceneObject);
+
+        try {
+            setupMetadata();
+        } catch (Exception e) {
+            throw new InstantiationException(e.getLocalizedMessage());
+        }
     }
 
     private static final String pattern = Widget.class.getSimpleName()
@@ -211,7 +257,7 @@ public class Widget {
 
     public String toString() {
         return String.format(pattern, getName(), mWidth, mHeight, mDepth,
-                mIsTouchable, mFocusEnabled, mVisibility);
+                             mIsTouchable, mFocusEnabled, mVisibility);
     }
 
     public Widget(final GVRContext context, final float width,
@@ -243,7 +289,7 @@ public class Widget {
      * notifications.
      * <p>
      * Focus is enabled by default.
-     *
+     * 
      * @param enabled
      *            {@code True} to enable line-of-sight focus, {@code false} to
      *            disable.
@@ -273,7 +319,7 @@ public class Widget {
      * Add a listener for {@linkplain OnFocusListener#onFocus(boolean) focus}
      * and {@linkplain OnFocusListener#onLongFocus() long focus} notifications
      * for this object.
-     *
+     * 
      * @param listener
      *            An implementation of {@link OnFocusListener}.
      * @return {@code True} if the listener was successfully registered,
@@ -286,7 +332,7 @@ public class Widget {
     /**
      * Remove a previously {@linkplain #addFocusListener(OnFocusListener)
      * registered} focus notification {@linkplain OnFocusListener listener}.
-     *
+     * 
      * @param listener
      *            An implementation of {@link OnFocusListener}
      * @return {@code True} if the listener was successfully unregistered,
@@ -297,11 +343,11 @@ public class Widget {
         return mFocusListeners.remove(listener);
     }
 
-    FocusManager.Focusable focusableImpl = new FocusManager.Focusable() {
+    private FocusManager.Focusable focusableImpl = new FocusManager.Focusable() {
 
         /**
          * Hook method for handling changes in focus for this object.
-         *
+         * 
          * @param focused
          *            {@code True} if the object has gained focus, {@code false}
          *            if it has lost focus.
@@ -339,7 +385,7 @@ public class Widget {
      * can also receive those notifications.
      * <p>
      * Objects are touchable by default.
-     *
+     * 
      * @param touchable
      *            {@code True} to enable touch events for this object,
      *            {@code false} to disable.
@@ -362,7 +408,7 @@ public class Widget {
     /**
      * Add a listener for {@linkplain OnBackKeyListener#onBackKey(Widget) back
      * key} notifications for this object.
-     *
+     * 
      * @param listener
      *            An implementation of {@link OnBackKeyListener}.
      * @return {@code True} if the listener was successfully registered,
@@ -376,7 +422,7 @@ public class Widget {
      * Remove a previously {@linkplain #addBackKeyListener(OnBackKeyListener)
      * registered} back key notification {@linkplain OnBackKeyListener listener}
      * .
-     *
+     * 
      * @param listener
      *            An implementation of {@link OnBackKeyListener}
      * @return {@code True} if the listener was successfully unregistered,
@@ -390,7 +436,7 @@ public class Widget {
     /**
      * Add a listener for {@linkplain OnTouchListener#onTouch() touch}
      * notifications for this object.
-     *
+     * 
      * @param listener
      *            An implementation of {@link OnTouchListener}.
      * @return {@code True} if the listener was successfully registered,
@@ -403,7 +449,7 @@ public class Widget {
     /**
      * Remove a previously {@linkplain #addTouchListener(OnTouchListener)
      * registered} touch notification {@linkplain OnTouchListener listener}.
-     *
+     * 
      * @param listener
      *            An implementation of {@link OnTouchListener}
      * @return {@code True} if the listener was successfully unregistered,
@@ -415,8 +461,64 @@ public class Widget {
     }
 
     /**
+     * Set the current "level" of the {@link Widget}. This is useful for
+     * indicating different states that reflect a change in quantity (e.g.,
+     * battery charge, WiFi signal strength, etc.). The visual change for each
+     * level can be a change in material, an animation, or showing a sub-object.
+     * 
+     * @param level
+     *            The new level value. Values will be clamped to the range
+     *            [0,num_levels).
+     */
+    public void setLevel(int level) {
+        if (level >= 0 && mLevel != level && level < mLevelInfo.size()) {
+            Log.d(TAG, "setLevel(%d): clearing level: %d", level, mLevel);
+            if (mLevel >= 0) {
+                mLevelInfo.get(mLevel).setState(this, null);
+            }
+
+            mLevel = level;
+
+            updateState();
+        }
+    }
+
+    /**
+     * @return The current {@linkplain #setLevel(int) level} of the
+     *         {@link Widget}.
+     */
+    public int getLevel() {
+        return mLevel;
+    }
+
+    /**
+     * Sets the state of the {@link Widget} to "selected". This state may be
+     * accompanied by visual changes -- material, animation, displayed mesh --
+     * if it has been specified in the {@code Widget's} metadata.
+     * 
+     * @param selected
+     *            {@code True} to set the {@code Widget} as selected,
+     *            {@code false} to set as unselected.
+     */
+    public void setSelected(final boolean selected) {
+        if (selected != mIsSelected) {
+            mIsSelected = selected;
+            updateState();
+        }
+    }
+
+    /**
+     * @return {@code True} if the {@link Widget Widget's} state is set to
+     *         {@linkplain #setSelected(boolean) "selected", {@code false} if
+     *         it is not.
+     */
+    public boolean isSelected() {
+        return mIsSelected;
+    }
+
+    /**
      * Get the (optional) name of the {@link Widget}.
-     *
+     * 
      * @return The name of the {@code Widget}.
      */
     public String getName() {
@@ -426,7 +528,7 @@ public class Widget {
     /**
      * Set the (optional) name of the {@link Widget}. {@code Widget} names are
      * not needed: they are only for the application's convenience.
-     *
+     * 
      * @param name
      */
     public void setName(String name) {
@@ -448,7 +550,7 @@ public class Widget {
 
     /**
      * Set the order in which this {@link Widget} will be rendered.
-     *
+     * 
      * @param renderingOrder
      *            See {@link GVRRenderingOrder}.
      */
@@ -474,7 +576,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     *
+     * 
      * @param texture
      *            The new texture.
      */
@@ -485,7 +587,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     *
+     * 
      * @param name
      *            Name of the texture
      * @param texture
@@ -498,7 +600,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     *
+     * 
      * @param texture
      *            The new texture.
      */
@@ -509,7 +611,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     *
+     * 
      * @param bitmapId
      *            Resource ID of the bitmap to create the texture from.
      */
@@ -533,7 +635,7 @@ public class Widget {
 
     /**
      * Set the {@code GL_DEPTH_TEST} option
-     *
+     * 
      * @param depthTest
      *            {@code true} if {@code GL_DEPTH_TEST} should be enabled,
      *            {@code false} if not.
@@ -559,7 +661,7 @@ public class Widget {
 
     /**
      * Set the {@code GL_POLYGON_OFFSET_FILL} option
-     *
+     * 
      * @param offset
      *            {@code true} if {@code GL_POLYGON_OFFSET_FILL} should be
      *            enabled, {@code false} if not.
@@ -586,7 +688,7 @@ public class Widget {
     /**
      * Set the {@code factor} value passed to {@code glPolygonOffset()} if
      * {@code GL_POLYGON_OFFSET_FILL} is enabled.
-     *
+     * 
      * @param offsetFactor
      *            Per OpenGL docs: Specifies a scale factor that is used to
      *            create a variable depth offset for each polygon. The initial
@@ -616,7 +718,7 @@ public class Widget {
     /**
      * Set the {@code units} value passed to {@code glPolygonOffset()} if
      * {@code GL_POLYGON_OFFSET_FILL} is enabled.
-     *
+     * 
      * @param offsetUnits
      *            Per OpenGL docs: Is multiplied by an implementation-specific
      *            value to create a constant depth offset. The initial value is
@@ -645,7 +747,7 @@ public class Widget {
 
     /**
      * Get the X component of the widget's position.
-     *
+     * 
      * @return 'X' component of the widget's position.
      */
     public float getPositionX() {
@@ -654,7 +756,7 @@ public class Widget {
 
     /**
      * Get the 'Y' component of the widget's position.
-     *
+     * 
      * @return 'Y' component of the widget's position.
      */
     public float getPositionY() {
@@ -663,7 +765,7 @@ public class Widget {
 
     /**
      * Get the 'Z' component of the widget's position.
-     *
+     * 
      * @return 'Z' component of the widget's position.
      */
     public float getPositionZ() {
@@ -672,9 +774,9 @@ public class Widget {
 
     /**
      * Set absolute position.
-     *
+     * 
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     *
+     * 
      * @param x
      *            'X' component of the absolute position.
      * @param y
@@ -688,9 +790,9 @@ public class Widget {
 
     /**
      * Set the 'X' component of absolute position.
-     *
+     * 
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     *
+     * 
      * @param x
      *            New 'X' component of the absolute position.
      */
@@ -700,9 +802,9 @@ public class Widget {
 
     /**
      * Set the 'Y' component of the absolute position.
-     *
+     * 
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     *
+     * 
      * @param y
      *            New 'Y' component of the absolute position.
      */
@@ -712,9 +814,9 @@ public class Widget {
 
     /**
      * Set the 'Z' component of the absolute position.
-     *
+     * 
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     *
+     * 
      * @param z
      *            New 'Z' component of the absolute position.
      */
@@ -724,7 +826,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'W' component.
-     *
+     * 
      * @return 'W' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationW() {
@@ -733,7 +835,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'X' component.
-     *
+     * 
      * @return 'X' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationX() {
@@ -742,7 +844,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'Y' component.
-     *
+     * 
      * @return 'Y' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationY() {
@@ -751,7 +853,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'Z' component.
-     *
+     * 
      * @return 'Z' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationZ() {
@@ -760,7 +862,7 @@ public class Widget {
 
     /**
      * Get the rotation around the 'Y' axis, in degrees.
-     *
+     * 
      * @return The widget's current rotation around the 'Y' axis, in degrees.
      */
     public float getRotationYaw() {
@@ -769,7 +871,7 @@ public class Widget {
 
     /**
      * Get the rotation around the 'X' axis, in degrees.
-     *
+     * 
      * @return The widget's rotation around the 'X' axis, in degrees.
      */
     public float getRotationPitch() {
@@ -778,7 +880,7 @@ public class Widget {
 
     /**
      * Get the rotation around the 'Z' axis, in degrees.
-     *
+     * 
      * @return The widget's rotation around the 'Z' axis, in degrees.
      */
     public float getRotationRoll() {
@@ -787,14 +889,14 @@ public class Widget {
 
     /**
      * Set rotation, as a quaternion.
-     *
+     * 
      * Sets the widget's current rotation in quaternion terms. Overrides any
      * previous rotations using {@link #rotate(float, float, float, float)
      * rotate()}, {@link #rotateByAxis(float, float, float, float)
      * rotateByAxis()} , or
      * {@link #rotateByAxisWithPivot(float, float, float, float, float, float, float)
      * rotateByAxisWithPivot()} .
-     *
+     * 
      * @param w
      *            'W' component of the quaternion.
      * @param x
@@ -810,7 +912,7 @@ public class Widget {
 
     /**
      * Get the 'X' scale
-     *
+     * 
      * @return The widget's current scaling on the 'X' axis.
      */
     public float getScaleX() {
@@ -819,7 +921,7 @@ public class Widget {
 
     /**
      * Get the 'Y' scale
-     *
+     * 
      * @return The widget's current scaling on the 'Y' axis.
      */
     public float getScaleY() {
@@ -828,7 +930,7 @@ public class Widget {
 
     /**
      * Get the 'Z' scale
-     *
+     * 
      * @return The widget's current scaling on the 'Z' axis.
      */
     public float getScaleZ() {
@@ -837,7 +939,7 @@ public class Widget {
 
     /**
      * Set [X, Y, Z] current scale
-     *
+     * 
      * @param x
      *            Scaling factor on the 'X' axis.
      * @param y
@@ -854,7 +956,7 @@ public class Widget {
 
     /**
      * Set the widget's current scaling on the 'X' axis.
-     *
+     * 
      * @param x
      *            Scaling factor on the 'X' axis.
      */
@@ -865,7 +967,7 @@ public class Widget {
 
     /**
      * Set the widget's current scaling on the 'Y' axis.
-     *
+     * 
      * @param y
      *            Scaling factor on the 'Y' axis.
      */
@@ -876,7 +978,7 @@ public class Widget {
 
     /**
      * Set the widget's current scaling on the 'Z' axis.
-     *
+     * 
      * @param z
      *            Scaling factor on the 'Z' axis.
      */
@@ -887,7 +989,7 @@ public class Widget {
 
     /**
      * Get the 4x4 single matrix.
-     *
+     * 
      * @return An array of 16 {@code float}s representing a 4x4 matrix in
      *         OpenGL-compatible column-major format.
      */
@@ -898,7 +1000,7 @@ public class Widget {
     /**
      * Set the 4x4 model matrix and set current scaling, rotation, and
      * transformation based on this model matrix.
-     *
+     * 
      * @param mat
      *            An array of 16 {@code float}s representing a 4x4 matrix in
      *            OpenGL-compatible column-major format.
@@ -912,10 +1014,10 @@ public class Widget {
 
     /**
      * Move the object, relative to its current position.
-     *
+     * 
      * Modify the tranform's current translation by applying translations on all
      * 3 axes.
-     *
+     * 
      * @param x
      *            'X' delta
      * @param y
@@ -929,15 +1031,15 @@ public class Widget {
 
     /**
      * Sets the absolute rotation in angle/axis terms.
-     *
+     * 
      * Rotates using the right hand rule.
-     *
+     * 
      * <p>
      * Contrast this with {@link #rotate(float, float, float, float) rotate()},
      * {@link #rotateByAxis(float, float, float, float) rotateByAxis()}, or
      * {@link #rotateByAxisWithPivot(float, float, float, float, float, float, float)
      * rotateByAxisWithPivot()}, which all do relative rotations.
-     *
+     * 
      * @param angle
      *            Angle of rotation in degrees.
      * @param x
@@ -953,7 +1055,7 @@ public class Widget {
 
     /**
      * Modify the tranform's current rotation in quaternion terms.
-     *
+     * 
      * @param w
      *            'W' component of the quaternion.
      * @param x
@@ -970,7 +1072,7 @@ public class Widget {
     /**
      * Modify the tranform's current rotation in quaternion terms, around a
      * pivot other than the origin.
-     *
+     * 
      * @param w
      *            'W' component of the quaternion.
      * @param x
@@ -993,7 +1095,7 @@ public class Widget {
 
     /**
      * Modify the widget's current rotation in angle/axis terms.
-     *
+     * 
      * @param angle
      *            Angle of rotation in degrees.
      * @param x
@@ -1010,7 +1112,7 @@ public class Widget {
     /**
      * Modify the widget's current rotation in angle/axis terms, around a pivot
      * other than the origin.
-     *
+     * 
      * @param angle
      *            Angle of rotation in degrees.
      * @param axisX
@@ -1029,7 +1131,7 @@ public class Widget {
     public void rotateByAxisWithPivot(float angle, float axisX, float axisY,
             float axisZ, float pivotX, float pivotY, float pivotZ) {
         getTransform().rotateByAxisWithPivot(angle, axisX, axisY, axisZ,
-                pivotX, pivotY, pivotZ);
+                                             pivotX, pivotY, pivotZ);
     }
 
     /**
@@ -1046,7 +1148,7 @@ public class Widget {
     /**
      * Set the widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
-     *
+     * 
      * @param opacity
      *            Value between {@code 0.0f} and {@code 0.1f}, inclusive.
      */
@@ -1057,7 +1159,7 @@ public class Widget {
     /**
      * Get the widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
-     *
+     * 
      * @return Current opacity value, between {@code 0.0f} and {@code 0.1f},
      *         inclusive.
      */
@@ -1067,32 +1169,35 @@ public class Widget {
 
     /**
      * Set the visibility of the object.
-     *
+     * 
      * @see Visibility
      * @param visibility
      *            The visibility of the object.
      */
     public void setVisibility(final Visibility visibility) {
         if (visibility != mVisibility) {
+            Log.d(TAG, "setVisibility(%s) for %s", visibility, getName());
             if (mParent != null) {
+                final GVRSceneObject parentSceneObject = mParent
+                        .getSceneObject();
                 switch (visibility) {
-                case VISIBLE:
-                    if (mSceneObject.getParent() != mParent.getSceneObject()) {
-                        mParent.getSceneObject().addChildObject(mSceneObject);
-                    }
-                    break;
-                case HIDDEN:
-                case GONE:
-                    if (mVisibility == Visibility.VISIBLE) {
-                        mParent.getSceneObject()
-                                .removeChildObject(mSceneObject);
-                    }
-                    break;
-                case PLACEHOLDER:
-                    getSceneObject().detachRenderData();
-                    break;
+                    case VISIBLE:
+                        if (mSceneObject.getParent() != parentSceneObject) {
+                            parentSceneObject.addChildObject(mSceneObject);
+                        }
+                        break;
+                    case HIDDEN:
+                    case GONE:
+                        if (mVisibility == Visibility.VISIBLE) {
+                            parentSceneObject.removeChildObject(mSceneObject);
+                        }
+                        break;
+                    case PLACEHOLDER:
+                        getSceneObject().detachRenderData();
+                        break;
                 }
-                if (mVisibility == Visibility.GONE || visibility == Visibility.GONE) {
+                if (mVisibility == Visibility.GONE
+                        || visibility == Visibility.GONE) {
                     mParent.layout();
                 }
             }
@@ -1125,11 +1230,10 @@ public class Widget {
     // TODO: Should this be public?
     protected final void create() {
         runOnGlThread(new Runnable() {
-
             @Override
             public void run() {
                 if (!mIsCreated) {
-                    onCreate();
+                    doOnCreate();
                     mIsCreated = true;
                 }
             }
@@ -1138,7 +1242,7 @@ public class Widget {
 
     /**
      * Determine whether the calling thread is the GL thread.
-     *
+     * 
      * @return {@code True} if called from the GL thread, {@code false}
      *         otherwise.
      */
@@ -1153,7 +1257,7 @@ public class Widget {
      * <p>
      * This differs from {@link GVRContext#runOnGlThread(Runnable)}: that method
      * always queues the {@code Runnable} for execution in the next frame.
-     *
+     * 
      * @param r
      *            {@link Runnable} to execute on the GL thread.
      */
@@ -1172,7 +1276,7 @@ public class Widget {
     /**
      * Get the {@link GVRMaterial material} for the underlying
      * {@link GVRSceneObject scene object}.
-     *
+     * 
      * @return The scene object's material or {@code null}.
      */
     protected GVRMaterial getMaterial() {
@@ -1186,7 +1290,7 @@ public class Widget {
     /**
      * Set the {@linkplain GVRMaterial material} for the underlying
      * {@linkplain GVRSceneObject scene object}.
-     *
+     * 
      * @param material
      *            The new material.
      */
@@ -1195,6 +1299,10 @@ public class Widget {
         if (renderData != null) {
             renderData.setMaterial(material);
         }
+    }
+
+    final protected JSONObject getObjectMetadata() {
+        return sObjectMetadata.optJSONObject(getName());
     }
 
     /**
@@ -1224,7 +1332,7 @@ public class Widget {
      * hooks and this method is <em>not</em> guaranteed. As a general rule, you
      * should not write code that has dependencies between the attachment hooks
      * and this method!
-     *
+     * 
      * @see #create()
      */
     protected void onCreate() {
@@ -1248,13 +1356,15 @@ public class Widget {
 
     /**
      * Hook method for handling changes in focus for this object.
-     *
+     * 
      * @param focused
      *            {@code True} if the object has gained focus, {@code false} if
      *            it has lost focus.
+     * @return {@code True} to accept focus, {@code false} if not.
      */
     protected boolean onFocus(boolean focused) {
-        return false;
+        updateState();
+        return true;
     }
 
     /**
@@ -1276,7 +1386,7 @@ public class Widget {
 
     /**
      * Hook method for handling back key events.
-     *
+     * 
      * @return {@code True} if the back key event was successfully processed,
      *         {@code false} otherwise.
      */
@@ -1286,7 +1396,7 @@ public class Widget {
 
     /**
      * Hook method for handling touch events.
-     *
+     * 
      * @return {@code True} if the touch event was successfully processed,
      *         {@code false} otherwise.
      */
@@ -1295,93 +1405,84 @@ public class Widget {
     }
 
     /* package */
-    /**
-     * <b>NOT FOR GENERAL USE!</b>
-     * <p>
-     * This is for use by {@link GroupWidget} <em>exclusively</em>.
-     * <p>
-     * Does post-{@linkplain GroupWidget#addChild(Widget) attachment} setup:
-     * <ul>
-     * <li>Runs GL thread {@linkplain #create() initialization}</li>
-     * <li>Registers for touch and focus notifications, if they are enabled</li>
-     * <li>Invokes {@link #onAttached()}
-     * </ul>
-     *
-     * @param parent
-     *            The {@link GroupWidget} this instance is being
-     *            {@linkplain GroupWidget#addChild(Widget) attached} to.
-     */
-    synchronized final void doOnAttached(final GroupWidget parent) {
-        if (parent != mParent) {
-            create();
-            mParent = parent;
-            mIsAttached = true;
-            registerPickable();
-            onAttached();
+    boolean addChildInner(final Widget child, final GVRSceneObject childRootSceneObject, int index) {
+        final boolean added = mChildren.indexOf(child) == -1;
+        if (added) {
+            if (index == -1 || index > mChildren.size()) {
+                mChildren.add(child);
+            } else {
+                mChildren.add(index, child);
+            }
+            if (child.getVisibility() == Visibility.VISIBLE) {
+                if (childRootSceneObject.getParent() != getSceneObject()) {
+                    getSceneObject().addChildObject(childRootSceneObject);
+                } else {
+                    Log.d(TAG,
+                          "addChildInner(): child '%s' already attached to this Group ('%s')",
+                          child.getName(), getName());
+                }
+            }
+            child.doOnAttached(this);
         }
+        return added;
     }
 
     /* package */
-    /**
-     * <b>NOT FOR GENERAL USE!</b>
-     * <p>
-     * This is for use by {@link GroupWidget} <em>exclusively</em>.
-     * <p>
-     * Does post-{@linkplain GroupWidget#removeChild(Widget) detachment}
-     * cleanup:
-     * <ul>
-     * <li>Clears parent reference</li>
-     * <li>Unregisters for touch and focus notifications</li>
-     * <li>Invokes {@link #onDetached()}</li>
-     * </ul>
-     */
-    synchronized final void doOnDetached() {
-        mIsAttached = false;
-        mParent = null;
-        registerPickable();
-        onDetached();
+    Widget createChild(GVRContext context, GVRSceneObject sceneObjectChild)
+            throws InstantiationException {
+        final Widget child = WidgetFactory.createWidget(sceneObjectChild);
+        return child;
     }
 
     /* package */
-    /**
-     * <b>NOT FOR GENERAL USE!</b>
-     * <p>
-     * This is for use by {@link FocusManager} <em>exclusively</em>.
-     * <p>
-     * Called by {@link FocusManager} when this {@link Widget} gains
-     * line-of-sight focus. Notifies all
-     * {@linkplain OnFocusListener#onFocus(boolean) listeners}; if none of the
-     * listeners has completely handled the event, {@link #onFocus(boolean)} is
-     * called.
-     */
-    boolean doOnFocus(boolean focused) {
-        for (OnFocusListener listener : mFocusListeners) {
-            if (listener.onFocus(focused, this)) {
-                return true;
+    void createChildren(final GVRContext context,
+            final GVRSceneObject sceneObject) throws InstantiationException {
+        Log.d(TAG, "GroupWidget(): creating children");
+        List<GVRSceneObject> children = sceneObject.getChildren();
+        Log.d(TAG, "GroupWidget(): child count: %d", children.size());
+        for (GVRSceneObject sceneObjectChild : children) {
+            Log.d(TAG, "GroupWidget(): creating child '%s'",
+                  sceneObjectChild.getName());
+            final Widget child = createChild(context, sceneObjectChild);
+            if (child != null) {
+                addChildInner(child);
             }
         }
-        return onFocus(focused);
     }
 
     /* package */
-    /**
-     * <b>NOT FOR GENERAL USE!</b>
-     * <p>
-     * This is for use by {@link FocusManager} <em>exclusively</em>.
-     * <p>
-     * Called by {@link FocusManager} when this {@link Widget} has had
-     * line-of-sight focus for more than {@link #getLongFocusTime()}
-     * milliseconds. Notifies all {@linkplain OnFocusListener#onLongFocus()
-     * listeners}; if none of the listeners has completely handled the event,
-     * {@link #onLongFocus()} is called.
-     */
-    void doOnLongFocus() {
-        for (OnFocusListener listener : mFocusListeners) {
-            if (listener.onLongFocus(this)) {
-                return;
+    Widget findChildByName(final String name) {
+        final List<Widget> groups = new ArrayList<Widget>();
+        groups.add(this);
+    
+        return findChildByNameInAllGroups(name, groups);
+    }
+
+    /* package */
+    List<Widget> getChildren() {
+        return new ArrayList<Widget>(mChildren);
+    }
+
+    /* package */
+    boolean removeChild(final Widget child, final GVRSceneObject childRootSceneObject, boolean preventLayout) {
+        final boolean removed = mChildren.remove(child);
+        if (removed) {
+            Log.d(TAG, "removeChild(): '%s' removed", child.getName());
+            if (childRootSceneObject.getParent() != getSceneObject()) {
+                Log.e(TAG,
+                      "removeChild(): '%s' is not a child of '%s' GVRSceneObject!",
+                      child.getName(), getName());
             }
+            getSceneObject().removeChildObject(childRootSceneObject);
+            child.doOnDetached();
+            if (!preventLayout) {
+                layout();
+            }
+        } else {
+            Log.w(TAG, "removeChild(): '%s' is not a child of '%s'!",
+                  child.getName(), getName());
         }
-        onLongFocus();
+        return removed;
     }
 
     /* package */
@@ -1396,6 +1497,33 @@ public class Widget {
         return mSceneObject.getRenderData();
     }
 
+    /* package */
+    void layout() {
+        
+    }
+
+    /**
+     * Does post-{@linkplain GroupWidget#addChild(Widget) attachment} setup:
+     * <ul>
+     * <li>Runs GL thread {@linkplain #create() initialization}</li>
+     * <li>Registers for touch and focus notifications, if they are enabled</li>
+     * <li>Invokes {@link #onAttached()}
+     * </ul>
+     * 
+     * @param parent
+     *            The {@link GroupWidget} this instance is being
+     *            {@linkplain GroupWidget#addChild(Widget) attached} to.
+     */
+    private synchronized final void doOnAttached(final Widget parent) {
+        if (parent != mParent) {
+            create();
+            mParent = parent;
+            mIsAttached = true;
+            registerPickable();
+            onAttached();
+        }
+    }
+
     private boolean doOnBackKey() {
         for (OnBackKeyListener listener : mBackKeyListeners) {
             if (listener.onBackKey(this)) {
@@ -1403,6 +1531,63 @@ public class Widget {
             }
         }
         return onBackKey();
+    }
+
+    private void doOnCreate() {
+        final int level = mLevel;
+        mLevel = -1;
+        setLevel(level);
+    
+        onCreate();
+    }
+
+    /**
+     * Does post-{@linkplain GroupWidget#removeChild(Widget) detachment}
+     * cleanup:
+     * <ul>
+     * <li>Clears parent reference</li>
+     * <li>Unregisters for touch and focus notifications</li>
+     * <li>Invokes {@link #onDetached()}</li>
+     * </ul>
+     */
+    private synchronized final void doOnDetached() {
+        mIsAttached = false;
+        mParent = null;
+        registerPickable();
+        onDetached();
+    }
+
+    /**
+     * Called when this {@link Widget} gains line-of-sight focus. Notifies all
+     * {@linkplain OnFocusListener#onFocus(boolean) listeners}; if none of the
+     * listeners has completely handled the event, {@link #onFocus(boolean)} is
+     * called.
+     */
+    private boolean doOnFocus(boolean focused) {
+        mIsFocused = focused;
+        Log.d(TAG, "doOnFocus(): '%s', focused: %b", getName(), mIsFocused);
+        for (OnFocusListener listener : mFocusListeners) {
+            if (listener.onFocus(focused, this)) {
+                return true;
+            }
+        }
+        return onFocus(focused);
+    }
+
+    /**
+     * Called when this {@link Widget} has had line-of-sight focus for more than
+     * {@link #getLongFocusTime()} milliseconds. Notifies all
+     * {@linkplain OnFocusListener#onLongFocus() listeners}; if none of the
+     * listeners has completely handled the event, {@link #onLongFocus()} is
+     * called.
+     */
+    private void doOnLongFocus() {
+        for (OnFocusListener listener : mFocusListeners) {
+            if (listener.onLongFocus(this)) {
+                return;
+            }
+        }
+        onLongFocus();
     }
 
     private boolean doOnTouch() {
@@ -1414,29 +1599,176 @@ public class Widget {
         return onTouch();
     }
 
+    private boolean addChildInner(final Widget child) {
+        return addChildInner(child, child.getSceneObject(), -1);
+    }
+
+    /**
+     * Searches the immediate children of {@link GroupWidget groupWidget} for a
+     * {@link Widget} with the specified {@link Widget#getName() name}.
+     * <p>
+     * Any non-matching {@code GroupWidget} children iterated prior to finding a
+     * match will be added to {@code groupChildren}. If no match is found, all
+     * immediate {@code GroupWidget} children will be added.
+     * 
+     * @param name
+     *            The name of the {@code Widget} to find.
+     * @param groupWidget
+     *            The {@code GroupWidget} to search.
+     * @param groupChildren
+     *            Output array for non-matching {@code GroupWidget} children.
+     * @return The first {@code Widget} with the specified name or {@code null}
+     *         if no child of {@code groupWidget} has that name.
+     */
+    private static Widget findChildByNameInOneGroup(final String name,
+            final Widget groupWidget, ArrayList<Widget> groupChildren) {
+        Collection<Widget> children = groupWidget.mChildren;
+        for (Widget child : children) {
+            if (child.getName().equals(name)) {
+                return child;
+            }
+            if (child instanceof GroupWidget) {
+                // Save the child for the next level of search if needed.
+                groupChildren.add((GroupWidget) child);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Performs a breadth-first search of the {@link GroupWidget GroupWidgets}
+     * in {@code groups} for a {@link Widget} with the specified
+     * {@link Widget#getName() name}.
+     *
+     * @param name
+     *            The name of the {@code Widget} to find.
+     * @param groups
+     *            The {@code GroupWidgets} to search.
+     * @return The first {@code Widget} with the specified name or {@code null}
+     *         if no child of {@code groups} has that name.
+     */
+    private static Widget findChildByNameInAllGroups(final String name, List<Widget> groups) {
+        if (groups.isEmpty()) {
+            return null;
+        }
+    
+        ArrayList<Widget> groupChildren = new ArrayList<Widget>();
+        Widget result = null;
+        for (Widget group : groups) {
+            // Search the immediate children of 'groups' for a match, rathering
+            // the children that are GroupWidgets themselves.
+            result = findChildByNameInOneGroup(name, group, groupChildren);
+            if (result != null) {
+                return result;
+            }
+        }
+    
+        // No match; Search the children that are GroupWidgets.
+        return findChildByNameInAllGroups(name, groupChildren);
+    }
+
     private void registerPickable() {
         final TouchManager touchManager = sTouchManager.get();
         if (touchManager == null) {
             Log.e(TAG,
-                    "Attempted to register widget as touchable with NULL TouchManager!");
+                  "Attempted to register widget as touchable with NULL TouchManager!");
             return;
         }
 
         if (mIsAttached && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
                 TouchManager.get(getGVRContext()).makeTouchable(mSceneObject,
-                        mTouchHandler);
+                                           mTouchHandler);
             } else {
                 TouchManager.get(getGVRContext()).makePickable(mSceneObject);
             }
             if (mFocusEnabled) {
-                FocusManager.get(mContext).register(getSceneObject(), focusableImpl);
+                FocusManager.get(mContext).register(getSceneObject(),
+                                                    focusableImpl);
             } else {
+                Log.d("registerPickable(): '%s' is not focus-enabled", getName());
                 FocusManager.get(mContext).unregister(getSceneObject());
             }
         } else {
             touchManager.removeHandlerFor(mSceneObject);
+            Log.d(TAG, "registerPickable(): unregistering '%s'; focus-enabled: %b", getName(), mFocusEnabled);
             FocusManager.get(mContext).unregister(getSceneObject());
+        }
+    }
+
+    private enum Properties {
+        touchable, focusenabled, visibility, states, levels, level
+    }
+
+    private void setupMetadata() throws JSONException, NoSuchMethodException {
+        JSONObject metaData = getObjectMetadata();
+        if (metaData != null) {
+            Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s", getName(), metaData);
+
+            mIsTouchable = optBoolean(metaData, Properties.touchable, mIsTouchable);
+            mFocusEnabled = optBoolean(metaData, Properties.focusenabled, mFocusEnabled);
+            Visibility visibility = optEnum(metaData, Properties.visibility, mVisibility);
+            setVisibility(visibility);
+
+            final boolean hasStates = has(metaData, Properties.states);
+            final boolean hasLevels = has(metaData, Properties.levels);
+            final boolean hasLevel = has(metaData, Properties.level);
+            Log.d(TAG,
+                  "setupMetadata(): for '%s'; states: %b, levels %b, level %b",
+                  getName(), hasStates, hasLevels, hasLevel);
+            if (hasStates) {
+                if (hasLevels || hasLevel) {
+                    throw RuntimeAssertion("Invalid metadata for '%s': both 'states' and 'levels' are present",
+                                              getName());
+                }
+                setupStates(metaData);
+            } else if (hasLevels) {
+                if (hasLevel) {
+                    mLevel = getInt(metaData, Properties.level);
+                    setupLevels(metaData);
+                }
+            } else if (hasLevel) {
+                throw RuntimeAssertion("Invalid metadata for '%s': 'level' specified without level specifications",
+                                          getName());
+            }
+        }
+    }
+
+    private void setupLevels(JSONObject metaData) throws JSONException,
+            NoSuchMethodException {
+        JSONArray levelsArray = optJSONArray(metaData, Properties.levels);
+
+        if (levelsArray != null) {
+            Log.d(TAG, "setupLevels(): for %s", getName());
+            for (int i = 0; i < levelsArray.length(); ++i) {
+                mLevelInfo.add(new WidgetState(this, levelsArray
+                        .getJSONObject(i)));
+            }
+        } else {
+            Log.d(TAG, "setupLevels(): No levels metadata for %s", getName());
+        }
+    }
+
+    private void setupStates(JSONObject metadata) throws JSONException,
+            NoSuchMethodException {
+        JSONObject states = optJSONObject(metadata, Properties.states);
+        Log.d(TAG, "setupStates(): for '%s': %s", getName(), states);
+        mLevelInfo.add(new WidgetState(this, states));
+    }
+
+    private void updateState() {
+        final WidgetState.State state;
+        if (mIsSelected) {
+            state = WidgetState.State.SELECTED;
+        } else if (mIsFocused) {
+            state = WidgetState.State.FOCUSED;
+        } else {
+            state = WidgetState.State.NORMAL;
+        }
+
+        Log.d(TAG, "updateState(): %s for '%s'", state, getName());
+        if (!mLevelInfo.isEmpty()) {
+            mLevelInfo.get(mLevel).setState(this, state);
         }
     }
 
@@ -1456,9 +1788,10 @@ public class Widget {
 
     private boolean mFocusEnabled = true;
     private boolean mIsFocused;
+    private boolean mIsSelected;
     private boolean mIsTouchable = true;
     private Visibility mVisibility = Visibility.VISIBLE;
-    private GroupWidget mParent;
+    private Widget mParent;
     private final float mBaseWidth;
     private final float mBaseHeight;
     private final float mBaseDepth;
@@ -1466,6 +1799,11 @@ public class Widget {
     private float mHeight;
     private float mDepth;
     private String mName;
+    
+    private int mLevel = 0;
+    private List<WidgetState> mLevelInfo = new ArrayList<WidgetState>();
+
+    private final List<Widget> mChildren = new ArrayList<Widget>();
 
     private final Set<OnBackKeyListener> mBackKeyListeners = new LinkedHashSet<OnBackKeyListener>();
     private final Set<OnFocusListener> mFocusListeners = new LinkedHashSet<OnFocusListener>();
@@ -1487,5 +1825,7 @@ public class Widget {
     private static WeakReference<TouchManager> sTouchManager;
     private static GVRTexture sDefaultTexture;
 
+    private static JSONObject sObjectMetadata;
     private static final String TAG = Widget.class.getSimpleName();
 }
+

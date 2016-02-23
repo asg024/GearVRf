@@ -2,6 +2,10 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRColorAnimation;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 
 public class ColorAnimation extends MaterialAnimation {
 
@@ -15,6 +19,14 @@ public class ColorAnimation extends MaterialAnimation {
             final float[] rgb) {
         super(target);
         mAdapter = new Adapter(target, duration, rgb);
+    }
+
+    public ColorAnimation(final Widget target, final JSONObject parameters)
+            throws JSONException {
+        super(target);
+        final float[] rgb = Helpers.getJSONColor(parameters, "color");
+        mAdapter = new Adapter(target,
+                (float) parameters.getDouble("duration"), rgb);
     }
 
     @Override

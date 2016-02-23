@@ -1,13 +1,11 @@
 package com.samsung.smcl.vr.widgets;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
-import com.samsung.smcl.utility.Log;
+
 
 public abstract class GroupWidget extends Widget {
 
@@ -27,8 +25,6 @@ public abstract class GroupWidget extends Widget {
             final GVRSceneObject sceneObject, NodeEntry attributes)
             throws InstantiationException {
         super(context, sceneObject, attributes);
-        createChildren(context, sceneObject);
-        // layout();
     }
 
     /**
@@ -137,10 +133,7 @@ public abstract class GroupWidget extends Widget {
      *         if no child of this {@code Widget} has that name.
      */
     public Widget findChildByName(final String name) {
-        final List<GroupWidget> groups = new ArrayList<GroupWidget>();
-        groups.add(this);
-
-        return findChildByNameInAllGroups(name, groups);
+        return super.findChildByName(name);
     }
 
     /**
@@ -148,7 +141,7 @@ public abstract class GroupWidget extends Widget {
      *         this instance.
      */
     public List<Widget> getChildren() {
-        return new ArrayList<Widget>(mChildren);
+        return super.getChildren();
     }
 
     /**
@@ -307,24 +300,7 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean removeChild(final Widget child,
             final GVRSceneObject childRootSceneObject, boolean preventLayout) {
-        final boolean removed = mChildren.remove(child);
-        if (removed) {
-            Log.d(TAG, "removeChild(): '%s' removed", child.getName());
-            if (childRootSceneObject.getParent() != getSceneObject()) {
-                Log.e(TAG,
-                      "removeChild(): '%s' is not a child of '%s' GVRSceneObject!",
-                      child.getName(), getName());
-            }
-            getSceneObject().removeChildObject(childRootSceneObject);
-            child.doOnDetached();
-            if (!preventLayout) {
-                layout();
-            }
-        } else {
-            Log.w(TAG, "removeChild(): '%s' is not a child of '%s'!",
-                  child.getName(), getName());
-        }
-        return removed;
+        return super.removeChild(child, childRootSceneObject, preventLayout);
     }
 
     /**
@@ -340,120 +316,17 @@ public abstract class GroupWidget extends Widget {
      */
     protected Widget createChild(final GVRContext context,
             GVRSceneObject sceneObjectChild) throws InstantiationException {
-        final Widget child = WidgetFactory.createWidget(sceneObjectChild);
-        return child;
+        return super.createChild(context, sceneObjectChild);
     }
 
     protected void createChildren(final GVRContext context,
             final GVRSceneObject sceneObject) throws InstantiationException {
-        Log.d(TAG, "GroupWidget(): creating children");
-        List<GVRSceneObject> children = sceneObject.getChildren();
-        Log.d(TAG, "GroupWidget(): child count: %d", children.size());
-        for (GVRSceneObject sceneObjectChild : children) {
-            Log.d(TAG, "GroupWidget(): creating child '%s'",
-                  sceneObjectChild.getName());
-            final Widget child = createChild(context, sceneObjectChild);
-            if (child != null) {
-                addChildInner(child);
-            }
-        }
+        super.createChildren(context, sceneObject);
     }
 
+    @Override
     protected abstract void layout();
 
-    private boolean addChildInner(final Widget child) {
-        return addChildInner(child, child.getSceneObject(), -1);
-    }
-
-    private boolean addChildInner(final Widget child,
-            final GVRSceneObject childRootSceneObject, int index) {
-        final boolean added = mChildren.indexOf(child) == -1;
-        if (added) {
-            if (index == -1 || index > mChildren.size()) {
-                mChildren.add(child);
-            } else {
-                mChildren.add(index, child);
-            }
-            if (child.getVisibility() == Visibility.VISIBLE) {
-                if (childRootSceneObject.getParent() != getSceneObject()) {
-                    getSceneObject().addChildObject(childRootSceneObject);
-                } else {
-                    Log.d(TAG,
-                          "addChildInner(): child '%s' already attached to this Group ('%s')",
-                          child.getName(), getName());
-                }
-            }
-            child.doOnAttached(this);
-        }
-        return added;
-    }
-
-    /**
-     * Performs a breadth-first search of the {@link GroupWidget GroupWidgets}
-     * in {@code groups} for a {@link Widget} with the specified
-     * {@link Widget#getName() name}.
-     *
-     * @param name
-     *            The name of the {@code Widget} to find.
-     * @param groups
-     *            The {@code GroupWidgets} to search.
-     * @return The first {@code Widget} with the specified name or {@code null}
-     *         if no child of {@code groups} has that name.
-     */
-    static private Widget findChildByNameInAllGroups(final String name,
-            List<GroupWidget> groups) {
-        if (groups.isEmpty()) {
-            return null;
-        }
-
-        ArrayList<GroupWidget> groupChildren = new ArrayList<GroupWidget>();
-        Widget result = null;
-        for (GroupWidget group : groups) {
-            // Search the immediate children of 'groups' for a match, rathering
-            // the children that are GroupWidgets themselves.
-            result = findChildByNameInOneGroup(name, group, groupChildren);
-            if (result != null) {
-                return result;
-            }
-        }
-
-        // No match; Search the children that are GroupWidgets.
-        return findChildByNameInAllGroups(name, groupChildren);
-    }
-
-    /**
-     * Searches the immediate children of {@link GroupWidget groupWidget} for a
-     * {@link Widget} with the specified {@link Widget#getName() name}.
-     * <p>
-     * Any non-matching {@code GroupWidget} children iterated prior to finding a
-     * match will be added to {@code groupChildren}. If no match is found, all
-     * immediate {@code GroupWidget} children will be added.
-     *
-     * @param name
-     *            The name of the {@code Widget} to find.
-     * @param groupWidget
-     *            The {@code GroupWidget} to search.
-     * @param groupChildren
-     *            Output array for non-matching {@code GroupWidget} children.
-     * @return The first {@code Widget} with the specified name or {@code null}
-     *         if no child of {@code groupWidget} has that name.
-     */
-    static private Widget findChildByNameInOneGroup(final String name,
-            final GroupWidget groupWidget, ArrayList<GroupWidget> groupChildren) {
-        Collection<Widget> children = groupWidget.mChildren;
-        for (Widget child : children) {
-            if (child.getName().equals(name)) {
-                return child;
-            }
-            if (child instanceof GroupWidget) {
-                // Save the child for the next level of search if needed.
-                groupChildren.add((GroupWidget) child);
-            }
-        }
-        return null;
-    }
-
-    private final List<Widget> mChildren = new ArrayList<Widget>();
-
+    @SuppressWarnings("unused")
     private static final String TAG = GroupWidget.class.getSimpleName();
 }

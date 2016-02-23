@@ -36,10 +36,11 @@ public class TextWidget extends Widget {
      *            The {@link GVRSceneObject} to wrap.
      * @param attributes
      *            A set of class-specific attributes.
+     * @throws InstantiationException 
      */
     @SuppressWarnings("deprecation")
     public TextWidget(GVRContext context, GVRSceneObject sceneObject,
-                      NodeEntry attributes) {
+                      NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
 
         String attribute = attributes.getProperty("text");

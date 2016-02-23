@@ -2,12 +2,21 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRTransformAnimation;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public abstract class TransformAnimation extends Animation {
 
     public TransformAnimation(Widget target, float duration) {
         super(target);
         mAdapter = new Adapter(target, duration);
+        mTarget = target;
+    }
+
+    protected TransformAnimation(final Widget target, final JSONObject params)
+            throws JSONException {
+        super(target);
+        mAdapter = new Adapter(target, (float) params.getDouble("duration"));
         mTarget = target;
     }
 

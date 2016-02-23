@@ -2,6 +2,8 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRScaleAnimation;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class ScaleAnimation extends TransformAnimation {
 
@@ -14,6 +16,22 @@ public class ScaleAnimation extends TransformAnimation {
             float scaleY, float scaleZ) {
         super(widget);
         mAdapter = new Adapter(widget, duration, scaleX, scaleY, scaleZ);
+    }
+
+    public ScaleAnimation(final Widget target, final JSONObject params)
+            throws JSONException {
+        super(target);
+        if (params.has("scale")) {
+            mAdapter = new Adapter(target,
+                    (float) params.getDouble("duration"),
+                    (float) params.getDouble("scale"));
+        } else {
+            mAdapter = new Adapter(target,
+                    (float) params.getDouble("duration"),
+                    (float) params.getDouble("scale_x"),
+                    (float) params.getDouble("scale_y"),
+                    (float) params.getDouble("scale_z"));
+        }
     }
 
     @Override
