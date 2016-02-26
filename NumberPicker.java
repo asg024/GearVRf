@@ -32,7 +32,7 @@ public class NumberPicker extends GVRSceneObject {
 
         mSelection = new TextWidget(gvrContext, width, selectionHeight, Integer.toString(mValue));
         mSelection.setGravity(Gravity.CENTER);
-        mSelection.setTextSize(120);
+        mSelection.setTextSize(20);
         mSelection.setTextColor(Color.BLACK);
         mSelection.setBackgroundColor(Color.WHITE);
 

@@ -124,63 +124,7 @@ public class TextWidget extends Widget {
 
     public TextWidget(GVRContext context, float width, float height,
             CharSequence text) {
-        super(context, new GVRTextViewSceneObject(context,
-                context.getActivity(), width, height, text));
-        mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
-    }
-
-    /**
-     * Shows a {@link TextView} on a {@linkplain Widget widget}.
-     *
-     * @param gvrContext
-     *            current {@link GVRContext}
-     * @param width
-     *            Widget height, in GVRF scene graph units.
-     *
-     *            Please note that your widget's size is independent of the size
-     *            of the internal {@code TextView}: a large mismatch between the
-     *            scene object's size and the view's size will result in
-     *            'spidery' or 'blocky' text.
-     *
-     * @param height
-     *            Widget width, in GVRF scene graph units.
-     * @param viewWidth
-     *            Width of the {@link TextView}
-     * @param viewHeight
-     *            Height of the {@link TextView}
-     */
-    public TextWidget(GVRContext context, float width, float height,
-            int viewWidth, int viewHeight) {
-        this(context, width, height, viewWidth, viewHeight, null);
-    }
-
-    /**
-     * Shows a {@link TextView} on a {@linkplain Widget widget}.
-     *
-     * @param gvrContext
-     *            current {@link GVRContext}
-     * @param width
-     *            Widget height, in GVRF scene graph units.
-     *
-     *            Please note that your widget's size, is independent of the
-     *            size of the internal {@code TextView}: a large mismatch
-     *            between the scene object's size and the view's size will
-     *            result in 'spidery' or 'blocky' text.
-     *
-     * @param height
-     *            Widget width, in GVRF scene graph units.
-     * @param viewWidth
-     *            Width of the {@link TextView}
-     * @param viewHeight
-     *            Height of the {@link TextView}
-     * @param text
-     *            {@link CharSequence} to show on the textView
-     */
-    public TextWidget(GVRContext context, float width, float height,
-            int viewWidth, int viewHeight, CharSequence text) {
-        super(context, new GVRTextViewSceneObject(context,
-                context.getActivity(), width, height, viewWidth, viewHeight,
-                text));
+        super(context, new GVRTextViewSceneObject(context, width, height, text));
         mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
     }
 
@@ -248,21 +192,4 @@ public class TextWidget extends Widget {
     }
 
     private final GVRTextViewSceneObject mTextViewSceneObject;
-
-    //temporary method until gvrtextviewso is either fixed or replaced; preferably the latter
-    public void destroy() {
-        //this is the only way to get rid of the instance right now - a drawFrameListener
-        //keeps it alive otherwise; thought about a dedicated method but I rather remove
-        //the whole class or find a way not to have to explicitly close it.
-        mTextViewSceneObject.setRefreshFrequency(GVRTextViewSceneObject.IntervalFrequency.NONE);
-
-        //to get both the widget (via its inner class instance) and the sceneObject out of
-        //the touchManager; weakhashmap in touchmgr wouldn't help as the key is held weakly
-        //(the sceneobject) but the inner class instance is held strongly; the inner class
-        //instance keeps the widget instance alive, and the widget instance has strong ref
-        //to the sceneobject - hence the need to explicitly call these two..
-        setTouchable(false);
-        setFocusEnabled(false);
-    }
-
 }
