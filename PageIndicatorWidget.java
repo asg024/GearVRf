@@ -103,10 +103,8 @@ public class PageIndicatorWidget extends LinearLayout {
                 try {
                     texture = futureTexture.get();
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 } catch (ExecutionException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
 

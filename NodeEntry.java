@@ -11,7 +11,6 @@ import java.util.Set;
 import org.gearvrf.GVRSceneObject;
 
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.utility.Utility;
 
 public class NodeEntry {
     public static final String KEY_NAME = "name";

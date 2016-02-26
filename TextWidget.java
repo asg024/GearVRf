@@ -8,6 +8,7 @@ import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import android.graphics.drawable.Drawable;
 import android.widget.TextView;
 
+@SuppressWarnings("deprecation")
 public class TextWidget extends Widget {
 
     /**
