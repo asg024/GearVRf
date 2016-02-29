@@ -1077,7 +1077,9 @@ public class Widget {
             if (mParent != null) {
                 switch (visibility) {
                 case VISIBLE:
-                    mParent.getSceneObject().addChildObject(mSceneObject);
+                    if (mSceneObject.getParent() != mParent.getSceneObject()) {
+                        mParent.getSceneObject().addChildObject(mSceneObject);
+                    }
                     break;
                 case HIDDEN:
                 case GONE:
