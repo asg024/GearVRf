@@ -53,11 +53,39 @@ public class RingList extends GroupWidget {
      * @param rho
      *            The radius of the {@code RingList}.
      */
+
     public RingList(final GVRContext gvrContext, float width, float height,
             final double rho) {
         super(gvrContext, width, height);
         mRho = rho;
     }
+
+    /**
+     * Construct a new {@code RingList} instance with the specified radius, page
+     * number, max number of items, incrementation of items per page.
+     * 
+     * @param gvrContext
+     *            The active {@link GVRContext}.
+     * @param rho
+     *            The radius of the {@code RingList}.
+     * @param pageNumber
+     *            The page number {@code RingList}.
+     * @param maxItemsDisplayed
+     *            The max number of items {@code RingList}.
+     * @param itemIncrementPerPage
+     *            The increment of items per page of the {@code RingList}.
+     */
+
+    public RingList(final GVRContext gvrContext, float width, float height,
+            final double rho, int pageNumber, int maxItemsDisplayed,
+            int itemIncrementPerPage) {
+        super(gvrContext, width, height);
+        mRho = rho;
+        mPageNumber = pageNumber;
+        mMaxItemsDisplayed = maxItemsDisplayed;
+        mItemIncrementPerPage = itemIncrementPerPage;
+    }
+
     /**
      * Set the {@link Adapter} for the {@code RingList}. The list will
      * immediately attempt to load data from the adapter.
@@ -74,11 +102,108 @@ public class RingList extends GroupWidget {
     public boolean getBalanceLayout() {
         return mBalanceLayout;
     }
-    
+
     public void setBalanceLayout(boolean balanceLayout) {
         if (balanceLayout != mBalanceLayout) {
             mBalanceLayout = balanceLayout;
             layout();
+        }
+    }
+
+    private int mPageNumber = 0;
+    private int mMaxItemsDisplayed = 0;
+    private int mItemIncrementPerPage;
+    private boolean isWrapAroundLayout = false;
+
+    /**
+     * Calculates the each angular width for each mItems
+     *
+     * @return array of floats each mItems' angular width
+     * 
+     */
+    private float[] calculateAngularWidth() {
+        final int numItems = mItems.size();
+        float[] angularWidths = new float[numItems];
+
+        float totalAngularWidths = 0;
+        for (int i = 0; i < numItems; ++i) {
+            angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems
+                    .get(i), mRho);
+            totalAngularWidths += angularWidths[i];
+            Log.d(TAG, "layout(): angular width at %d: %f", i, angularWidths[i]);
+        }
+
+        if (mItemPadding < 0) {
+            float uniformAngularWidth = (360.f - totalAngularWidths)
+                    / (float) mMaxItemsDisplayed;
+            for (int i = 0; i < numItems; ++i) {
+                angularWidths[i] = uniformAngularWidth;
+            }
+        }
+
+        return angularWidths;
+    }
+
+    /**
+     * Calculates the total angular width for mItems
+     *
+     * @return total angular width for mItems
+     *            
+     */
+    private float calculateTotalAngularWidth() {
+        float totalAngularWidths = 0;
+        for (int i = 0; i < mItems.size(); ++i) {
+            totalAngularWidths += LayoutHelpers.calculateAngularWidth(mItems
+                    .get(i), mRho);
+        }
+
+        return totalAngularWidths;
+    }
+
+    private void wrapAroundLayout() {
+        if (mItems.isEmpty()) {
+            Log.d(TAG, "wrapAroundLayout(): no items to layout!");
+            return;
+        }
+        final int numItems = mItems.size();
+
+        final float[] angularWidths = calculateAngularWidth();
+
+        int itemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = Math.min(numItems, mMaxItemsDisplayed);
+        int numItemsFirstHalf = (totalNumPerPage / 2);
+
+        float phi = 0;
+        for (int i = 0; i < numItemsFirstHalf; i++) {
+            int appListIndex = itemIndex + i;
+            if (appListIndex >= numItems) {
+                appListIndex = appListIndex % numItems;
+            }
+
+            mItems.get(appListIndex).setRotation(1, 0, 0, 0);
+            mItems.get(appListIndex).setPosition(0, 0, -(float) mRho);
+            mItems.get(appListIndex).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0,
+                                                           0);
+            phi -= angularWidths[appListIndex] + mItemPadding;
+
+        }
+
+        phi = angularWidths[0];
+
+        int numItemsSecondHalf = totalNumPerPage - numItemsFirstHalf;
+        int index = numItems - (numItemsSecondHalf - itemIndex);
+
+        for (int j = index + numItemsSecondHalf - 1; j >= index; j--) {
+            int appListIndex = j;
+            if (j >= numItems) {
+                appListIndex = j % numItems;
+            }
+
+            mItems.get(appListIndex).setRotation(1, 0, 0, 0);
+            mItems.get(appListIndex).setPosition(0, 0, -(float) mRho);
+            mItems.get(appListIndex).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0,
+                                                           0);
+            phi += angularWidths[appListIndex] - mItemPadding;
         }
     }
 
@@ -102,6 +227,20 @@ public class RingList extends GroupWidget {
             mItemPadding = itemPadding;
             layout();
         }
+    }
+
+    /**
+     * Set to enable wrap around layout {@code RingList}.
+     */
+    public void setWrapAroundLayout(boolean isWrapAround) {
+        isWrapAroundLayout = isWrapAround;
+    }
+
+    /**
+     * @return The boolean for wrap around layout {@code RingList}.
+     */
+    public boolean getWrapAroundLayout() {
+        return isWrapAroundLayout;
     }
 
     /**
@@ -139,17 +278,19 @@ public class RingList extends GroupWidget {
             return;
         }
 
+        if (isWrapAroundLayout) {
+            wrapAroundLayout();
+            return;
+        }
+
         final int numItems = mItems.size();
         Log.d(TAG, "layout(): laying out %d items", numItems);
-        final float[] angularWidths = new float[numItems];
-        float totalAngularWidths = (numItems - 1) * mItemPadding;
-        for (int i = 0; i < numItems; ++i) {
-            angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems.get(i), mRho);
-            totalAngularWidths += angularWidths[i];
-            Log.d(TAG, "layout(): angular width at %d: %f", i, angularWidths[i]);
-        }
+
         float phi = 0;
+        final float[] angularWidths = calculateAngularWidth();
+        
         if (mBalanceLayout && numItems > 0) {
+            float totalAngularWidths = calculateTotalAngularWidth();
             phi = (totalAngularWidths / 2) - (angularWidths[0] / 2);
         }
 
@@ -198,8 +339,7 @@ public class RingList extends GroupWidget {
         // Recycle any items we already have
 
         for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
-            mAdapter.getView(pos, mItems.get(pos),
-                    RingList.this);
+            mAdapter.getView(pos, mItems.get(pos), RingList.this);
         }
 
         // Get any additional items
@@ -232,10 +372,10 @@ public class RingList extends GroupWidget {
         for (int i = 0; i < children.size(); ++i) {
             Widget child = children.get(i);
             Log.d(TAG,
-                    "layout(): item at %d {%05.2f, %05.2f, %05.2f}, {%05.2f, %05.2f, %05.2f}",
-                    i, child.getPositionX(), child.getPositionY(),
-                    child.getPositionZ(), child.getRotationX(),
-                    child.getRotationY(), child.getRotationZ());
+                  "layout(): item at %d {%05.2f, %05.2f, %05.2f}, {%05.2f, %05.2f, %05.2f}",
+                  i, child.getPositionX(), child.getPositionY(),
+                  child.getPositionZ(), child.getRotationX(),
+                  child.getRotationY(), child.getRotationZ());
         }
         Log.d(TAG, "onChanged(): child objects: %d", this.getChildren().size());
     }
