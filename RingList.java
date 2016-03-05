@@ -121,7 +121,6 @@ public class RingList extends GroupWidget {
         mMaxItemsDisplayed = maxItemsDisplayed;
         mItemIncrementPerPage = itemIncrementPerPage;
     }
-
     /**
      * Set the {@link Adapter} for the {@code RingList}. The list will
      * immediately attempt to load data from the adapter.
@@ -133,6 +132,17 @@ public class RingList extends GroupWidget {
      */
     public void setAdapter(final Adapter adapter) {
         onChanged(adapter);
+    }
+
+    public void setPageNumber(int page) {
+        if (mPageNumber >= 0 && mPageNumber != page) {
+            mPageNumber = page;
+            layout();
+        }
+    }
+
+    public int getPageNumber() {
+        return mPageNumber;
     }
 
     public boolean getBalanceLayout() {
@@ -180,21 +190,6 @@ public class RingList extends GroupWidget {
         return angularWidths;
     }
 
-    /**
-     * Calculates the total angular width for mItems
-     *
-     * @return total angular width for mItems
-     *
-     */
-    private float calculateTotalAngularWidth() {
-        float totalAngularWidths = 0;
-        for (int i = 0; i < mItems.size(); ++i) {
-            totalAngularWidths += LayoutHelpers.calculateAngularWidth(mItems
-                    .get(i), mRho);
-        }
-
-        return totalAngularWidths;
-    }
 
     private void wrapAroundLayout() {
         if (mItems.isEmpty()) {
@@ -326,7 +321,10 @@ public class RingList extends GroupWidget {
         final float[] angularWidths = calculateAngularWidth();
 
         if (mBalanceLayout && numItems > 0) {
-            float totalAngularWidths = calculateTotalAngularWidth();
+            float totalAngularWidths = 0;
+            for (float i : angularWidths) {
+                totalAngularWidths += i;
+            }
             phi = (totalAngularWidths / 2) - (angularWidths[0] / 2);
         }
 
