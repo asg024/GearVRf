@@ -1686,7 +1686,7 @@ public class Widget {
                 FocusManager.get(mContext).register(getSceneObject(),
                                                     focusableImpl);
             } else {
-                Log.d("registerPickable(): '%s' is not focus-enabled", getName());
+                Log.d(TAG, "registerPickable(): '%s' is not focus-enabled", getName());
                 FocusManager.get(mContext).unregister(getSceneObject());
             }
         } else {
