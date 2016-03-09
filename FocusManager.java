@@ -151,7 +151,7 @@ public class FocusManager {
                             break;
                         }
 
-                        if (focusable != null && !focusable.isFocusEnabled()) {
+                        if (null == focusable || !focusable.isFocusEnabled()) {
                             continue;
                         }
 
