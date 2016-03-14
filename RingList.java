@@ -9,6 +9,7 @@ import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
 import android.database.DataSetObserver;
+import android.util.SparseBooleanArray;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
@@ -55,6 +56,7 @@ public class RingList extends GroupWidget {
     public boolean removeOnItemFocusListener(final OnItemFocusListener listener) {
         return mItemFocusListeners.remove(listener);
     }
+
     /**
      * Construct a new {@code RingList} instance with a {@link #setRho(double)
      * radius} of zero.
@@ -120,6 +122,7 @@ public class RingList extends GroupWidget {
         mMaxItemsDisplayed = maxItemsDisplayed;
         mItemIncrementPerPage = itemIncrementPerPage;
     }
+
     /**
      * Set the {@link Adapter} for the {@code RingList}. The list will
      * immediately attempt to load data from the adapter.
@@ -516,6 +519,7 @@ public class RingList extends GroupWidget {
             final Widget item = mAdapter.getView(pos, host.guestWidget, host);
             item.addFocusListener(mFocusListener);
             host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
+            updateItemSelection(item, mSelectedItems.get(pos));
         }
 
         // Get any additional items
@@ -536,6 +540,7 @@ public class RingList extends GroupWidget {
             mItems.add(host);
             Log.d(TAG, "onChanged(%s): added item at %d", getName(), pos);
             addChild(host, true);
+            updateItemSelection(item, mSelectedItems.get(pos));
         }
 
         // Trim unused items
@@ -611,10 +616,93 @@ public class RingList extends GroupWidget {
         long id;
     }
 
+    private static boolean MULTI_SELECTION_SUPPORTED = false;
+
+    /**
+     * Clear the selection of all the items if any.
+     */
+    public void clearSelection() {
+        int size = mSelectedItems.size();
+        for (int i = 0; i < size; i++) {
+            if (mSelectedItems.get(i)) {
+                updateItemSelection(i, false);
+            }
+        }
+        mSelectedItems.clear();
+    }
+
+    /**
+     * Select or deselect an item at position {@code pos}.
+     * 
+     * @param pos
+     *            item position
+     * @param select
+     *            operation to perform select or deselect.
+     * @return {@code true} if the requested operation is successful,
+     *         {@code false} otherwise.
+     */
+    public boolean setItemSelected(int pos, boolean select) {
+        int size = mSelectedItems.size();
+
+        if (select && MULTI_SELECTION_SUPPORTED == false) {
+            for (int i = 0; i < size; i++) {
+                if (mSelectedItems.get(i)) {
+                    // Deselect any selected item other than the item at 'pos'
+                    if (i != pos) {
+                        mSelectedItems.put(i, false);
+                        updateItemSelection(i, false);
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (mSelectedItems.get(pos) != select) {
+            mSelectedItems.put(pos, select);
+            updateItemSelection(pos, select);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void updateItemSelection(int position, boolean select) {
+        Widget widget = null;
+
+        for (ListItemHostWidget w : mItems) {
+            if (w.position == position) {
+                widget = w.guestWidget;
+                break;
+            }
+        }
+
+        if (widget != null && widget.isSelected() != select) {
+            widget.setSelected(select);
+        }
+    }
+
+    private void updateItemSelection(Widget widget, boolean select) {
+        if (widget != null && widget.isSelected() != select) {
+            widget.setSelected(select);
+        }
+    }
+
+    /**
+     * Check whether the item at position {@code pos} is selected.
+     * 
+     * @param pos
+     *            item position
+     * @return {@code true} if the item is selected, {@code false} otherwise.
+     */
+    public boolean isSelected(int pos) {
+        return mSelectedItems.get(pos);
+    }
+
     private Adapter mAdapter;
     private float mItemPadding;
     private boolean mProportionalItemPadding;
     private List<ListItemHostWidget> mItems = new ArrayList<ListItemHostWidget>();
+    SparseBooleanArray mSelectedItems = new SparseBooleanArray();
     private double mRho;
     private DataSetObserver mObserver = new DataSetObserver() {
         @Override

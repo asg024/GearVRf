@@ -236,6 +236,10 @@ public class Widget {
         setFocusEnabled(attribute != null && hasRenderData
                 && attribute.compareToIgnoreCase("false") != 0);
 
+        attribute = attributes.getProperty("selected");
+        setSelected(attribute != null && hasRenderData
+                && attribute.compareToIgnoreCase("false") != 0);
+
         attribute = attributes.getProperty("visibility");
         setVisibility(attribute != null ? Visibility.valueOf(attribute
                 .toUpperCase(Locale.ENGLISH)) : Visibility.VISIBLE);
@@ -251,11 +255,11 @@ public class Widget {
 
     private static final String pattern = Widget.class.getSimpleName()
             + "name : %s size = (%f, %f, %f) \n"
-            + "touchable = %b focus_enabled = %b Visibile = %s";
+            + "touchable = %b focus_enabled = %b Visibile = %s selected = %b";
 
     public String toString() {
         return String.format(pattern, getName(), getWidth(), getHeight(), getDepth(),
-                             mIsTouchable, mFocusEnabled, mVisibility);
+                             mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
     }
 
     public Widget(final GVRContext context, final float width,
@@ -1883,7 +1887,7 @@ public class Widget {
     }
 
     private enum Properties {
-        touchable, focusenabled, visibility, states, levels, level
+        touchable, focusenabled, visibility, states, levels, level, selected
     }
 
     private void setupMetadata() throws JSONException, NoSuchMethodException {
@@ -1893,6 +1897,7 @@ public class Widget {
 
             mIsTouchable = optBoolean(metaData, Properties.touchable, mIsTouchable);
             mFocusEnabled = optBoolean(metaData, Properties.focusenabled, mFocusEnabled);
+            mIsSelected = optBoolean(metaData, Properties.selected, mIsSelected);
             Visibility visibility = optEnum(metaData, Properties.visibility, mVisibility);
             setVisibility(visibility);
 
