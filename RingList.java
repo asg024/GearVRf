@@ -1,7 +1,9 @@
 package com.samsung.smcl.vr.widgets;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
@@ -20,6 +22,40 @@ import com.samsung.smcl.utility.Utility;
 // TODO: Selection
 public class RingList extends GroupWidget {
 
+    public interface OnItemFocusListener {
+        public void onFocus(int position, boolean focused);
+        public void onLongFocus(int position);
+    }
+
+    private final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<OnItemFocusListener>();
+
+    /**
+     * Add a listener for {@linkplain OnItemFocusListener#onFocus(boolean) focus}
+     * and {@linkplain OnItemFocusListener#onLongFocus() long focus} notifications
+     * for this object.
+     *
+     * @param listener
+     *            An implementation of {@link OnItemFocusListener}.
+     * @return {@code true} if the listener was successfully registered,
+     *         {@code false} if the listener is already registered.
+     */
+    public boolean addOnItemFocusListener(final OnItemFocusListener listener) {
+        return mItemFocusListeners.add(listener);
+    }
+
+    /**
+     * Remove a previously {@linkplain #addOnItemFocusListener(OnItemFocusListener)
+     * registered} focus notification {@linkplain OnItemFocusListener listener}.
+     *
+     * @param listener
+     *            An implementation of {@link OnItemFocusListener}
+     * @return {@code true} if the listener was successfully unregistered,
+     *         {@code false} if the specified listener was not previously
+     *         registered with this object.
+     */
+    public boolean removeOnItemFocusListener(final OnItemFocusListener listener) {
+        return mItemFocusListeners.remove(listener);
+    }
     /**
      * Construct a new {@code RingList} instance with a {@link #setRho(double)
      * radius} of zero.
@@ -63,7 +99,7 @@ public class RingList extends GroupWidget {
     /**
      * Construct a new {@code RingList} instance with the specified radius, page
      * number, max number of items, incrementation of items per page.
-     * 
+     *
      * @param gvrContext
      *            The active {@link GVRContext}.
      * @param rho
@@ -119,7 +155,7 @@ public class RingList extends GroupWidget {
      * Calculates the each angular width for each mItems
      *
      * @return array of floats each mItems' angular width
-     * 
+     *
      */
     private float[] calculateAngularWidth() {
         final int numItems = mItems.size();
@@ -148,7 +184,7 @@ public class RingList extends GroupWidget {
      * Calculates the total angular width for mItems
      *
      * @return total angular width for mItems
-     *            
+     *
      */
     private float calculateTotalAngularWidth() {
         float totalAngularWidths = 0;
@@ -288,7 +324,7 @@ public class RingList extends GroupWidget {
 
         float phi = 0;
         final float[] angularWidths = calculateAngularWidth();
-        
+
         if (mBalanceLayout && numItems > 0) {
             float totalAngularWidths = calculateTotalAngularWidth();
             phi = (totalAngularWidths / 2) - (angularWidths[0] / 2);
@@ -339,7 +375,8 @@ public class RingList extends GroupWidget {
         // Recycle any items we already have
 
         for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
-            mAdapter.getView(pos, mItems.get(pos), RingList.this);
+            Widget w = mAdapter.getView(pos, mItems.get(pos), RingList.this);
+            w.addFocusListener(mFocusListener);
         }
 
         // Get any additional items
@@ -350,6 +387,7 @@ public class RingList extends GroupWidget {
                 if (item == null) {
                     break;
                 }
+                item.addFocusListener(mFocusListener);
             } catch (Exception e) {
                 e.printStackTrace();
                 break;
@@ -379,6 +417,34 @@ public class RingList extends GroupWidget {
         }
         Log.d(TAG, "onChanged(): child objects: %d", this.getChildren().size());
     }
+
+    private OnFocusListener mFocusListener = new OnFocusListener() {
+        @Override
+        public boolean onFocus(final boolean focused, final Widget widget) {
+            Log.d(TAG, "onFocus widget= %s focused [%b]", widget, focused);
+            int position = mItems.indexOf(widget);
+            if (position >= 0) {
+                widget.onFocus(focused);
+                for (OnItemFocusListener listener : mItemFocusListeners) {
+                    listener.onFocus(position, focused);
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onLongFocus(Widget widget) {
+            Log.d(TAG, "onLongFocus widget= %s", widget);
+            int position = mItems.indexOf(widget);
+            if (position >= 0) {
+                widget.onLongFocus();
+                for (OnItemFocusListener listener : mItemFocusListeners) {
+                    listener.onLongFocus(position);
+                }
+            }
+            return true;
+        }
+    };
 
     private Adapter mAdapter;
     private float mItemPadding;
