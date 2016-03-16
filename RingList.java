@@ -424,12 +424,11 @@ public class RingList extends GroupWidget {
             Log.d(TAG, "onFocus widget= %s focused [%b]", widget, focused);
             int position = mItems.indexOf(widget);
             if (position >= 0) {
-                widget.onFocus(focused);
                 for (OnItemFocusListener listener : mItemFocusListeners) {
                     listener.onFocus(position, focused);
                 }
             }
-            return true;
+            return false;
         }
 
         @Override
@@ -437,12 +436,11 @@ public class RingList extends GroupWidget {
             Log.d(TAG, "onLongFocus widget= %s", widget);
             int position = mItems.indexOf(widget);
             if (position >= 0) {
-                widget.onLongFocus();
                 for (OnItemFocusListener listener : mItemFocusListeners) {
                     listener.onLongFocus(position);
                 }
             }
-            return true;
+            return false;
         }
     };
 
