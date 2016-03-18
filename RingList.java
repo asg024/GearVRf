@@ -145,21 +145,19 @@ public class RingList extends GroupWidget {
         return mPageNumber;
     }
 
-    public boolean getBalanceLayout() {
-        return mBalanceLayout;
-    }
-
-    public void setBalanceLayout(boolean balanceLayout) {
-        if (balanceLayout != mBalanceLayout) {
-            mBalanceLayout = balanceLayout;
-            layout();
-        }
-    }
-
     private int mPageNumber = 0;
     private int mMaxItemsDisplayed = 0;
-    private int mItemIncrementPerPage;
-    private boolean isWrapAroundLayout = false;
+    private int mItemIncrementPerPage = 0;
+    private LayoutType layoutType = LayoutType.LEFT_ORDER;
+    private int mAroundItemAtId = -1;
+
+    public enum LayoutType {
+        LEFT_ORDER,
+        BALANCED,
+        WRAP_AROUND_CENTER,
+        AROUND_ITEM_AT, // can take the parameter int mAroundItemAtId
+        AROUND_SELECTED_ITEM,
+    }
 
     /**
      * Calculates the each angular width for each mItems
@@ -179,29 +177,54 @@ public class RingList extends GroupWidget {
             Log.d(TAG, "layout(): angular width at %d: %f", i, angularWidths[i]);
         }
 
-        if (mItemPadding < 0) {
+        if (mProportionalItemPadding) {
+            int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() : mMaxItemsDisplayed;
             float uniformAngularWidth = (360.f - totalAngularWidths)
-                    / (float) mMaxItemsDisplayed;
+                    / (float) totalNumPerPage;
             for (int i = 0; i < numItems; ++i) {
-                angularWidths[i] = uniformAngularWidth;
+                angularWidths[i] += uniformAngularWidth;
+                Log.d(TAG, "layout(): angular uniform width at %d: %f", i, angularWidths[i]);
             }
         }
 
         return angularWidths;
     }
 
+    private void layoutAroundItemAt(final int position, final float[] angularWidths,
+            final float[] prevItemRotationValues) {
+        int firstItemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() :
+            Math.min(mItems.size(), mMaxItemsDisplayed);
+        int lastItemIndex = firstItemIndex + totalNumPerPage - 1;
 
-    private void wrapAroundLayout() {
-        if (mItems.isEmpty()) {
-            Log.d(TAG, "wrapAroundLayout(): no items to layout!");
-            return;
+        float phi = 0;
+
+        if (prevItemRotationValues != null) {
+            int anchorAt = position;
+
+            if (position == -1 || position > lastItemIndex) {
+                anchorAt = lastItemIndex;
+            } else if (position < firstItemIndex) {
+                anchorAt = firstItemIndex;
+            }
+
+            for (int i = Math.min(anchorAt, prevItemRotationValues.length); --i >= firstItemIndex;) {
+                phi += (angularWidths[i] + mItemPadding) - prevItemRotationValues[i];
+            }
         }
+
+        for (int i = firstItemIndex; i <= lastItemIndex; i++) {
+            layoutItem(i, mItems.get(i), phi);
+            phi -= angularWidths[i] + mItemPadding;
+        }
+    }
+
+    private void wrapAroundCenterLayout(final float[] angularWidths) {
         final int numItems = mItems.size();
 
-        final float[] angularWidths = calculateAngularWidth();
-
         int itemIndex = mPageNumber * mItemIncrementPerPage;
-        int totalNumPerPage = Math.min(numItems, mMaxItemsDisplayed);
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? numItems :
+            Math.min(numItems, mMaxItemsDisplayed);
         int numItemsFirstHalf = (totalNumPerPage / 2);
 
         float phi = 0;
@@ -210,15 +233,10 @@ public class RingList extends GroupWidget {
             if (appListIndex >= numItems) {
                 appListIndex = appListIndex % numItems;
             }
-
-            mItems.get(appListIndex).setRotation(1, 0, 0, 0);
-            mItems.get(appListIndex).setPosition(0, 0, -(float) mRho);
-            mItems.get(appListIndex).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0,
-                                                           0);
+            layoutItem(appListIndex, mItems.get(appListIndex), phi);
             phi -= angularWidths[appListIndex] + mItemPadding;
 
         }
-
         phi = angularWidths[0];
 
         int numItemsSecondHalf = totalNumPerPage - numItemsFirstHalf;
@@ -229,13 +247,54 @@ public class RingList extends GroupWidget {
             if (j >= numItems) {
                 appListIndex = j % numItems;
             }
-
-            mItems.get(appListIndex).setRotation(1, 0, 0, 0);
-            mItems.get(appListIndex).setPosition(0, 0, -(float) mRho);
-            mItems.get(appListIndex).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0,
-                                                           0);
+            layoutItem(appListIndex, mItems.get(appListIndex), phi);
             phi += angularWidths[appListIndex] - mItemPadding;
         }
+    }
+
+    private void leftLayout(final float[] angularWidths) {
+        float phi = 0;
+
+        int firstItemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() :
+            Math.min(mItems.size(), mMaxItemsDisplayed);
+
+        int lastItemIndex = firstItemIndex + totalNumPerPage - 1;
+
+        for (int i = firstItemIndex; i <= lastItemIndex; ++i) {
+            layoutItem(i, mItems.get(i), phi);
+            phi -= angularWidths[i] + mItemPadding;
+        }
+    }
+
+    private void balancedLayout(final float[] angularWidths) {
+        int firstItemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() :
+            Math.min(mItems.size(), mMaxItemsDisplayed);
+
+        int lastItemIndex = firstItemIndex + totalNumPerPage - 1;
+
+        float totalAngularWidths = 0;
+        for (int i = firstItemIndex; i <= lastItemIndex; ++i) {
+            totalAngularWidths +=  angularWidths[i];
+        }
+
+        float phi = (totalAngularWidths + mItemPadding * (mItems.size() - 1)) / 2 - (angularWidths[0] / 2);
+
+        Log.d(TAG, "balancedLayout : firstItemIndex %d lasttItemIndex %d ", firstItemIndex, lastItemIndex);
+        for (int i = firstItemIndex; i <= lastItemIndex; ++i) {
+            layoutItem(i, mItems.get(i), phi);
+            phi -= angularWidths[i] + mItemPadding;
+        }
+    }
+
+
+    private void layoutItem(final int index,  final Widget item, final float phi) {
+        Log.d(TAG, "layout(%s): phi [%f]", item.getName(), phi);
+        item.setRotation(1, 0, 0, 0);
+        item.setPosition(0, 0, -(float) mRho);
+        item.rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
+        mItemRotationValues[index] = phi;
     }
 
     /**
@@ -256,22 +315,51 @@ public class RingList extends GroupWidget {
     public void setItemPadding(final float itemPadding) {
         if (Utility.equal(mItemPadding, itemPadding) == false) {
             mItemPadding = itemPadding;
+            mProportionalItemPadding = false;
             layout();
         }
     }
 
-    /**
-     * Set to enable wrap around layout {@code RingList}.
-     */
-    public void setWrapAroundLayout(boolean isWrapAround) {
-        isWrapAroundLayout = isWrapAround;
+    public void enableProportionalItemPadding(final boolean enable) {
+        if (mProportionalItemPadding != enable) {
+            mProportionalItemPadding = enable;
+            if (enable) {
+                mItemPadding = 0;
+            }
+            layout();
+        }
     }
 
-    /**
-     * @return The boolean for wrap around layout {@code RingList}.
-     */
-    public boolean getWrapAroundLayout() {
-        return isWrapAroundLayout;
+    public void setLayoutType(LayoutType type, Object... parameters) {
+        boolean relayout = layoutType != type;
+        // reset layout parameters
+        mAroundItemAtId = -1;
+
+        layoutType = type;
+        switch (type) {
+            case AROUND_ITEM_AT:
+                // set around item Id
+                int id  = parameters == null || parameters.length == 0 ?
+                        0 : (Integer)parameters[0];
+                relayout = mAroundItemAtId != id;
+                mAroundItemAtId = id;
+
+                break;
+            // no parameters
+            case LEFT_ORDER:
+            case BALANCED:
+            case WRAP_AROUND_CENTER:
+            case AROUND_SELECTED_ITEM:
+                break;
+        }
+
+        if (relayout) {
+            layout();
+        }
+    }
+
+    public LayoutType getLayoutType() {
+        return layoutType;
     }
 
     /**
@@ -302,38 +390,85 @@ public class RingList extends GroupWidget {
         }
     }
 
+    /**
+     * Method getItemRotation
+     *
+     * @param position:  the position in the dataset.
+     * @return  the rotation ("phi") of the view displaying the data at position;
+     *          if that data is not being displayed, return Float.NaN.
+     */
+    public float getItemRotation(int position) {
+        if (position < 0 || position >= mItems.size()) {
+            return Float.NaN;
+        }
+        if (mItemRotationValues == null) {
+            Log.e(TAG, "Error: layout() has not been called!");
+            layout();
+        }
+        return mItemRotationValues[position];
+    }
+
+    /**
+     * getSelectedItemRotation()
+     *
+     * A convenience method for calling getItemRotation() with the position of the
+     * selected data item. If no item is selected, return Float.NaN.
+     */
+    public float getSelectedItemRotation() {
+        //TODO: support multiple selections
+        int selectionIndex = getSelectedItemId();
+        return selectionIndex != -1 ? getItemRotation(getSelectedItemId()) : Float.NaN;
+    }
+
+    private int getSelectedItemId() {
+        //TODO: support multiple selections
+        int selectionIndex = -1;
+        for (int i = 0; i < mItems.size(); i++) {
+            Widget w = mItems.get(i);
+            if (w != null && w.isSelected()) {
+                selectionIndex = i;
+                break;
+            }
+        }
+        return selectionIndex;
+    }
+
+    private float[] mItemRotationValues = null;
+
     @Override
     protected void layout() {
-        if (mItems.isEmpty()) {
-            Log.d(TAG, "layout(): no items to layout!");
-            return;
-        }
-
-        if (isWrapAroundLayout) {
-            wrapAroundLayout();
-            return;
-        }
-
-        final int numItems = mItems.size();
-        Log.d(TAG, "layout(): laying out %d items", numItems);
-
-        float phi = 0;
         final float[] angularWidths = calculateAngularWidth();
+        final int numItems = mItems.size();
 
-        if (mBalanceLayout && numItems > 0) {
-            float totalAngularWidths = 0;
-            for (float i : angularWidths) {
-                totalAngularWidths += i;
+        if (numItems == 0) {
+            Log.d(TAG, "layout(): no items to layout!");
+        } else {
+            Log.d(TAG, "layout(): laying out %d items", numItems);
+
+            float[] prevItemRotationValues = mItemRotationValues;
+            mItemRotationValues = new float[numItems];
+
+            switch (layoutType) {
+                case WRAP_AROUND_CENTER:
+                    wrapAroundCenterLayout(angularWidths);
+                    break;
+                case AROUND_ITEM_AT:
+                    layoutAroundItemAt(mAroundItemAtId, angularWidths, prevItemRotationValues);
+                    break;
+                case AROUND_SELECTED_ITEM:
+                    int aroundItemAtId = getSelectedItemId();
+                    if (aroundItemAtId >= 0) {
+                        layoutAroundItemAt(aroundItemAtId, angularWidths, prevItemRotationValues);
+                    }
+                    break;
+                case BALANCED:
+                    balancedLayout(angularWidths);
+                    break;
+                case LEFT_ORDER:
+                default:
+                    leftLayout(angularWidths);
+                    break;
             }
-            phi = (totalAngularWidths / 2) - (angularWidths[0] / 2);
-        }
-
-        for (int i = 0; i < numItems; ++i) {
-            Log.d(TAG, "layout(%s): phi at %d: %f", getName(), i, phi);
-            mItems.get(i).setRotation(1, 0, 0, 0);
-            mItems.get(i).setPosition(0, 0, -(float) mRho);
-            mItems.get(i).rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
-            phi -= angularWidths[i] + mItemPadding;
         }
     }
 
@@ -444,9 +579,9 @@ public class RingList extends GroupWidget {
 
     private Adapter mAdapter;
     private float mItemPadding;
+    private boolean mProportionalItemPadding;
     private List<Widget> mItems = new ArrayList<Widget>();
     private double mRho;
-    private boolean mBalanceLayout;
     private DataSetObserver mObserver = new DataSetObserver() {
         @Override
         public void onChanged() {
