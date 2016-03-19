@@ -13,7 +13,6 @@ import android.database.DataSetObserver;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
 
-// TODO: Add "holder" scene objects: these are what we will translate & rotate for layout
 // TODO: Add rotate-to-item
 // TODO: Split layout calculations out into main or background thread
 // TODO: Recycle views
@@ -172,7 +171,7 @@ public class RingList extends GroupWidget {
         float totalAngularWidths = 0;
         for (int i = 0; i < numItems; ++i) {
             angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems
-                    .get(i), mRho);
+                    .get(i).guestWidget, mRho);
             totalAngularWidths += angularWidths[i];
             Log.d(TAG, "layout(): angular width at %d: %f", i, angularWidths[i]);
         }
@@ -508,26 +507,30 @@ public class RingList extends GroupWidget {
         // Recycle any items we already have
 
         for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
-            Widget w = mAdapter.getView(pos, mItems.get(pos), RingList.this);
-            w.addFocusListener(mFocusListener);
+            final ListItemHostWidget host = mItems.get(pos);
+            final Widget item = mAdapter.getView(pos, host.guestWidget, host);
+            item.addFocusListener(mFocusListener);
+            host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
         }
 
         // Get any additional items
         for (; pos < itemCount; ++pos) {
             Widget item = null;
+            ListItemHostWidget host = makeHost(getGVRContext());
             try {
-                item = mAdapter.getView(pos, null, RingList.this);
+                item = mAdapter.getView(pos, null, host);
                 if (item == null) {
                     break;
                 }
                 item.addFocusListener(mFocusListener);
+                host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
             } catch (Exception e) {
                 e.printStackTrace();
                 break;
             }
-            mItems.add(item);
+            mItems.add(host);
             Log.d(TAG, "onChanged(): added item at %d", pos);
-            addChild(item, true);
+            addChild(host, true);
         }
 
         // Trim unused items
@@ -577,10 +580,44 @@ public class RingList extends GroupWidget {
         }
     };
 
+    private ListItemHostWidget makeHost(GVRContext gvrContext) {
+        ListItemHostWidget host = new ListItemHostWidget(gvrContext);
+        return host;
+    }
+
+    private class ListItemHostWidget extends AbsoluteLayout {
+        public ListItemHostWidget(GVRContext gvrContext) {
+            super(gvrContext, 0, 0);
+            setTouchable(false);
+            setFocusEnabled(false);
+        }
+
+        public void setHostedWidget(Widget guest, int pos, long id) {
+            Log.d(TAG, "setHostedWidget(): hosting %s, same: %b",
+                  guest == null ? "<null>" : guest.getName(),
+                  guest == guestWidget);
+            if (guest != guestWidget) {
+                if (guestWidget != null) {
+                    removeChild(guestWidget, guestWidget.getSceneObject(), true);
+                }
+                guestWidget = guest;
+                if (guestWidget != null) {
+                    addChildInner(guestWidget, guestWidget.getSceneObject(), -1);
+                }
+            }
+            position = pos;
+            this.id = id;
+        }
+
+        Widget guestWidget;
+        int position;
+        long id;
+    }
+
     private Adapter mAdapter;
     private float mItemPadding;
     private boolean mProportionalItemPadding;
-    private List<Widget> mItems = new ArrayList<Widget>();
+    private List<ListItemHostWidget> mItems = new ArrayList<ListItemHostWidget>();
     private double mRho;
     private DataSetObserver mObserver = new DataSetObserver() {
         @Override
