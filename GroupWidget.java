@@ -5,8 +5,6 @@ import java.util.List;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
-
-
 public abstract class GroupWidget extends Widget {
 
     /**
@@ -191,11 +189,7 @@ public abstract class GroupWidget extends Widget {
      */
     protected boolean addChild(final Widget child,
             final GVRSceneObject childRootSceneObject, final int index) {
-        final boolean added = addChildInner(child, childRootSceneObject, index);
-        if (added) {
-            layout();
-        }
-        return added;
+        return addChild(child, childRootSceneObject, index, false);
     }
 
     /**
@@ -274,7 +268,7 @@ public abstract class GroupWidget extends Widget {
             boolean preventLayout) {
         final boolean added = addChildInner(child, childRootSceneObject, index);
         if (added && !preventLayout) {
-            layout();
+            requestLayout();
         }
         return added;
     }
@@ -325,8 +319,8 @@ public abstract class GroupWidget extends Widget {
     }
 
     @Override
-    protected abstract void layout();
-
+    protected abstract void onLayout();
+    
     @SuppressWarnings("unused")
     private static final String TAG = GroupWidget.class.getSimpleName();
 }

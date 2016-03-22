@@ -101,7 +101,7 @@ public class LinearLayout extends GroupWidget {
     public void setOrientation(final Orientation orientation) {
         if (orientation != mOrientation) {
             mOrientation = orientation;
-            layout();
+            requestLayout();
         }
     }
 
@@ -121,11 +121,15 @@ public class LinearLayout extends GroupWidget {
      * change that.
      */
     @Override
-    protected void layout() {
+    protected void onLayout() {
         Log.d(TAG, "layout() called (%s)", getName());
         List<Widget> children = getChildren();
         if (children.isEmpty()) {
             return;
+        }
+
+        for (Widget child : children) {
+            child.layout();
         }
 
         final int xFactor;

@@ -63,7 +63,10 @@ public class PageIndicatorWidget extends LinearLayout {
             buttonWidget.setName(Integer.toString(i));
             buttonWidget.setTouchable(true);
             buttonWidget.addTouchListener(listener);
-            this.addChild(buttonWidget);
+            this.addChild(buttonWidget, true);
+        }
+        if (numIndicators > 0) {
+            requestLayout();
         }
     }
 

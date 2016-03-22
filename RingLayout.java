@@ -82,7 +82,7 @@ public class RingLayout extends LinearLayout {
     public void setRadius(final float radius) {
         if (!Utility.equal(radius, mRadius)) {
             mRadius = radius;
-            layout();
+            requestLayout();
         }
     }
 

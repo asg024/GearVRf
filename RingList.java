@@ -136,7 +136,7 @@ public class RingList extends GroupWidget {
     public void setPageNumber(int page) {
         if (mPageNumber >= 0 && mPageNumber != page) {
             mPageNumber = page;
-            layout();
+            requestLayout();
         }
     }
 
@@ -315,7 +315,7 @@ public class RingList extends GroupWidget {
         if (Utility.equal(mItemPadding, itemPadding) == false) {
             mItemPadding = itemPadding;
             mProportionalItemPadding = false;
-            layout();
+            requestLayout();
         }
     }
 
@@ -325,7 +325,7 @@ public class RingList extends GroupWidget {
             if (enable) {
                 mItemPadding = 0;
             }
-            layout();
+            requestLayout();
         }
     }
 
@@ -353,7 +353,7 @@ public class RingList extends GroupWidget {
         }
 
         if (relayout) {
-            layout();
+            requestLayout();
         }
     }
 
@@ -377,7 +377,7 @@ public class RingList extends GroupWidget {
     public void setRho(final double rho) {
         if (Utility.equal(mRho, rho) == false) {
             mRho = rho;
-            layout();
+            requestLayout();
         }
     }
 
@@ -402,7 +402,8 @@ public class RingList extends GroupWidget {
         }
         if (mItemRotationValues == null) {
             Log.e(TAG, "Error: layout() has not been called!");
-            layout();
+            requestLayout();
+            return Float.NaN;
         }
         return mItemRotationValues[position];
     }
@@ -435,7 +436,11 @@ public class RingList extends GroupWidget {
     private float[] mItemRotationValues = null;
 
     @Override
-    protected void layout() {
+    protected void onLayout() {
+        for (Widget child : getChildren()) {
+            child.layout();
+        }
+
         final float[] angularWidths = calculateAngularWidth();
         final int numItems = mItems.size();
 
@@ -540,7 +545,8 @@ public class RingList extends GroupWidget {
             removeChild(item, true);
         }
 
-        layout();
+        Log.d(TAG, "onChanged(%s): requesting layout", getName());
+        requestLayout();
 
     }
 
@@ -594,6 +600,7 @@ public class RingList extends GroupWidget {
                 if (guestWidget != null) {
                     addChildInner(guestWidget, guestWidget.getSceneObject(), -1);
                 }
+                requestLayout();
             }
             position = pos;
             this.id = id;

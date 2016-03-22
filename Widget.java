@@ -27,6 +27,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.MotionEvent;
 
@@ -200,6 +201,7 @@ public class Widget {
               "Widget constructor: %s width = %f height = %f depth = %f",
               sceneObject.getName(), getWidth(), getHeight(), getDepth());
         mTransformCache = new TransformCache(getTransform());
+        requestLayout();
     }
 
     /**
@@ -1288,7 +1290,7 @@ public class Widget {
                 }
                 if (mVisibility == Visibility.GONE
                         || visibility == Visibility.GONE) {
-                    mParent.layout();
+                    mParent.requestLayout();
                 }
             }
             mVisibility = visibility;
@@ -1303,8 +1305,33 @@ public class Widget {
         return mVisibility;
     }
 
+    /**
+     * Call this method to notify ancestors of this {@link Widget} that its
+     * dimensions, position, or orientation have been altered so that they can
+     * respond by running {@link #layout()} if needed.
+     */
+    public void requestLayout() {
+        mLayoutRequested = true;
+        Log.d(TAG,
+              "requestLayout(): for %s; mParent == null: %b, mParent.isLayoutRequested: %b",
+              getName(), mParent == null, mParent != null && mParent.isLayoutRequested());
+        if (mParent != null && !mParent.isLayoutRequested()) {
+            Log.d(TAG, "requestLayout() requesting");
+            mParent.requestLayout();
+//            new RuntimeException().printStackTrace();
+        }
+    }
+
     public boolean isChanged() {
         return mChanged;
+    }
+
+    public boolean isInLayout() {
+        return mParent != null && mParent.isInLayout();
+    }
+
+    public boolean isLayoutRequested() {
+        return mLayoutRequested;
     }
 
     protected Widget(final GVRContext context, final GVRMesh mesh) {
@@ -1344,6 +1371,19 @@ public class Widget {
     protected final boolean isGLThread() {
         final Thread glThread = sGLThread.get();
         return glThread != null && glThread.equals(Thread.currentThread());
+    }
+
+    /**
+     * Does layout on the {@link Widget}. If you override this method and don't
+     * call {@code super}, bad things will almost certainly happen.
+     */
+    @SuppressLint("WrongCall")
+    protected void layout() {
+        if (mChanged || mLayoutRequested) {
+            onLayout();
+        }
+        mLayoutRequested = false;
+        mChanged = false;
     }
 
     /**
@@ -1478,7 +1518,11 @@ public class Widget {
     }
 
     /**
-     * ???
+     * Hook method for handling layout events. For {@link GroupWidget} in
+     * particular, this is where layout of children is done.
+     * {@code GroupWidgets} should call {@link #layout()} on their children,
+     * most likely before performing their own layout <em>of</em> their
+     * children.
      */
     protected void onLayout() {
 
@@ -1608,7 +1652,7 @@ public class Widget {
             getSceneObject().removeChildObject(childRootSceneObject);
             child.doOnDetached();
             if (!preventLayout) {
-                layout();
+                requestLayout();
             }
         } else {
             Log.w(TAG, "removeChild(): '%s' is not a child of '%s'!",
@@ -1627,11 +1671,6 @@ public class Widget {
     /* package */
     GVRRenderData getRenderData() {
         return mSceneObject.getRenderData();
-    }
-
-    /* package */
-    void layout() {
-        
     }
 
     /**
@@ -1932,6 +1971,7 @@ public class Widget {
 
     private final TransformCache mTransformCache;
     private BoundingBox mBoundingBox;
+    private boolean mLayoutRequested;
     private boolean mChanged;
     private boolean mIsAttached;
     private boolean mIsCreated;

@@ -20,7 +20,6 @@ public class AbsoluteLayout extends GroupWidget {
         super(context, sceneObject);
     }
 
-
     public AbsoluteLayout(GVRContext context, GVRSceneObject sceneObject,
                           NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
@@ -39,6 +38,9 @@ public class AbsoluteLayout extends GroupWidget {
     }
 
     @Override
-    protected void layout() {
+    protected void onLayout() {
+        for (Widget child : getChildren()) {
+            child.layout();
+        }
     }
 }
