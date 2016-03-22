@@ -316,6 +316,26 @@ public class Widget {
     }
 
     /**
+     * @return The timeout, in milliseconds, before a continuous focus state
+     *         triggers an {@link #onLongFocus()} event. By default this is
+     *         {@link FocusManger#LONG_FOCUS_TIMEOUT}.
+     */
+    public long getLongFocusTimeout() {
+        return mLongFocusTimeout;
+    }
+
+    /**
+     * Set the timeout, in milliseconds, before a continuous focus state trigger
+     * an {@link #onLongFocus()} event.
+     * 
+     * @param longFocusTimeout
+     *            Timeout value, in milliseconds.
+     */
+    public void setLongFocusTimeout(long longFocusTimeout) {
+        mLongFocusTimeout = longFocusTimeout;
+    }
+
+    /**
      * Add a listener for {@linkplain OnFocusListener#onFocus(boolean) focus}
      * and {@linkplain OnFocusListener#onLongFocus() long focus} notifications
      * for this object.
@@ -343,8 +363,7 @@ public class Widget {
         return mFocusListeners.remove(listener);
     }
 
-    private FocusManager.Focusable focusableImpl = new FocusManager.Focusable() {
-
+    private final class FocusableImpl implements FocusManager.Focusable, FocusManager.LongFocusTimeout {
         /**
          * Hook method for handling changes in focus for this object.
          * 
@@ -374,7 +393,17 @@ public class Widget {
             return Widget.this.isFocusEnabled();
         }
 
-    };
+        @Override
+        public long getLongFocusTimeout() {
+            // We use the getter method instead of directly accessing the
+            // property so that deriving classes can override
+            // getLongFocusTimeout() and return a constant; this is a handy
+            // pattern for ensuring that instances of a class will always have
+            // the specified timeout.
+            return Widget.this.getLongFocusTimeout();
+        }
+    }
+    private FocusManager.Focusable focusableImpl = new FocusableImpl();
 
     /**
      * Set whether or not the {@code Widget} can receive touch and back key
@@ -1788,6 +1817,7 @@ public class Widget {
 
     private boolean mFocusEnabled = true;
     private boolean mIsFocused;
+    private long mLongFocusTimeout = FocusManager.LONG_FOCUS_TIMEOUT;
     private boolean mIsSelected;
     private boolean mIsTouchable = true;
     private Visibility mVisibility = Visibility.VISIBLE;

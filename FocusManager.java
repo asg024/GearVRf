@@ -34,6 +34,10 @@ public class FocusManager {
         void onLongFocus();
     }
 
+    interface LongFocusTimeout {
+        long getLongFocusTimeout();
+    }
+
     static public FocusManager get(Activity activity) {
         return ((Holder) activity).getFocusManager();
     }
@@ -104,11 +108,11 @@ public class FocusManager {
         }
     }
 
-    private void postLongFocusRunnable() {
+    private void postLongFocusRunnable(long timeout) {
         if (mCurrentFocus != null) {
             LongFocusRunnable r = new LongFocusRunnable(mCurrentFocus);
             mLongFocusEvent = GVRPeriodicEngine.getInstance(mContext)
-                    .runAfter(r, LONG_FOCUS_TIMEOUT / 1000.0f);
+                    .runAfter(r, timeout / 1000.0f);
         }
     }
 
@@ -189,7 +193,14 @@ public class FocusManager {
             ret = newFocusable.onFocus(true);
             if (ret) {
                 mCurrentFocus = newFocusable;
-                postLongFocusRunnable();
+                final long longFocusTimeout;
+                if (newFocusable instanceof LongFocusTimeout) {
+                    longFocusTimeout = ((LongFocusTimeout) newFocusable)
+                            .getLongFocusTimeout();
+                } else {
+                    longFocusTimeout = LONG_FOCUS_TIMEOUT;
+                }
+                postLongFocusRunnable(longFocusTimeout);
             }
         }
         return ret;
