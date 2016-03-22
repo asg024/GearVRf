@@ -173,7 +173,7 @@ public class RingList extends GroupWidget {
             angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems
                     .get(i).guestWidget, mRho);
             totalAngularWidths += angularWidths[i];
-            Log.d(TAG, "layout(): angular width at %d: %f", i, angularWidths[i]);
+//            Log.d(TAG, "layout(%s): angular width at %d: %f", getName(), i, angularWidths[i]);
         }
 
         if (mProportionalItemPadding) {
@@ -383,7 +383,7 @@ public class RingList extends GroupWidget {
 
     private void clear() {
         List<Widget> children = new ArrayList<Widget>(getChildren());
-        Log.d(TAG, "clear(): removing %d children", children.size());
+        Log.d(TAG, "clear(%s): removing %d children", getName(), children.size());
         for (Widget child : children) {
             removeChild(child, true);
         }
@@ -500,10 +500,10 @@ public class RingList extends GroupWidget {
     private void onChangedImpl() {
 
         final int itemCount = mAdapter.getCount();
-        Log.d(TAG, "onChanged(): %d items", itemCount);
+        Log.d(TAG, "onChanged(%s): %d items", getName(), itemCount);
         int pos;
 
-        Log.d(TAG, "onChanged(): %d views", mItems.size());
+        Log.d(TAG, "onChanged(%s): %d views", getName(), mItems.size());
         // Recycle any items we already have
 
         for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
@@ -529,12 +529,12 @@ public class RingList extends GroupWidget {
                 break;
             }
             mItems.add(host);
-            Log.d(TAG, "onChanged(): added item at %d", pos);
+            Log.d(TAG, "onChanged(%s): added item at %d", getName(), pos);
             addChild(host, true);
         }
 
         // Trim unused items
-        Log.d(TAG, "onChanged(): trimming: %b", pos < mItems.size());
+        Log.d(TAG, "onChanged(%s): trimming: %b", getName(), pos < mItems.size());
         for (; pos < mItems.size(); ++pos) {
             Widget item = mItems.remove(pos);
             removeChild(item, true);
@@ -542,22 +542,12 @@ public class RingList extends GroupWidget {
 
         layout();
 
-        List<Widget> children = getChildren();
-        for (int i = 0; i < children.size(); ++i) {
-            Widget child = children.get(i);
-            Log.d(TAG,
-                  "layout(): item at %d {%05.2f, %05.2f, %05.2f}, {%05.2f, %05.2f, %05.2f}",
-                  i, child.getPositionX(), child.getPositionY(),
-                  child.getPositionZ(), child.getRotationX(),
-                  child.getRotationY(), child.getRotationZ());
-        }
-        Log.d(TAG, "onChanged(): child objects: %d", this.getChildren().size());
     }
 
     private OnFocusListener mFocusListener = new OnFocusListener() {
         @Override
         public boolean onFocus(final boolean focused, final Widget widget) {
-            Log.d(TAG, "onFocus widget= %s focused [%b]", widget, focused);
+            Log.d(TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget.getName(), focused);
             int position = mItems.indexOf(widget);
             if (position >= 0) {
                 for (OnItemFocusListener listener : mItemFocusListeners) {
@@ -569,7 +559,7 @@ public class RingList extends GroupWidget {
 
         @Override
         public boolean onLongFocus(Widget widget) {
-            Log.d(TAG, "onLongFocus widget= %s", widget);
+            Log.d(TAG, "onLongFocus(%s) widget= %s", getName(), widget.getName());
             int position = mItems.indexOf(widget);
             if (position >= 0) {
                 for (OnItemFocusListener listener : mItemFocusListeners) {
@@ -593,7 +583,7 @@ public class RingList extends GroupWidget {
         }
 
         public void setHostedWidget(Widget guest, int pos, long id) {
-            Log.d(TAG, "setHostedWidget(): hosting %s, same: %b",
+            Log.d(TAG, "setHostedWidget(%s): hosting %s, same: %b", getName(),
                   guest == null ? "<null>" : guest.getName(),
                   guest == guestWidget);
             if (guest != guestWidget) {

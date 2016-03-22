@@ -3,6 +3,7 @@ package com.samsung.smcl.vr.widgets;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
+import com.samsung.smcl.utility.RuntimeAssertion;
 import com.samsung.smcl.utility.Utility;
 
 /**
@@ -100,9 +101,8 @@ public class RingLayout extends LinearLayout {
 
     class RadialLayoutStrategy extends LinearLayoutStrategy {
         @Override
-        protected float getChildSize(final Widget child, int axis) {
-            final float segment = LayoutHelpers
-                    .calculateGeometricDimensions(child)[axis];
+        protected float getChildSize(final Widget child, Axis axis) {
+            final float segment = super.getChildSize(child, axis);
             final float angle = LayoutHelpers.calculateAngularWidth(segment,
                                                                     mRadius);
             return angle;

@@ -37,6 +37,7 @@ import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
+import com.samsung.smcl.vr.gvrf_launcher.TransformCache;
 
 public class Widget {
 
@@ -195,15 +196,10 @@ public class Widget {
     public Widget(final GVRContext context, final GVRSceneObject sceneObject) {
         mContext = context;
         mSceneObject = sceneObject;
-        final float[] dimensions = LayoutHelpers
-                .calculateGeometricDimensions(sceneObject);
-        mBaseWidth = mWidth = dimensions[0];
-        mBaseHeight = mHeight = dimensions[1];
-        mBaseDepth = mDepth = dimensions[2];
-
         Log.d(TAG,
-              "Widget constructor: %s mWidth = %f mHeight = %f mDepth = %f",
-              sceneObject.getName(), mWidth, mHeight, mDepth);
+              "Widget constructor: %s width = %f height = %f depth = %f",
+              sceneObject.getName(), getWidth(), getHeight(), getDepth());
+        mTransformCache = new TransformCache(getTransform());
     }
 
     /**
@@ -256,7 +252,7 @@ public class Widget {
             + "touchable = %b focus_enabled = %b Visibile = %s";
 
     public String toString() {
-        return String.format(pattern, getName(), mWidth, mHeight, mDepth,
+        return String.format(pattern, getName(), getWidth(), getHeight(), getDepth(),
                              mIsTouchable, mFocusEnabled, mVisibility);
     }
 
@@ -651,15 +647,52 @@ public class Widget {
     }
 
     public float getWidth() {
-        return mWidth;
+        return getBoundingBoxInternal().getWidth();
     }
 
     public float getHeight() {
-        return mHeight;
+        return getBoundingBoxInternal().getHeight();
     }
 
     public float getDepth() {
-        return mDepth;
+        return getBoundingBoxInternal().getDepth();
+    }
+
+    /**
+     * Get a {@link BoundingBox} that is axis-aligned with this {@link Widget}'s
+     * parent and sized to contain the {@code Widget} with its local transform
+     * applied.
+     * <p>
+     * Note: The {@code Widget}'s children are <em>not</em> explicitly included,
+     * so the bounding box may or may not be big enough to include them. If you
+     * want to make sure that the bounding box fully encompasses the
+     * {@code Widget}'s children, use {@link #getBoundingBox(boolean)}.
+     * 
+     * @return A {@link BoundingBox} that contains the {@code Widget}.
+     */
+    public BoundingBox getBoundingBox() {
+        return getBoundingBox(false);
+    }
+
+    /**
+     * Get a {@link BoundingBox} that is axis-aligned with this {@link Widget}'s
+     * parent and sized to contain the {@code Widget} with its local transform
+     * applied. Optionally, the bounding box can be
+     * {@linkplain BoundingBox#expand(BoundingBox) expanded} to contain the
+     * bounding boxes of the {@code Widget}'s children that would otherwise lie
+     * outside it.
+     * 
+     * @param includeChildren
+     *            {@code True} to explicitly include the {@code Widget}'s
+     *            children, {@code false} to ignore them.
+     * @return A {@code BoundingBox} that contains the {@code Widget} and,
+     *         optionally, its children.
+     */
+    public BoundingBox getBoundingBox(boolean includeChildren) {
+        if (includeChildren) {
+            return expandBoundingBox(new BoundingBox(this));
+        }
+        return new BoundingBox(getBoundingBoxInternal());
     }
 
     /**
@@ -815,6 +848,9 @@ public class Widget {
      */
     public void setPosition(float x, float y, float z) {
         getTransform().setPosition(x, y, z);
+        if (mTransformCache.setPosition(x, y, z) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -827,6 +863,9 @@ public class Widget {
      */
     public void setPositionX(float x) {
         getTransform().setPositionX(x);
+        if (mTransformCache.setPosX(x) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -839,6 +878,9 @@ public class Widget {
      */
     public void setPositionY(float y) {
         getTransform().setPositionY(y);
+        if (mTransformCache.setPosY(y) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -851,6 +893,9 @@ public class Widget {
      */
     public void setPositionZ(float z) {
         getTransform().setPositionZ(z);
+        if (mTransformCache.setPosZ(z) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -937,6 +982,9 @@ public class Widget {
      */
     public void setRotation(float w, float x, float y, float z) {
         getTransform().setRotation(w, x, y, z);
+        if (mTransformCache.setRotation(w, x, y, z) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -977,10 +1025,10 @@ public class Widget {
      *            Scaling factor on the 'Z' axis.
      */
     public void setScale(float x, float y, float z) {
-        mWidth = mBaseWidth * x;
-        mHeight = mBaseHeight * y;
-        mDepth = mBaseDepth * z;
         getTransform().setScale(x, y, z);
+        if (mTransformCache.setScale(x, y, z) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -990,8 +1038,10 @@ public class Widget {
      *            Scaling factor on the 'X' axis.
      */
     public void setScaleX(float x) {
-        mWidth = mBaseWidth * x;
         getTransform().setScaleX(x);
+        if (mTransformCache.setScaleX(x) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1001,8 +1051,10 @@ public class Widget {
      *            Scaling factor on the 'Y' axis.
      */
     public void setScaleY(float y) {
-        mHeight = mBaseHeight * y;
         getTransform().setScaleY(y);
+        if (mTransformCache.setScaleY(y) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1012,8 +1064,10 @@ public class Widget {
      *            Scaling factor on the 'Z' axis.
      */
     public void setScaleZ(float z) {
-        mDepth = mBaseDepth * z;
         getTransform().setScaleZ(z);
+        if (mTransformCache.setScaleZ(z) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1056,6 +1110,7 @@ public class Widget {
      */
     public void translate(float x, float y, float z) {
         getTransform().translate(x, y, z);
+        checkTransformChanged();
     }
 
     /**
@@ -1080,6 +1135,7 @@ public class Widget {
      */
     public void setRotationByAxis(float angle, float x, float y, float z) {
         getTransform().setRotationByAxis(angle, x, y, z);
+        checkTransformChanged();
     }
 
     /**
@@ -1096,6 +1152,7 @@ public class Widget {
      */
     public void rotate(float w, float x, float y, float z) {
         getTransform().rotate(w, x, y, z);
+        checkTransformChanged();
     }
 
     /**
@@ -1120,6 +1177,7 @@ public class Widget {
     public void rotateWithPivot(float w, float x, float y, float z,
             float pivotX, float pivotY, float pivotZ) {
         getTransform().rotateWithPivot(w, x, y, z, pivotX, pivotY, pivotZ);
+        checkTransformChanged();
     }
 
     /**
@@ -1136,6 +1194,7 @@ public class Widget {
      */
     public void rotateByAxis(float angle, float x, float y, float z) {
         getTransform().rotateByAxis(angle, x, y, z);
+        checkTransformChanged();        
     }
 
     /**
@@ -1161,6 +1220,7 @@ public class Widget {
             float axisZ, float pivotX, float pivotY, float pivotZ) {
         getTransform().rotateByAxisWithPivot(angle, axisX, axisY, axisZ,
                                              pivotX, pivotY, pivotZ);
+        checkTransformChanged();
     }
 
     /**
@@ -1172,6 +1232,7 @@ public class Widget {
      */
     public void reset() {
         getTransform().reset();
+        checkTransformChanged();
     }
 
     /**
@@ -1242,6 +1303,10 @@ public class Widget {
         return mVisibility;
     }
 
+    public boolean isChanged() {
+        return mChanged;
+    }
+
     protected Widget(final GVRContext context, final GVRMesh mesh) {
         this(context, new GVRSceneObject(context, mesh, sDefaultTexture));
     }
@@ -1272,8 +1337,9 @@ public class Widget {
     /**
      * Determine whether the calling thread is the GL thread.
      * 
-     * @return {@code True} if called from the GL thread, {@code false}
-     *         otherwise.
+     * @return {@code True} if called from the GL thread, {@code false} if
+     *         called from another thread, or if the {@link Widget} framework
+     *         has not been {@linkplain #onInitListener GL initialized} yet.
      */
     protected final boolean isGLThread() {
         final Thread glThread = sGLThread.get();
@@ -1282,10 +1348,15 @@ public class Widget {
 
     /**
      * Execute a {@link Runnable} on the GL thread. If this method is called
-     * from the GL thread, the {@code Runnable} is executed immediately.
+     * from the GL thread, the {@code Runnable} is executed immediately;
+     * otherwise, the {@code Runnable} will be executed in the next frame.
      * <p>
      * This differs from {@link GVRContext#runOnGlThread(Runnable)}: that method
      * always queues the {@code Runnable} for execution in the next frame.
+     * <p>
+     * Note: if the {@link Widget} framework has not yet been
+     * {@link #onInitListener GL initialized}, the {@code Runnable} will be
+     * executed in the next frame.
      * 
      * @param r
      *            {@link Runnable} to execute on the GL thread.
@@ -1433,6 +1504,32 @@ public class Widget {
         return false;
     }
 
+    /**
+     * Called when the {@link Widget}'s transform is altered, whether by
+     * scaling, rotation, or translation. Flags the {@code Widget} for layout
+     * (client code will still have to call {@link #requestLayout()} to initiate
+     * the layout cycle) and invalidates its {@linkplain #getBoundingBox()
+     * bounding box}.
+     * <p>
+     * Deriving classes that override this method <em>really</em> need to call
+     * {@code super}: otherwise the {@code Widget} won't get laid out until
+     * somebody explicitly calls {@code requestLayout()} on it, and the cached
+     * bounding box will get out of date.
+     */
+    protected void onTransformChanged() {
+        Log.d(TAG, "onTransformChanged(): %s", getName());
+//        new RuntimeException().printStackTrace();
+        
+        // Even if the calling code that altered the transform doesn't request a
+        // layout, we'll do a layout the next time a layout is requested on our
+        // part of the scene graph.
+        mChanged = true;
+
+        // Clear this to indicate that the bounding box has been invalidated and
+        // needs to be constructed and transformed anew.
+        mBoundingBox = null;
+    }
+
     /* package */
     boolean addChildInner(final Widget child, final GVRSceneObject childRootSceneObject, int index) {
         final boolean added = mChildren.indexOf(child) == -1;
@@ -1454,6 +1551,12 @@ public class Widget {
             child.doOnAttached(this);
         }
         return added;
+    }
+
+    void checkTransformChanged() {
+        if (mTransformCache.save(this, true) && !mChanged) {
+            onTransformChanged();
+        }
     }
 
     /* package */
@@ -1696,6 +1799,21 @@ public class Widget {
         return findChildByNameInAllGroups(name, groupChildren);
     }
 
+    private BoundingBox expandBoundingBox(final BoundingBox boundingBox) {
+        boundingBox.expand(getBoundingBoxInternal());
+        for (Widget child : mChildren) {
+            child.expandBoundingBox(boundingBox);
+        }
+        return boundingBox;
+    }
+
+    private BoundingBox getBoundingBoxInternal() {
+        if (mBoundingBox == null) {
+            mBoundingBox = new BoundingBox(this);
+        }
+        return mBoundingBox;
+    }
+
     private void registerPickable() {
         final TouchManager touchManager = sTouchManager.get();
         if (touchManager == null) {
@@ -1812,6 +1930,9 @@ public class Widget {
 
     private final GVRContext mContext;
 
+    private final TransformCache mTransformCache;
+    private BoundingBox mBoundingBox;
+    private boolean mChanged;
     private boolean mIsAttached;
     private boolean mIsCreated;
 
@@ -1822,12 +1943,6 @@ public class Widget {
     private boolean mIsTouchable = true;
     private Visibility mVisibility = Visibility.VISIBLE;
     private Widget mParent;
-    private final float mBaseWidth;
-    private final float mBaseHeight;
-    private final float mBaseDepth;
-    private float mWidth;
-    private float mHeight;
-    private float mDepth;
     private String mName;
     
     private int mLevel = 0;
@@ -1851,7 +1966,7 @@ public class Widget {
         }
     };
 
-    private static WeakReference<Thread> sGLThread;
+    private static WeakReference<Thread> sGLThread = new WeakReference<Thread>(null);
     private static WeakReference<TouchManager> sTouchManager;
     private static GVRTexture sDefaultTexture;
 

@@ -6,6 +6,7 @@ import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.RuntimeAssertion;
 
 /**
  * A widget group class that lays its children out along its local x-axis (
@@ -66,24 +67,6 @@ public class LinearLayout extends GroupWidget {
         mWidth = width;
         mHeight = height;
         mLayoutStrategy = getLayoutStrategy();
-    }
-
-    @Override
-    public boolean addChild(final Widget child) {
-        if (super.addChild(child)) {
-            layout();
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean removeChild(final Widget child) {
-        if (super.removeChild(child)) {
-            layout();
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -148,16 +131,16 @@ public class LinearLayout extends GroupWidget {
         final int xFactor;
         final int yFactor;
         final int zFactor;
-        final int axis;
+        final LayoutStrategy.Axis axis;
         final float axisSize;
 
         if (mOrientation == Orientation.HORIZONTAL) {
-            axis = 0;
+            axis = LayoutStrategy.Axis.X;
             xFactor = 1;
             yFactor = 0;
             axisSize = mLayoutStrategy.getAxisSize(mWidth);
         } else {
-            axis = 1;
+            axis = LayoutStrategy.Axis.Y;
             xFactor = 0;
             yFactor = 1;
             axisSize = mLayoutStrategy.getAxisSize(mHeight);
@@ -202,7 +185,7 @@ public class LinearLayout extends GroupWidget {
     }
 
     private float getSizes(final List<Widget> children, final float[] sizes,
-            int axis) {
+            final LayoutStrategy.Axis axis) {
         final int numChildren = children.size();
         float totalSize = 0;
         for (int i = 0; i < numChildren; ++i) {
@@ -221,9 +204,12 @@ public class LinearLayout extends GroupWidget {
         return totalSize;
     }
 
-    abstract class LayoutStrategy {
+    static abstract class LayoutStrategy {
+        enum Axis {
+            X, Y, Z
+        }
 
-        protected abstract float getChildSize(final Widget child, int axis);
+        protected abstract float getChildSize(final Widget child, Axis axis);
 
         protected abstract float getAxisSize(final float size);
 
@@ -238,10 +224,17 @@ public class LinearLayout extends GroupWidget {
 
     class LinearLayoutStrategy extends LayoutStrategy {
         @Override
-        protected float getChildSize(final Widget child, int axis) {
-            final float size = LayoutHelpers
-                    .calculateGeometricDimensions(child)[axis];
-            return size;
+        protected float getChildSize(final Widget child, Axis axis) {
+            switch (axis) {
+                case X:
+                    return child.getWidth();
+                case Y:
+                    return child.getHeight();
+                case Z:
+                    return child.getDepth();
+                default:
+                    throw new RuntimeAssertion("Bad axis specified: %s", axis);
+            }
         }
 
         @Override
