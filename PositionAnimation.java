@@ -26,6 +26,7 @@ public class PositionAnimation extends TransformAnimation {
     @Override
     protected void animate(Widget target, float ratio) {
         mAdapter.superAnimate(target, ratio);
+        target.checkTransformChanged();
     }
 
     @Override

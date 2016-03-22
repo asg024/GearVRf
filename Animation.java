@@ -11,8 +11,25 @@ import org.gearvrf.animation.GVROnFinish;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 
+/**
+ * A wrapper for {@link GVRAnimation} and derived classes. Client code can
+ * derive directly from this class (or its descendants) and override
+ * {@link #animate(Widget, float)} to implement {@link Widget} animations.
+ * <p>
+ * The class provides a number of handy features:
+ * <ul>
+ * <li>Support for multiple {@link OnFinish} listeners</li>
+ * <li>A {@link #finish()} method that stops the animation <em>and</em> runs the
+ * animation's last frame</li>
+ * <li>Support for instantiation from JSON metadata</li>
+ * <li>Checks whether the target {@code Widget's} transform has changed during
+ * an animation frame and {@linkplain Widget#requestLayout() requests a layout}
+ * if needed.</li>
+ * </ul>
+ */
 public abstract class Animation {
     public interface OnFinish {
         void finished(Animation animation);
@@ -240,7 +257,11 @@ public abstract class Animation {
 
     /* package */
     void doAnimate(float ratio) {
+        Log.d(TAG, "doAnimate(): animating %s", mTarget.getName());
         animate(mTarget, ratio);
+        if (mTarget.isChanged()) {
+            mTarget.requestLayout();
+        }
     }
 
     /**
@@ -329,4 +350,6 @@ public abstract class Animation {
     private AnimationAdapter mAnimation;
     private OnFinishManager mOnFinish;
     private boolean mIsRunning;
+
+    private static final String TAG = Animation.class.getSimpleName();
 }
