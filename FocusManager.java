@@ -85,7 +85,18 @@ public class FocusManager {
 
     public void unregister(final GVRSceneObject sceneObject) {
         log("unregister sceneObject %s", sceneObject.getName());
-        mFocusableMap.remove(sceneObject);
+        final WeakReference<Focusable> focusableRef = mFocusableMap
+                .remove(sceneObject);
+        if (focusableRef != null) {
+            MainThread.get(mContext).runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (mCurrentFocus == focusableRef.get()) {
+                        releaseCurrentFocus();
+                    }
+                }
+            });
+        }
     }
 
     void init(GVRContext context) {
@@ -119,59 +130,61 @@ public class FocusManager {
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
-            MainThread.get(mContext).runOnMainThread(new Runnable() {
-                @Override
-                public void run() {
-                    final GVRScene mainScene = mContext.getMainScene();
-                    final List<GVRPickedObject> pickedObjectList = GVRPicker
-                            .findObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
-
-                    // release old focus
-                    if (pickedObjectList == null ||
-                            pickedObjectList.isEmpty()) {
-                        log("onDrawFrame(): empty/null pick list; releasing current focus (%s)", mCurrentFocusName);
-                        releaseCurrentFocus();
-                        return;
-                    }
-
-                    for (GVRPickedObject picked : pickedObjectList) {
-                        final GVRSceneObject quad = picked.getHitObject();
-                        Focusable focusable = null;
-                        if (quad != null) {
-                            log("onDrawFrame(): checking '%s' for focus", quad.getName());
-                            WeakReference<Focusable> ref = mFocusableMap.get(quad);
-                            if (null != ref) {
-                                focusable = ref.get();
-                            } else {
-                                mFocusableMap.remove(quad);
-                                focusable = null;
-                            }
-                        }
-
-                        // already has a focus - do nothing
-                        if (mCurrentFocus != null &&
-                            mCurrentFocus == focusable) {
-                            log("onDrawFrame(): already has focus (%s)", quad != null ? quad.getName() : "<null>");
-                            break;
-                        }
-
-                        if (null == focusable || !focusable.isFocusEnabled()) {
-                            continue;
-                        }
-
-                        releaseCurrentFocus();
-
-                        if (takeNewFocus(focusable)) {
-                            mCurrentFocusName = quad.getName();
-                            log("onDrawFrame(): '%s' took focus", mCurrentFocusName);
-                            break;
-                        }
-                    }
-                }
-            });
+            MainThread.get(mContext).runOnMainThread(mFocusRunnable);
         }
     };
 
+    final Runnable mFocusRunnable = new Runnable() {
+        @Override
+        public void run() {
+            final GVRScene mainScene = mContext.getMainScene();
+            final List<GVRPickedObject> pickedObjectList = GVRPicker
+                    .findObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
+
+            // release old focus
+            if (pickedObjectList == null || pickedObjectList.isEmpty()) {
+                log("onDrawFrame(): empty/null pick list; releasing current focus (%s)",
+                    mCurrentFocusName);
+                releaseCurrentFocus();
+                return;
+            }
+
+            for (GVRPickedObject picked : pickedObjectList) {
+                final GVRSceneObject quad = picked.getHitObject();
+                Focusable focusable = null;
+                if (quad != null) {
+                    log("onDrawFrame(): checking '%s' for focus",
+                        quad.getName());
+                    WeakReference<Focusable> ref = mFocusableMap.get(quad);
+                    if (null != ref) {
+                        focusable = ref.get();
+                    } else {
+                        mFocusableMap.remove(quad);
+                        focusable = null;
+                    }
+                }
+
+                // already has a focus - do nothing
+                if (mCurrentFocus != null && mCurrentFocus == focusable) {
+                    log("onDrawFrame(): already has focus (%s)",
+                        quad != null ? quad.getName() : "<null>");
+                    break;
+                }
+
+                if (null == focusable || !focusable.isFocusEnabled()) {
+                    continue;
+                }
+
+                releaseCurrentFocus();
+
+                if (takeNewFocus(focusable)) {
+                    mCurrentFocusName = quad.getName();
+                    log("onDrawFrame(): '%s' took focus", mCurrentFocusName);
+                    break;
+                }
+            }
+        }
+    };
 
     private boolean releaseCurrentFocus() {
         boolean ret = true;

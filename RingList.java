@@ -57,6 +57,50 @@ public class RingList extends GroupWidget {
         return mItemFocusListeners.remove(listener);
     }
 
+    private boolean mItemFocusEnabled = true;
+
+    /**
+     * @return Whether the {@link RingList} allows it items to be focused.
+     */
+    public boolean getItemFocusEnabled() {
+        return mItemFocusEnabled;
+    }
+
+    /**
+     * Sets {@linkplain Widget#setFocusEnabled(boolean) focus enabled} (or
+     * disabled) for all children of the {@link RingList} that were fetched from
+     * the {@link Adapter}. If this is called with {@code false}, any new items
+     * gotten from the {@code Adapter} will have {@code setFocusEnabled(false)}
+     * called on them. If called with {@code true}, {@code RingList} acts as
+     * though it's received an {@link DataSetObserver#onChanged() on changed}
+     * notification and refreshes its items with the {@code Adapter}.
+     * <p>
+     * This is a convenience method only, and the current state of focus
+     * enabling for each displayed item is not tracked in any way.
+     * {@code Adapters} should ensure that they enable or disable focus as
+     * appropriate for their views.
+     * 
+     * @param enabled
+     *            {@code True} to enable focus for all items, {@code false} to
+     *            disable.
+     */
+    public void setItemFocusEnabled(boolean enabled) {
+        if (enabled != mItemFocusEnabled) {
+            mItemFocusEnabled = enabled;
+            if (!mItemFocusEnabled) {
+                Log.d(TAG, "setItemFocusEnabled(%s): item focus enabled: %b", getName(), enabled);
+                for (ListItemHostWidget host : mItems) {
+                    host.guestWidget.setFocusEnabled(enabled);
+                }
+            } else {
+                // This will refresh the data for the items, allowing the
+                // Adapter to reset focus enabling
+                Log.d(TAG, "setItemFocusEnabled(%s): item focus enabled: %b", getName(), enabled);
+                onChanged();
+            }
+        }
+    }
+
     /**
      * Construct a new {@code RingList} instance with a {@link #setRho(double)
      * radius} of zero.
@@ -517,6 +561,9 @@ public class RingList extends GroupWidget {
         for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
             final ListItemHostWidget host = mItems.get(pos);
             final Widget item = mAdapter.getView(pos, host.guestWidget, host);
+            if (!mItemFocusEnabled) {
+                item.setFocusEnabled(false);
+            }
             item.addFocusListener(mFocusListener);
             host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
             updateItemSelection(item, mSelectedItems.get(pos));
@@ -530,6 +577,9 @@ public class RingList extends GroupWidget {
                 item = mAdapter.getView(pos, null, host);
                 if (item == null) {
                     break;
+                }
+                if (!mItemFocusEnabled) {
+                    item.setFocusEnabled(false);
                 }
                 item.addFocusListener(mFocusListener);
                 host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
