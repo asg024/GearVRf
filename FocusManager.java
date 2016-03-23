@@ -79,12 +79,12 @@ public class FocusManager {
      * @param focusable
      */
     public void register(final GVRSceneObject sceneObject, final Focusable focusable) {
-        Log.d(TAG, "register sceneObject %s , focusable = %s", sceneObject.getName(), focusable);
+        log("register sceneObject %s , focusable = %s", sceneObject.getName(), focusable);
         mFocusableMap.put(sceneObject, new WeakReference<Focusable>(focusable));
     }
 
     public void unregister(final GVRSceneObject sceneObject) {
-        Log.d(TAG, "unregister sceneObject %s", sceneObject.getName());
+        log("unregister sceneObject %s", sceneObject.getName());
         mFocusableMap.remove(sceneObject);
     }
 
@@ -129,7 +129,7 @@ public class FocusManager {
                     // release old focus
                     if (pickedObjectList == null ||
                             pickedObjectList.isEmpty()) {
-                        Log.d(TAG, "onDrawFrame(): empty/null pick list; releasing current focus (%s)", mCurrentFocusName);
+                        log("onDrawFrame(): empty/null pick list; releasing current focus (%s)", mCurrentFocusName);
                         releaseCurrentFocus();
                         return;
                     }
@@ -138,7 +138,7 @@ public class FocusManager {
                         final GVRSceneObject quad = picked.getHitObject();
                         Focusable focusable = null;
                         if (quad != null) {
-                            Log.d(TAG, "onDrawFrame(): checking '%s' for focus", quad.getName());
+                            log("onDrawFrame(): checking '%s' for focus", quad.getName());
                             WeakReference<Focusable> ref = mFocusableMap.get(quad);
                             if (null != ref) {
                                 focusable = ref.get();
@@ -151,7 +151,7 @@ public class FocusManager {
                         // already has a focus - do nothing
                         if (mCurrentFocus != null &&
                             mCurrentFocus == focusable) {
-                            Log.d(TAG, "onDrawFrame(): already has focus (%s)", quad != null ? quad.getName() : "<null>");
+                            log("onDrawFrame(): already has focus (%s)", quad != null ? quad.getName() : "<null>");
                             break;
                         }
 
@@ -163,7 +163,7 @@ public class FocusManager {
 
                         if (takeNewFocus(focusable)) {
                             mCurrentFocusName = quad.getName();
-                            Log.d(TAG, "onDrawFrame(): '%s' took focus", mCurrentFocusName);
+                            log("onDrawFrame(): '%s' took focus", mCurrentFocusName);
                             break;
                         }
                     }
@@ -179,7 +179,7 @@ public class FocusManager {
             cancelLongFocusRunnable();
             ret = mCurrentFocus.onFocus(false);
             mCurrentFocus = null;
-            Log.d(TAG, "releaseCurrentFocus(): releasing focus for '%s'", mCurrentFocusName);
+            log("releaseCurrentFocus(): releasing focus for '%s'", mCurrentFocusName);
             mCurrentFocusName = null;
         }
         return ret;
@@ -206,6 +206,12 @@ public class FocusManager {
         return ret;
     }
 
+    private void log(final String msg, Object...args) {
+        if (LOGGING_ENABLED) {
+            Log.d(TAG, msg, args);
+        }
+    }
+
     private GVRContext mContext;
     private Focusable mCurrentFocus = null;
     private String mCurrentFocusName = "";
@@ -228,7 +234,9 @@ public class FocusManager {
 
     private GVRPeriodicEngine.PeriodicEvent mLongFocusEvent;
 
+    private static final boolean LOGGING_ENABLED = false;
     static final int LONG_FOCUS_TIMEOUT = 5000;
+
     @SuppressWarnings("unused")
     private static final String TAG = FocusManager.class.getSimpleName();
 }

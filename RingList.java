@@ -176,7 +176,7 @@ public class RingList extends GroupWidget {
             angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems
                     .get(i).guestWidget, mRho);
             totalAngularWidths += angularWidths[i];
-//            Log.d(TAG, "layout(%s): angular width at %d: %f", getName(), i, angularWidths[i]);
+            Log.d(TAG, "layout(%s): angular width at %d: %f", getName(), i, angularWidths[i]);
         }
 
         if (mProportionalItemPadding) {
@@ -283,7 +283,7 @@ public class RingList extends GroupWidget {
 
         float phi = (totalAngularWidths + mItemPadding * (mItems.size() - 1)) / 2 - (angularWidths[0] / 2);
 
-        Log.d(TAG, "balancedLayout : firstItemIndex %d lasttItemIndex %d ", firstItemIndex, lastItemIndex);
+        Log.d(TAG, "balancedLayout(%s) : firstItemIndex %d lasttItemIndex %d ", getName(), firstItemIndex, lastItemIndex);
         for (int i = firstItemIndex; i <= lastItemIndex; ++i) {
             layoutItem(i, mItems.get(i), phi);
             phi -= angularWidths[i] + mItemPadding;
@@ -448,9 +448,9 @@ public class RingList extends GroupWidget {
         final int numItems = mItems.size();
 
         if (numItems == 0) {
-            Log.d(TAG, "layout(): no items to layout!");
+            Log.d(TAG, "layout(%s): no items to layout!", getName());
         } else {
-            Log.d(TAG, "layout(): laying out %d items", numItems);
+            Log.d(TAG, "layout(%s): laying out %d items", getName(), numItems);
 
             float[] prevItemRotationValues = mItemRotationValues;
             mItemRotationValues = new float[numItems];

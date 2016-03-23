@@ -1317,10 +1317,10 @@ public class Widget {
     public void requestLayout() {
         mLayoutRequested = true;
         Log.d(TAG,
-              "requestLayout(): for %s; mParent == null: %b, mParent.isLayoutRequested: %b",
-              getName(), mParent == null, mParent != null && mParent.isLayoutRequested());
+              "requestLayout(%s): mParent: '%s', mParent.isLayoutRequested: %b",
+              getName(), mParent == null ? "<NULL>" : mParent.getName(), mParent != null && mParent.isLayoutRequested());
         if (mParent != null && !mParent.isLayoutRequested()) {
-            Log.d(TAG, "requestLayout() requesting");
+            Log.d(TAG, "requestLayout(%s) requesting", getName());
             mParent.requestLayout();
 //            new RuntimeException().printStackTrace();
         }
@@ -1383,7 +1383,9 @@ public class Widget {
      */
     @SuppressLint("WrongCall")
     protected void layout() {
+        Log.d(TAG, "layout(%s): changed: %b, requested: %b", getName(), mChanged, mLayoutRequested);
         if (mChanged || mLayoutRequested) {
+            Log.d(TAG, "layout(%s): calling onLayout", getName());
             onLayout();
         }
         mLayoutRequested = false;
