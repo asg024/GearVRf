@@ -257,10 +257,10 @@ public class Widget {
             + "name : %s size = (%f, %f, %f) \n"
             + "touchable = %b focus_enabled = %b Visibile = %s selected = %b";
 
-    public String toString() {
-        return String.format(pattern, getName(), getWidth(), getHeight(), getDepth(),
-                             mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
-    }
+//    public String toString() {
+//        return String.format(pattern, getName(), getWidth(), getHeight(), getDepth(),
+//                             mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
+//    }
 
     public Widget(final GVRContext context, final float width,
             final float height) {
@@ -1269,8 +1269,10 @@ public class Widget {
      * @see Visibility
      * @param visibility
      *            The visibility of the object.
+     * @return {@code true} if the visibility was changed, {@code false} if it
+     *         wasn't.
      */
-    public void setVisibility(final Visibility visibility) {
+    public boolean setVisibility(final Visibility visibility) {
         if (visibility != mVisibility) {
             Log.d(TAG, "setVisibility(%s) for %s", visibility, getName());
             if (mParent != null) {
@@ -1298,7 +1300,9 @@ public class Widget {
                 }
             }
             mVisibility = visibility;
+            return true;
         }
+        return false;
     }
 
     /**

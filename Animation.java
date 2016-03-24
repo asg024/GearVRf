@@ -191,9 +191,9 @@ public abstract class Animation {
     }
 
     /**
-     * Stops the animation running and calls any
-     * {@linkplain #addOnFinish(OnFinish) registered} {@linkplain OnFinish
-     * listeners}.
+     * If the animation is still running, stops the animation, runs the last
+     * frame, and calls any {@linkplain #addOnFinish(OnFinish) registered}
+     * {@linkplain OnFinish listeners}.
      * 
      * @return {@code True} if the animation was running and finishing was
      *         successful; {@code false} if the animation was not running.
@@ -203,9 +203,9 @@ public abstract class Animation {
     }
 
     /**
-     * Stops the animation running and calls any
-     * {@linkplain #addOnFinish(OnFinish) registered} {@linkplain OnFinish
-     * listeners}.
+     * If the animation is still running, stops the animation, runs the last
+     * frame, and calls any {@linkplain #addOnFinish(OnFinish) registered}
+     * {@linkplain OnFinish listeners}.
      * 
      * @param engine
      *            The global animation engine.

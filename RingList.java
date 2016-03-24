@@ -530,6 +530,28 @@ public class RingList extends GroupWidget {
         }
     }
 
+    /**
+     * Rotate an item in the {@link RingList}.
+     * 
+     * @param pos
+     *            Position of the item in the data set
+     * @param rotation
+     *            New rotation of the item, relative to the {@code RingList}
+     */
+    public void scrollItemTo(int pos, float rotation) {
+        // TODO: Implement #20239
+    }
+
+    /**
+     * Scroll all items in the {@link RingList} by {@code rotation} degrees}.
+     * 
+     * @param rotation
+     *            The amount to scroll, in degrees.
+     */
+    public void scrollBy(float rotation) {
+        // TODO: Implement #20241
+    }
+
     private void clear() {
         List<Widget> children = new ArrayList<Widget>(getChildren());
         Log.d(TAG, "clear(%s): removing %d children", getName(), children.size());
