@@ -253,10 +253,10 @@ public class Widget {
         }
     }
 
-    private static final String pattern = Widget.class.getSimpleName()
-            + "name : %s size = (%f, %f, %f) \n"
-            + "touchable = %b focus_enabled = %b Visibile = %s selected = %b";
-
+//    private static final String pattern = Widget.class.getSimpleName()
+//            + "name : %s size = (%f, %f, %f) \n"
+//            + "touchable = %b focus_enabled = %b Visibile = %s selected = %b";
+//
 //    public String toString() {
 //        return String.format(pattern, getName(), getWidth(), getHeight(), getDepth(),
 //                             mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);

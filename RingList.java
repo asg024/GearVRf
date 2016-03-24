@@ -429,7 +429,8 @@ public class RingList extends GroupWidget {
     }
 
     /**
-     * Rotate an item in the {@link RingList}.
+     * Rotate the items in the {@link RingList} until the item at {@code pos} is
+     * rotated to {@code rotation}.
      * 
      * @param pos
      *            Position of the item in the data set
@@ -448,6 +449,7 @@ public class RingList extends GroupWidget {
      */
     public void scrollBy(float rotation) {
         // TODO: Implement #20241
+        Log.d(TAG, "scrollBy(%s): rotation: %.2f", getName(), rotation);
     }
 
     private void clear() {
