@@ -16,7 +16,6 @@ public class GridAdapter extends BaseAdapter {
     private int mNumOfColumns;
     private GVRContext mContext;
     private Adapter adapter;
-    private static final String COLUMN_NAME = "GridColumn";
 
     public GridAdapter(GVRContext gvrContext, Adapter adapter, float dividerPadding,
             int numOfRows) {
@@ -62,7 +61,7 @@ public class GridAdapter extends BaseAdapter {
 
             // remove all current children from convertView
             for (int index = 0; index < children.size(); index++) {
-                ((LinearLayout) convertView).removeChild(children.get(index), true);
+                ((LinearLayout) convertView).removeChild(children.get(index));
             }
 
             // re-add all new children to convertView
@@ -71,15 +70,14 @@ public class GridAdapter extends BaseAdapter {
                 Widget item = adapter.getView(itemIdx + index,
                                               children.get(index),
                                               ((LinearLayout) convertView));
-                ((LinearLayout) convertView).addChild(item, true);
+                ((LinearLayout) convertView).addChild(item);
             }
 
             for (; index < mNumOfRows; index++) {
                 Widget item = adapter.getView(itemIdx + index, null, parent);
-                ((LinearLayout) convertView).addChild(item, true);
+                ((LinearLayout) convertView).addChild(item);
             }
 
-            convertView.setName(COLUMN_NAME + Integer.toString(position));
             return convertView;
         }
 
@@ -88,7 +86,6 @@ public class GridAdapter extends BaseAdapter {
         columnWidget.setDividerPadding(mGridPadding);
         for (int index = itemIdx; index < itemIdx + mNumOfRows; index++) {
             Widget app = adapter.getView(index, null, parent);
-            columnWidget.setName(COLUMN_NAME + Integer.toString(position));
             columnWidget.addChild(app);
         }
 

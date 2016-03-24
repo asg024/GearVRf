@@ -1,4 +1,3 @@
-
 package com.samsung.smcl.vr.widgets;
 
 import java.util.ArrayList;
@@ -159,10 +158,12 @@ public class RingList extends GroupWidget {
      */
 
     public RingList(final GVRContext gvrContext, float width, float height,
-            final double rho, int pageNumber, int itemIncrementPerPage) {
+            final double rho, int pageNumber, int maxItemsDisplayed,
+            int itemIncrementPerPage) {
         super(gvrContext, width, height);
         mRho = rho;
         mPageNumber = pageNumber;
+        mMaxItemsDisplayed = maxItemsDisplayed;
         mItemIncrementPerPage = itemIncrementPerPage;
     }
 
@@ -191,12 +192,10 @@ public class RingList extends GroupWidget {
     }
 
     private int mPageNumber = 0;
+    private int mMaxItemsDisplayed = 0;
     private int mItemIncrementPerPage = 0;
     private LayoutType layoutType = LayoutType.LEFT_ORDER;
     private int mAroundItemAtId = -1;
-
-    private static int FULL_CIRCLE = 360;
-    private static int HALF_CIRCLE = 180;
 
     public enum LayoutType {
         LEFT_ORDER,
@@ -206,238 +205,137 @@ public class RingList extends GroupWidget {
         AROUND_SELECTED_ITEM,
     }
 
-    private int layoutAroundItemAt(final int position,
-            final float[] prevItemRotationValues) {
-        final int numItems = mAdapter.getCount();
-        int firstItemIndex = mPageNumber * mItemIncrementPerPage;
-        int pos = firstItemIndex;
-        float phi = 0;
-        int itemsIndexOnDisplay = 0;
+    /**
+     * Calculates the each angular width for each mItems
+     *
+     * @return array of floats each mItems' angular width
+     *
+     */
+    private float[] calculateAngularWidth() {
+        final int numItems = mItems.size();
         float[] angularWidths = new float[numItems];
 
-        while (phi > -FULL_CIRCLE && itemsIndexOnDisplay < numItems) {
-            int appListIndex = getValidItemPosition(pos, numItems);
-
-            setUpItem(appListIndex, itemsIndexOnDisplay,
-                      angularWidths[itemsIndexOnDisplay]);
-            phi -= angularWidths[itemsIndexOnDisplay] + mItemPadding;
-
-            pos++;
-            itemsIndexOnDisplay++;
+        float totalAngularWidths = 0;
+        for (int i = 0; i < numItems; ++i) {
+            angularWidths[i] = LayoutHelpers.calculateAngularWidth(mItems
+                    .get(i).guestWidget, mRho);
+            totalAngularWidths += angularWidths[i];
+            Log.d(TAG, "layout(%s): angular width at %d: %f", getName(), i, angularWidths[i]);
         }
+
+        if (mProportionalItemPadding) {
+            int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() : mMaxItemsDisplayed;
+            float uniformAngularWidth = (360.f - totalAngularWidths)
+                    / (float) totalNumPerPage;
+            for (int i = 0; i < numItems; ++i) {
+                angularWidths[i] += uniformAngularWidth;
+                Log.d(TAG, "layout(): angular uniform width at %d: %f", i, angularWidths[i]);
+            }
+        }
+
+        return angularWidths;
+    }
+
+    private void layoutAroundItemAt(final int position, final float[] angularWidths,
+            final float[] prevItemRotationValues) {
+        int firstItemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() :
+            Math.min(mItems.size(), mMaxItemsDisplayed);
+        int lastItemIndex = firstItemIndex + totalNumPerPage - 1;
+
+        float phi = 0;
 
         if (prevItemRotationValues != null) {
             int anchorAt = position;
-            int lastItemIndex = itemsIndexOnDisplay + firstItemIndex - 1;
+
             if (position == -1 || position > lastItemIndex) {
-                    anchorAt = lastItemIndex;
+                anchorAt = lastItemIndex;
             } else if (position < firstItemIndex) {
-                    anchorAt = firstItemIndex;
+                anchorAt = firstItemIndex;
             }
 
-            phi = 0;
-            if (prevItemRotationValues != null) {
-                phi = prevItemRotationValues[prevItemRotationValues.length > anchorAt ? anchorAt
-                        : prevItemRotationValues.length - 1];
-            }
-
-            float anchorPhi = phi;
-
-            for (int index = anchorAt; position < itemsIndexOnDisplay; index++) {
-                layoutItem(index,
-                           mItems.get(index - firstItemIndex).guestWidget, phi);
-                phi -= angularWidths[index] + mItemPadding;
-            }
-
-            phi = anchorPhi;
-
-            for (int index = anchorAt - 1; index >= firstItemIndex; index--) {
-                phi += angularWidths[index] + mItemPadding;
-                layoutItem(index,
-                           mItems.get(index - firstItemIndex).guestWidget, phi);
+            for (int i = Math.min(anchorAt, prevItemRotationValues.length); --i >= firstItemIndex;) {
+                phi += (angularWidths[i] + mItemPadding) - prevItemRotationValues[i];
             }
         }
 
-        return itemsIndexOnDisplay;
-    }
-
-    private void wrapAroundCenterLayout() {
-        final int numItems = mAdapter.getCount();
-
-        int rightHalfNumItems = (int) Math.ceil(numItems / 2);
-        int leftHalfNumItems = numItems - rightHalfNumItems;
-
-        int startPosition = mPageNumber * mItemIncrementPerPage;
-        int secondHalfPos = numItems - 1 + startPosition;
-
-        int numViewUsedRight = layoutClockwise(HALF_CIRCLE, startPosition, 0,
-                                               0.f, rightHalfNumItems);
-        layoutCounterclockwise(HALF_CIRCLE, secondHalfPos, numViewUsedRight,
-                               0.f, leftHalfNumItems);
-    }
-
-    private float getItemAngularWidth(int adapterItemIndex, int reusableIndex)
-    {
-        Widget w = null;
-        if (mItems.size() > reusableIndex) {
-            final ListItemHostWidget host = mItems.get(reusableIndex);
-            w = mAdapter.getView(adapterItemIndex, host.guestWidget, host);
-        } else {
-            ListItemHostWidget host = makeHost(getGVRContext());
-            w = mAdapter.getView(adapterItemIndex, null, host);
-        }
-
-        float angularWidth = 0f;
-        if (w != null) {
-            angularWidth = LayoutHelpers.calculateAngularWidth(w, mRho);
-        }
-        return angularWidth;
-    }
-
-    private Widget setUpItem(int adapterItemIndex, int reusableIndex,
-            float angularWidth) {
-        Widget w = null;
-        if (mItems.size() > reusableIndex) {
-            final ListItemHostWidget host = mItems.get(reusableIndex);
-            w = mAdapter.getView(adapterItemIndex, host.guestWidget, host);
-            host.setHostedWidget(w, reusableIndex,
-                                 mAdapter.getItemId(adapterItemIndex));
-        } else {
-            ListItemHostWidget host = makeHost(getGVRContext());
-            w = mAdapter.getView(adapterItemIndex, null, host);
-            w.addFocusListener(mFocusListener);
-            host.setHostedWidget(w, reusableIndex,
-                                 mAdapter.getItemId(adapterItemIndex));
-
-            mItems.add(host);
-            addChild(host);
-            host.layout();
-            updateItemSelection(w, mSelectedItems.get(adapterItemIndex));
-        }
-
-        if (w != null) {
-            angularWidth = LayoutHelpers.calculateAngularWidth(w, mRho);
-        }
-
-        return w;
-    }
-
-    private int getValidItemPosition(int pos, int size) {
-        int validItemIndex = pos;
-        if (validItemIndex >= size) {
-            validItemIndex = validItemIndex % size;
-        }
-        return validItemIndex;
-    }
-
-    private void getValidDegree(int degree) {
-        if (degree < 0) {
-            degree = -degree;
-        }
-        if (degree > FULL_CIRCLE) {
-            degree = degree % FULL_CIRCLE;
+        for (int i = firstItemIndex; i <= lastItemIndex; i++) {
+            layoutItem(i, mItems.get(i), phi);
+            phi -= angularWidths[i] + mItemPadding;
         }
     }
 
-    private int layoutClockwise(int degreeCoverage, int pos,
-            int reusedPosition, float phi, int maxCount) {
+    private void wrapAroundCenterLayout(final float[] angularWidths) {
+        final int numItems = mItems.size();
 
-        final int numItems = mAdapter.getCount();
-        getValidDegree(degreeCoverage);
-        int initPosition = reusedPosition;
+        int itemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? numItems :
+            Math.min(numItems, mMaxItemsDisplayed);
+        int numItemsFirstHalf = (totalNumPerPage / 2);
 
-        while (phi > -degreeCoverage
-                && reusedPosition < (initPosition + maxCount)) {
-            int appListIndex = getValidItemPosition(pos, numItems);
+        float phi = 0;
+        for (int i = 0; i < numItemsFirstHalf; i++) {
+            int appListIndex = itemIndex + i;
+            if (appListIndex >= numItems) {
+                appListIndex = appListIndex % numItems;
+            }
+            layoutItem(appListIndex, mItems.get(appListIndex), phi);
+            phi -= angularWidths[appListIndex] + mItemPadding;
 
-            float angularWidth = 0f;
-            Widget w = setUpItem(appListIndex, reusedPosition, angularWidth);
-            layoutItem(appListIndex, w, phi);
-
-            // update phi
-            phi -= angularWidth + mItemPadding;
-
-            // increment
-            pos++;
-            reusedPosition++;
         }
+        phi = angularWidths[0];
 
-        // check for overlap
-        int nextItemIndex = getValidItemPosition(pos + 1, numItems);
-        float angularWidth = getItemAngularWidth(nextItemIndex,
-                                                 reusedPosition + 1);
-        phi -= angularWidth + mItemPadding;
-        if (phi > -degreeCoverage) {
-            trimItems(reusedPosition);
-            reusedPosition--;
-        }
+        int numItemsSecondHalf = totalNumPerPage - numItemsFirstHalf;
+        int index = numItems - (numItemsSecondHalf - itemIndex);
 
-        return reusedPosition - initPosition;
-    }
-
-    private int layoutCounterclockwise(int degreeCoverage, int pos,
-            int reusedPosition, float phi, int maxCount) {
-
-        final int numItems = mAdapter.getCount();
-        getValidDegree(degreeCoverage);
-
-        int initPosition = reusedPosition;
-        while (phi < degreeCoverage
-                && reusedPosition < (maxCount + initPosition)) {
-
-            int appListIndex = getValidItemPosition(pos, numItems);
-            float angularWidth = 0f;
-            Widget w = setUpItem(appListIndex, reusedPosition, angularWidth);
-
-            // update phi
-            phi += angularWidth + mItemPadding;
-            layoutItem(appListIndex, w, phi);
-
-            // update indices
-            pos--;
-            reusedPosition++;
-        }
-
-        return reusedPosition - initPosition;
-    }
-
-    private void trimItems(int pos) {
-        for (; pos < mItems.size(); pos++) {
-            ListItemHostWidget w = mItems.remove(pos);
-            removeChild(w);
-            w.layout();
+        for (int j = index + numItemsSecondHalf - 1; j >= index; j--) {
+            int appListIndex = j;
+            if (j >= numItems) {
+                appListIndex = j % numItems;
+            }
+            layoutItem(appListIndex, mItems.get(appListIndex), phi);
+            phi += angularWidths[appListIndex] - mItemPadding;
         }
     }
 
-    private int balancedLayout() {
+    private void leftLayout(final float[] angularWidths) {
+        float phi = 0;
 
-        final int numItems = mAdapter.getCount();
-        int startPosition = mPageNumber * mItemIncrementPerPage;
+        int firstItemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() :
+            Math.min(mItems.size(), mMaxItemsDisplayed);
+
+        int lastItemIndex = firstItemIndex + totalNumPerPage - 1;
+
+        for (int i = firstItemIndex; i <= lastItemIndex; ++i) {
+            layoutItem(i, mItems.get(i), phi);
+            phi -= angularWidths[i] + mItemPadding;
+        }
+    }
+
+    private void balancedLayout(final float[] angularWidths) {
+        int firstItemIndex = mPageNumber * mItemIncrementPerPage;
+        int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() :
+            Math.min(mItems.size(), mMaxItemsDisplayed);
+
+        int lastItemIndex = firstItemIndex + totalNumPerPage - 1;
+
         float totalAngularWidths = 0;
-        float[] angularWidths = new float[numItems];
-        int itemIndexToDisplay = 0;
-
-        for (int pos = startPosition; pos < numItems; pos++) {
-            setUpItem(pos, itemIndexToDisplay,
-                      angularWidths[itemIndexToDisplay]);
-            totalAngularWidths += angularWidths[itemIndexToDisplay];
-            itemIndexToDisplay++;
+        for (int i = firstItemIndex; i <= lastItemIndex; ++i) {
+            totalAngularWidths +=  angularWidths[i];
         }
 
-        float phi = (totalAngularWidths + mItemPadding
-                * (itemIndexToDisplay - 1))
-                / 2 - (angularWidths[0] / 2);
+        float phi = (totalAngularWidths + mItemPadding * (mItems.size() - 1)) / 2 - (angularWidths[0] / 2);
 
-        itemIndexToDisplay = 0;
-        for (int pos = startPosition; pos < numItems; pos++) {
-            layoutItem(pos, mItems.get(itemIndexToDisplay).guestWidget, phi);
-            phi -= angularWidths[itemIndexToDisplay] + mItemPadding;
-            itemIndexToDisplay++;
+        Log.d(TAG, "balancedLayout(%s) : firstItemIndex %d lasttItemIndex %d ", getName(), firstItemIndex, lastItemIndex);
+        for (int i = firstItemIndex; i <= lastItemIndex; ++i) {
+            layoutItem(i, mItems.get(i), phi);
+            phi -= angularWidths[i] + mItemPadding;
         }
-        return itemIndexToDisplay;
     }
 
-    private void layoutItem(final int index, final Widget item, final float phi) {
+
+    private void layoutItem(final int index,  final Widget item, final float phi) {
         Log.d(TAG, "layout(%s): phi [%f]", item.getName(), phi);
         item.setRotation(1, 0, 0, 0);
         item.setPosition(0, 0, -(float) mRho);
@@ -467,7 +365,7 @@ public class RingList extends GroupWidget {
             requestLayout();
         }
     }
-    
+
     public void enableProportionalItemPadding(final boolean enable) {
         if (mProportionalItemPadding != enable) {
             mProportionalItemPadding = enable;
@@ -556,7 +454,7 @@ public class RingList extends GroupWidget {
         List<Widget> children = new ArrayList<Widget>(getChildren());
         Log.d(TAG, "clear(%s): removing %d children", getName(), children.size());
         for (Widget child : children) {
-            removeChild(child);
+            removeChild(child, true);
         }
     }
 
@@ -587,15 +485,15 @@ public class RingList extends GroupWidget {
      */
     public float getSelectedItemRotation() {
         //TODO: support multiple selections
-        int selectionIndex = getSelectedItemIndex();
-        return selectionIndex != -1 ? getItemRotation(getSelectedItemIndex()) : Float.NaN;
+        int selectionIndex = getSelectedItemId();
+        return selectionIndex != -1 ? getItemRotation(getSelectedItemId()) : Float.NaN;
     }
 
-    private int getSelectedItemIndex() {
+    private int getSelectedItemId() {
         //TODO: support multiple selections
         int selectionIndex = -1;
         for (int i = 0; i < mItems.size(); i++) {
-            Widget w = mItems.get(i).guestWidget;
+            Widget w = mItems.get(i);
             if (w != null && w.isSelected()) {
                 selectionIndex = i;
                 break;
@@ -605,10 +503,15 @@ public class RingList extends GroupWidget {
     }
 
     private float[] mItemRotationValues = null;
-    
+
     @Override
-    protected void onLayout() {       
-        final int numItems = mAdapter.getCount();
+    protected void onLayout() {
+        for (Widget child : getChildren()) {
+            child.layout();
+        }
+
+        final float[] angularWidths = calculateAngularWidth();
+        final int numItems = mItems.size();
 
         if (numItems == 0) {
             Log.d(TAG, "layout(%s): no items to layout!", getName());
@@ -617,33 +520,27 @@ public class RingList extends GroupWidget {
 
             float[] prevItemRotationValues = mItemRotationValues;
             mItemRotationValues = new float[numItems];
-            int numViewsUsed = 0;
+
             switch (layoutType) {
                 case WRAP_AROUND_CENTER:
-                    wrapAroundCenterLayout();
+                    wrapAroundCenterLayout(angularWidths);
                     break;
                 case AROUND_ITEM_AT:
-                    numViewsUsed = layoutAroundItemAt(mAroundItemAtId, prevItemRotationValues);
-                    trimItems(numViewsUsed);
+                    layoutAroundItemAt(mAroundItemAtId, angularWidths, prevItemRotationValues);
                     break;
                 case AROUND_SELECTED_ITEM:
-                    int aroundItemAtId = getSelectedItemIndex();
+                    int aroundItemAtId = getSelectedItemId();
                     if (aroundItemAtId >= 0) {
-                        numViewsUsed = layoutAroundItemAt(aroundItemAtId,
-                                           prevItemRotationValues);
-                        trimItems(numViewsUsed);
+                        layoutAroundItemAt(aroundItemAtId, angularWidths, prevItemRotationValues);
                     }
                     break;
                 case BALANCED:
-                    numViewsUsed = balancedLayout();
-                    trimItems(numViewsUsed);
+                    balancedLayout(angularWidths);
                     break;
                 case LEFT_ORDER:
                 default:
-                    numViewsUsed = layoutClockwise(FULL_CIRCLE, 0, 0, 0.f, numItems);
-                    trimItems(numViewsUsed);
+                    leftLayout(angularWidths);
                     break;
-
             }
         }
     }
@@ -674,21 +571,60 @@ public class RingList extends GroupWidget {
         });
     }
 
-    private void onChangedImpl() { 
-        clear();
-        mItems = new ArrayList<ListItemHostWidget>();
-        
-        requestLayout();
-        List<Widget> children = getChildren();
-        for (int i = 0; i < children.size(); ++i) {
-            Widget child = children.get(i);
-            Log.d(TAG,
-                  "layout(): item at %d {%05.2f, %05.2f, %05.2f}, {%05.2f, %05.2f, %05.2f}",
-                  i, child.getPositionX(), child.getPositionY(),
-                  child.getPositionZ(), child.getRotationX(),
-                  child.getRotationY(), child.getRotationZ());
+    private void onChangedImpl() {
+
+        final int itemCount = mAdapter.getCount();
+        Log.d(TAG, "onChanged(%s): %d items", getName(), itemCount);
+        int pos;
+
+        Log.d(TAG, "onChanged(%s): %d views", getName(), mItems.size());
+        // Recycle any items we already have
+
+        for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
+            final ListItemHostWidget host = mItems.get(pos);
+            final Widget item = mAdapter.getView(pos, host.guestWidget, host);
+            if (!mItemFocusEnabled) {
+                item.setFocusEnabled(false);
+            }
+            item.addFocusListener(mFocusListener);
+            host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
+            updateItemSelection(item, mSelectedItems.get(pos));
         }
-        Log.d(TAG, "onChanged(): child objects: %d", this.getChildren().size());
+
+        // Get any additional items
+        for (; pos < itemCount; ++pos) {
+            Widget item = null;
+            ListItemHostWidget host = makeHost(getGVRContext());
+            try {
+                item = mAdapter.getView(pos, null, host);
+                if (item == null) {
+                    break;
+                }
+                if (!mItemFocusEnabled) {
+                    item.setFocusEnabled(false);
+                }
+                item.addFocusListener(mFocusListener);
+                host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
+            } catch (Exception e) {
+                e.printStackTrace();
+                break;
+            }
+            mItems.add(host);
+            Log.d(TAG, "onChanged(%s): added item at %d", getName(), pos);
+            addChild(host, true);
+            updateItemSelection(item, mSelectedItems.get(pos));
+        }
+
+        // Trim unused items
+        Log.d(TAG, "onChanged(%s): trimming: %b", getName(), pos < mItems.size());
+        for (; pos < mItems.size(); ++pos) {
+            Widget item = mItems.remove(pos);
+            removeChild(item, true);
+        }
+
+        Log.d(TAG, "onChanged(%s): requesting layout", getName());
+        requestLayout();
+
     }
 
     private OnFocusListener mFocusListener = new OnFocusListener() {
