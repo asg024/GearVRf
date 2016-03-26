@@ -476,7 +476,7 @@ public class RingList extends GroupWidget {
             requestLayout();
             return Float.NaN;
         }
-        return mItemRotationValues[position];
+        return -mItemRotationValues[position] + 180;
     }
 
     /**
