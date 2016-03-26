@@ -54,13 +54,12 @@ public abstract class Animation {
         track(tracker, (OnFinish) null);
     }
 
-    public void track(SimpleAnimationTracker tracker,
-            final OnFinish onFinish) {
+    public void track(SimpleAnimationTracker tracker, final OnFinish onFinish) {
         track(tracker, (Runnable) null, onFinish);
     }
 
-    public void track(SimpleAnimationTracker tracker,
-            final Runnable onStart, OnFinish onFinish) {
+    public void track(SimpleAnimationTracker tracker, final Runnable onStart,
+            OnFinish onFinish) {
         tracker.track(mTarget.getSceneObject(), (GVRAnimation) getAnimation(),
                       onStart, new GVROnFinishProxy(onFinish));
     }
@@ -83,6 +82,33 @@ public abstract class Animation {
 
     public Animation setRepeatCount(int count) {
         getAnimation().setRepeatMode(count);
+        return this;
+    }
+
+    /**
+     * @return Whether {@link Widget#requestLayout()} will be called on the
+     *         {@linkplain Widget target} when its transform
+     *         {@linkplain Widget#isChanged() is changed} during each animation
+     *         frame.
+     */
+    public boolean getRequestLayoutOnTargetChange() {
+        return mRequestLayoutOnTargetChange;
+    }
+
+    /**
+     * Sets whether {@link Widget#requestLayout()} will be called on the
+     * {@linkplain Widget target} when its transform
+     * {@linkplain Widget#isChanged() is changed} during each animation frame.
+     * <p>
+     * By default, this feature is enabled.
+     * 
+     * @param enable
+     *            {@code true} to enable this feature, {@code false} to disable
+     *            it.
+     * @return The {@link Animation} instance for call chaining.
+     */
+    public Animation setRequestLayoutOnTargetChange(boolean enable) {
+        mRequestLayoutOnTargetChange = enable;
         return this;
     }
 
@@ -244,7 +270,8 @@ public abstract class Animation {
         return getAnimation().getElapsedTime();
     }
 
-    protected Animation(Widget target, JSONObject metadata) throws JSONException {
+    protected Animation(Widget target, JSONObject metadata)
+            throws JSONException {
         this(target, (float) metadata.getDouble("duration"));
     }
 
@@ -259,7 +286,7 @@ public abstract class Animation {
     void doAnimate(float ratio) {
         Log.d(TAG, "doAnimate(): animating %s", mTarget.getName());
         animate(mTarget, ratio);
-        if (mTarget.isChanged()) {
+        if (mRequestLayoutOnTargetChange && mTarget.isChanged()) {
             mTarget.requestLayout();
         }
     }
@@ -350,6 +377,7 @@ public abstract class Animation {
     private AnimationAdapter mAnimation;
     private OnFinishManager mOnFinish;
     private boolean mIsRunning;
+    private boolean mRequestLayoutOnTargetChange = true;
 
     private static final String TAG = Animation.class.getSimpleName();
 }

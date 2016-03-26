@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRExternalRendererTexture;
 import org.gearvrf.GVRSceneObject;
-import org.gearvrf.GVRTexture;
 
 import android.database.DataSetObserver;
 import android.util.SparseBooleanArray;
@@ -511,11 +509,11 @@ public class RingList extends GroupWidget {
      */
     public float getSelectedItemRotation() {
         //TODO: support multiple selections
-        int selectionIndex = getSelectedItemId();
-        return selectionIndex != -1 ? getItemRotation(getSelectedItemId()) : Float.NaN;
+        int selectionIndex = getSelectedItemIndex();
+        return selectionIndex != -1 ? getItemRotation(getSelectedItemIndex()) : Float.NaN;
     }
 
-    private int getSelectedItemId() {
+    private int getSelectedItemIndex() {
         //TODO: support multiple selections
         int selectionIndex = -1;
         for (int i = 0; i < mItems.size(); i++) {
@@ -551,7 +549,7 @@ public class RingList extends GroupWidget {
                     layoutAroundItemAt(mAroundItemAtId, angularWidths);
                     break;
                 case AROUND_SELECTED_ITEM:
-                    int aroundItemAtId = getSelectedItemId();
+                    int aroundItemAtId = getSelectedItemIndex();
                     layoutAroundItemAt(aroundItemAtId, angularWidths);
                     break;
                 case BALANCED:
@@ -564,7 +562,7 @@ public class RingList extends GroupWidget {
             }
         }
     }
-    
+
     private void onChanged() {
         onChanged(mAdapter);
     }
