@@ -64,15 +64,17 @@ public class AnimationFactory {
         JSONObject animSpec;
         String key;
 
-        Iterator<String> iter = animationMetadata.keys();
-        while (iter.hasNext()) {
-            key = iter.next();
-            if (!sFactoryMap.containsKey(key)) {
-                animSpec = animationMetadata.getJSONObject(key);
-                Log.d(TAG, "init(): creating factory for '%s': %s", key,
-                      animSpec);
-                factory = makeFactory(animSpec);
-                sFactoryMap.put(key, factory);
+        if (animationMetadata != null) {
+            Iterator<String> iter = animationMetadata.keys();
+            while (iter.hasNext()) {
+                key = iter.next();
+                if (!sFactoryMap.containsKey(key)) {
+                    animSpec = animationMetadata.getJSONObject(key);
+                    Log.d(TAG, "init(): creating factory for '%s': %s", key,
+                          animSpec);
+                    factory = makeFactory(animSpec);
+                    sFactoryMap.put(key, factory);
+                }
             }
         }
     }

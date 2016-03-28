@@ -76,8 +76,7 @@ public class Widget {
 
         JSONObject animationMetadata = json.optJSONObject("animations");
         AnimationFactory.init(animationMetadata);
-        Log.d(TAG, "init(): loaded animation metadata: %s",
-              animationMetadata.toString());
+        Log.d(TAG, "init(): loaded animation metadata: %s", animationMetadata);
     }
 
     /**
