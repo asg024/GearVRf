@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRExternalRendererTexture;
 import org.gearvrf.GVRSceneObject;
+import org.gearvrf.GVRTexture;
 
 import android.database.DataSetObserver;
 import android.util.SparseBooleanArray;
@@ -244,21 +246,20 @@ public class RingList extends GroupWidget {
 
         float phi = basePhi;
 
-        if (mItems.get(position).getPhi() == -1) {
+        if (Float.isNaN(mItems.get(position).getPhi()) == false) {
             int anchorAt = position;
 
-            if (position == -1 || position > lastItemIndex) {
+            if (position < 0 || position > lastItemIndex) {
                 anchorAt = lastItemIndex;
             } else if (position < firstItemIndex) {
                 anchorAt = firstItemIndex;
             }
 
             for (int i = anchorAt; --i >= firstItemIndex;) {
-                if (mItems.get(position).getPhi() >= 0f) {
-                    phi += (angularWidths[i] + mItemPadding)
-                            - mItems.get(position).getPhi();
-                }
+                phi += (angularWidths[i] + mItemPadding);
             }
+
+            phi -= mItems.get(position).getPhi();
         }
 
         for (int i = firstItemIndex; i <= lastItemIndex; i++) {
@@ -440,7 +441,22 @@ public class RingList extends GroupWidget {
      *            New rotation of the item, relative to the {@code RingList}
      */
     public void scrollItemTo(int pos, float rotation) {
-        // TODO: Implement #20239
+        if (pos < 0 || pos >= mItems.size()) {
+            return;
+        }
+
+        if (Float.isNaN(rotation)) {
+            return;
+        }
+        if (Float.isNaN(mItems.get(pos).getPhi())) {
+            Log.e(TAG, "Error: layout() has not been called!");
+            requestLayout();
+        }
+
+        rotation = -(rotation - 180f);
+        float delta = rotation - mItems.get(pos).getPhi();
+
+        scrollBy(delta);
     }
 
     private float basePhi = 0f;
@@ -478,7 +494,7 @@ public class RingList extends GroupWidget {
         if (position < 0 || position >= mItems.size()) {
             return Float.NaN;
         }
-        if (mItems.get(position).getPhi() == -1) {
+        if (Float.isNaN(mItems.get(position).getPhi())) {
             Log.e(TAG, "Error: layout() has not been called!");
             requestLayout();
             return Float.NaN;
@@ -520,12 +536,6 @@ public class RingList extends GroupWidget {
         }
 
         final float[] angularWidths = calculateAngularWidth();
-        layoutWithNewParam(angularWidths);
-    }
-
-    private void layoutWithNewParam(final float[] angularWidths)
-    {
-
         final int numItems = mItems.size();
 
         if (numItems == 0) {
@@ -542,9 +552,7 @@ public class RingList extends GroupWidget {
                     break;
                 case AROUND_SELECTED_ITEM:
                     int aroundItemAtId = getSelectedItemId();
-                    if (aroundItemAtId >= 0) {
-                        layoutAroundItemAt(aroundItemAtId, angularWidths);
-                    }
+                    layoutAroundItemAt(aroundItemAtId, angularWidths);
                     break;
                 case BALANCED:
                     balancedLayout(angularWidths);
@@ -693,7 +701,7 @@ public class RingList extends GroupWidget {
             }
             position = pos;
             this.id = id;
-            this.phi = -1;
+            this.phi = Float.NaN;
         }
 
         public void setPhi(float phi) {
