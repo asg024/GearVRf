@@ -36,6 +36,7 @@ import com.samsung.smcl.utility.UnmodifiableJSONObject;
 import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
+import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
 import com.samsung.smcl.vr.gvrf_launcher.TransformCache;
@@ -64,19 +65,24 @@ public class Widget {
         sTouchManager = new WeakReference<TouchManager>(touchManager);
 
         String rawJson = Utility.readTextFile(context, "objects.json");
-        Log.d(TAG, "init(): raw JSON: %s", rawJson);
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "init(): raw JSON: %s", rawJson);
+        }
         if (rawJson == null) {
             rawJson = "";
         }
         final JSONObject json = new JSONObject(rawJson);
         sObjectMetadata = new UnmodifiableJSONObject(
                 json.optJSONObject("objects"));
-        Log.d(TAG, "init(): loaded object metadata: %s",
-              sObjectMetadata.toString());
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "init(): loaded object metadata: %s", sObjectMetadata.toString());
+        }
 
         JSONObject animationMetadata = json.optJSONObject("animations");
         AnimationFactory.init(animationMetadata);
-        Log.d(TAG, "init(): loaded animation metadata: %s", animationMetadata);
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "init(): loaded animation metadata: %s", animationMetadata);
+        }
     }
 
     /**
@@ -196,9 +202,13 @@ public class Widget {
     public Widget(final GVRContext context, final GVRSceneObject sceneObject) {
         mContext = context;
         mSceneObject = sceneObject;
-        Log.d(TAG,
-              "Widget constructor: %s width = %f height = %f depth = %f",
-              sceneObject.getName(), getWidth(), getHeight(), getDepth());
+
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG,
+                  "Widget constructor: %s width = %f height = %f depth = %f",
+                  sceneObject.getName(), getWidth(), getHeight(), getDepth());
+        }
+
         mTransformCache = new TransformCache(getTransform());
         requestLayout();
     }
@@ -1319,11 +1329,19 @@ public class Widget {
      */
     public void requestLayout() {
         mLayoutRequested = true;
-        Log.d(TAG,
-              "requestLayout(%s): mParent: '%s', mParent.isLayoutRequested: %b",
-              getName(), mParent == null ? "<NULL>" : mParent.getName(), mParent != null && mParent.isLayoutRequested());
+
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG,
+                  "requestLayout(%s): mParent: '%s', mParent.isLayoutRequested: %b",
+                  getName(), mParent == null ? "<NULL>" : mParent.getName(),
+                  mParent != null && mParent.isLayoutRequested());
+        }
+
         if (mParent != null && !mParent.isLayoutRequested()) {
-            Log.d(TAG, "requestLayout(%s) requesting", getName());
+            if (Policy.LOGGING_VERBOSE) {
+                Log.v(TAG, "requestLayout(%s) requesting", getName());
+            }
+
             mParent.requestLayout();
 //            new RuntimeException().printStackTrace();
         }
@@ -1386,11 +1404,17 @@ public class Widget {
      */
     @SuppressLint("WrongCall")
     protected void layout() {
-        Log.d(TAG, "layout(%s): changed: %b, requested: %b", getName(), mChanged, mLayoutRequested);
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "layout(%s): changed: %b, requested: %b", getName(), mChanged, mLayoutRequested);
+        }
+
         if (mChanged || mLayoutRequested) {
-            Log.d(TAG, "layout(%s): calling onLayout", getName());
+            if (Policy.LOGGING_VERBOSE) {
+                Log.v(TAG, "layout(%s): calling onLayout", getName());
+            }
             onLayout();
         }
+
         mLayoutRequested = false;
         mChanged = false;
     }
@@ -1595,8 +1619,8 @@ public class Widget {
             if (child.getVisibility() == Visibility.VISIBLE) {
                 if (childRootSceneObject.getParent() != getSceneObject()) {
                     getSceneObject().addChildObject(childRootSceneObject);
-                } else {
-                    Log.d(TAG,
+                } else if (Policy.LOGGING_VERBOSE) {
+                    Log.v(TAG,
                           "addChildInner(): child '%s' already attached to this Group ('%s')",
                           child.getName(), getName());
                 }
@@ -1745,7 +1769,10 @@ public class Widget {
      */
     private boolean doOnFocus(boolean focused) {
         mIsFocused = focused;
-        Log.d(TAG, "doOnFocus(): '%s', focused: %b", getName(), mIsFocused);
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "doOnFocus(): '%s', focused: %b", getName(), mIsFocused);
+        }
+
         for (OnFocusListener listener : mFocusListeners) {
             if (listener.onFocus(focused, this)) {
                 return true;

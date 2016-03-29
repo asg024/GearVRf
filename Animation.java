@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 
 /**
@@ -284,7 +285,9 @@ public abstract class Animation {
 
     /* package */
     void doAnimate(float ratio) {
-        Log.d(TAG, "doAnimate(): animating %s", mTarget.getName());
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "doAnimate(): animating %s", mTarget.getName());
+        }
         animate(mTarget, ratio);
         if (mRequestLayoutOnTargetChange && mTarget.isChanged()) {
             mTarget.requestLayout();
