@@ -39,7 +39,6 @@ import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
-import com.samsung.smcl.vr.gvrf_launcher.TransformCache;
 
 public class Widget {
 
@@ -1695,6 +1694,11 @@ public class Widget {
     }
 
     /* package */
+    GVRRenderData getRenderData() {
+        return mSceneObject.getRenderData();
+    }
+
+    /* package */
     // NOTE: If you find yourself wanting to make this public, don't! You're
     // either working *against* Widget or Widget needs some extending.
     GVRSceneObject getSceneObject() {
@@ -1702,8 +1706,8 @@ public class Widget {
     }
 
     /* package */
-    GVRRenderData getRenderData() {
-        return mSceneObject.getRenderData();
+    GVRTransform getTransform() {
+        return mSceneObject.getTransform();
     }
 
     /**
@@ -1993,13 +1997,6 @@ public class Widget {
         if (!mLevelInfo.isEmpty()) {
             mLevelInfo.get(mLevel).setState(this, state);
         }
-    }
-
-    /**
-     * @return The {@code Widget's} {@linkplain GVRTransform transform}.
-     */
-    public GVRTransform getTransform() {
-        return mSceneObject.getTransform();
     }
 
     private final GVRSceneObject mSceneObject;
