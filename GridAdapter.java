@@ -4,11 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.gearvrf.GVRContext;
-
-import com.samsung.smcl.vr.gvrf_launcher.LauncherInfo;
 import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
-
-import android.util.SparseArray;
 
 public class GridAdapter extends BaseAdapter {
     private float mGridPadding;
@@ -51,8 +47,6 @@ public class GridAdapter extends BaseAdapter {
         return position;
     }
 
-    private final String TAG = GridAdapter.class.getSimpleName();
-
     @Override
     public Widget getView(int position, Widget convertView, GroupWidget parent) {
         int itemIdx = position * mNumOfRows;
@@ -84,11 +78,13 @@ public class GridAdapter extends BaseAdapter {
         LinearLayout columnWidget = new LinearLayout(mContext, 0, 0);
         columnWidget.setOrientation(Orientation.VERTICAL);
         columnWidget.setDividerPadding(mGridPadding);
-        for (int index = itemIdx; index < itemIdx + mNumOfRows; index++) {
+
+        final int limit = Math.min(adapter.getCount(), itemIdx + mNumOfRows);
+        for (int index = itemIdx; index < limit; index++) {
             Widget app = adapter.getView(index, null, parent);
             columnWidget.addChild(app);
         }
 
         return columnWidget;
     }
-};
+}
