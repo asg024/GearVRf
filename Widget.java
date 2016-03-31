@@ -59,10 +59,6 @@ public class Widget {
      */
     static public void init(Context context, TouchManager touchManager)
             throws JSONException, NoSuchMethodException {
-        // TODO: I have a change in the works to make TouchManager a singleton,
-        // so this step will be unnecessary
-        sTouchManager = new WeakReference<TouchManager>(touchManager);
-
         String rawJson = Utility.readTextFile(context, "objects.json");
         if (Policy.LOGGING_VERBOSE) {
             Log.v(TAG, "init(): raw JSON: %s", rawJson);
@@ -237,12 +233,14 @@ public class Widget {
         final boolean hasRenderData = sceneObject.getRenderData() != null;
 
         attribute = attributes.getProperty("touchable");
-        setTouchable(attribute != null && hasRenderData
-                && attribute.compareToIgnoreCase("false") != 0);
+        if (attribute != null) {
+            setTouchable(hasRenderData && attribute.compareToIgnoreCase("false") != 0);
+        }
 
         attribute = attributes.getProperty("focusenabled");
-        setFocusEnabled(attribute != null && hasRenderData
-                && attribute.compareToIgnoreCase("false") != 0);
+        if (attribute != null) {
+            setFocusEnabled(attribute.compareToIgnoreCase("false") != 0);
+        }
 
         attribute = attributes.getProperty("selected");
         setSelected(attribute != null && hasRenderData
@@ -373,6 +371,181 @@ public class Widget {
         return mFocusListeners.remove(listener);
     }
 
+    /**
+     * @return Whether children of this {@link Widget} will be grouped with
+     *         their parent for purposes of managing focus.
+     * @see #setChildrenFollowFocus(boolean)
+     */
+    public boolean getChildrenFollowFocus() {
+        return mChildrenFollowFocus;
+    }
+
+    /**
+     * When children follow the focus of their parent {@link Widget}, the parent
+     * and children are treated as a single entity for focus management
+     * purposes. When any of them would normally gain focus, they all gain
+     * focus, and the group only loses focus when none of them would normally
+     * have focus.
+     * <p>
+     * The focus hook methods -- {@link #onFocus(boolean)} and
+     * {@link #onLongFocus()} -- are invoked as usual, but en masse for the
+     * parent and its children. There is one caveat: only the parent's
+     * {@code onFocus()} method determines whether focus is accepted or
+     * rejected. If the parent rejects focus, it is rejected for the entire
+     * group and none of the children will have {@code onFocus()} called on
+     * them.
+     * <p>
+     * Children can {@linkplain #setFocusEnabled(boolean) enable and disable}
+     * focus individually; if a child disables focus, it will not receive calls
+     * to the hook methods, but it will still be considered when determining
+     * focus for the entire group. However, if the parent disables focus,
+     * neither it nor any of its children will receive focus events.
+     * <p>
+     * Focus hook methods will be called as appropriate when children follow
+     * focus is enabled or disabled:
+     * <ul>
+     * <li>If the parent has focus when the feature is enabled, the children
+     * will gain focus as well</li>
+     * <li>If the group has focus when the feature is disabled, the children
+     * will lose focus (children that are independently
+     * {@linkplain #setFollowParentFocus(boolean) following parent focus} are
+     * excepted from this). If a child would have focus normally, the parent
+     * will then lose focus and the child will gain focus again</li>
+     * <li>If the parent does not have focus when the feature is enabled, but
+     * one of the children does have focus, the focused child will first lose
+     * focus, and then the entire group will gain focus</li>
+     * </ul>
+     * 
+     * @param follow
+     *            {@code true} to enable children following focus, {@code false}
+     *            to disable.
+     */
+    public void setChildrenFollowFocus(final boolean follow) {
+        if (follow != mChildrenFollowFocus) {
+            mChildrenFollowFocus = follow;
+            final boolean focused = isFocused();
+            if (focused && follow) {
+                for (Widget child : mChildren) {
+                    if (child.isFocusEnabled()) {
+                        child.doOnFocus(true);
+                    }
+                }
+            } else if (focused && !follow) {
+                for (Widget child : mChildren) {
+                    if (child.isFocusEnabled() && !child.mFollowParentFocus) {
+                        child.doOnFocus(false);
+                    }
+                }
+            }
+            for (Widget child : mChildren) {
+                if (focused && child.isFocusEnabled()) {
+                    if (follow) {
+                        child.doOnFocus(true);
+                    } else if (!child.getFollowParentFocus()) {
+                        child.doOnFocus(false);
+                    }
+                }
+
+                Log.d(TAG, "setChildrenFollowFocus(%s): calling registerPickable", getName());
+                child.registerPickable();
+            }
+        }
+    }
+
+    /**
+     * Whether this {@link Widget} will be grouped with its parent for purposes
+     * of managing focus. This is different from
+     * {@link #setChildrenFollowFocus(boolean)} in that the parent is not in
+     * control of whether or not the child follows focus, as the following has
+     * been initiated by the child.
+     * 
+     * @return {@code true} if this {@code Widget} is following its parent's
+     *         focus, {@code false} if not.
+     */
+    public boolean getFollowParentFocus() {
+        return mFollowParentFocus;
+    }
+
+    /**
+     * This method is nearly identical to
+     * {@link #setChildrenFollowFocus(boolean)}, with the only difference being
+     * that the child is independently grouping itself with the parent for
+     * purposes of managing focus. If either feature is enabled, the child will
+     * be focused with the parent.
+     * 
+     * @param follow
+     *            {@code true} to enable this {@link Widget} to follow its
+     *            parent's focus, {@code false} to disable.
+     */
+    public void setFollowParentFocus(final boolean follow) {
+        if (follow != mFollowParentFocus) {
+            mFollowParentFocus = follow;
+            Log.d(TAG, "setFollowParentFocus(%s): calling registerPickable", getName());
+            registerPickable();
+        }
+    }
+
+    /**
+     * @return Whether the children of this {@link Widget} will be grouped with
+     *         their parent as a single touchable object.
+     */
+    public boolean getChildrenFollowInput() {
+        return mChildrenFollowInput;
+    }
+
+    /**
+     * When children follow the input of their parent {@link Widget}, the parent
+     * and children are treated as a single entity for touch event purposes.
+     * When any of them would normally get a touch event, they all get a touch
+     * event.
+     * <p>
+     * The touch hook method -- {@link #onTouch(boolean)} -- is invoked as
+     * usual, but en masse for the parent and its children. There is one caveat:
+     * only the parent's {@code onTouch()} method determines whether the touch
+     * event is accepted or rejected. If the parent rejects the event, it is
+     * rejected for the entire group and none of the children will have
+     * {@code onTouch()} called on them.
+     * <p>
+     * Children can {@linkplain #setTouchable(boolean) enable and disable} touch
+     * individually; if a child disables touch, it will not receive calls to
+     * {@code onTouch()}, but it will still be considered for dispatching touch
+     * events to the entire group. However, if the parent disables touch,
+     * neither it nor any of its children will receive touch events.
+     * 
+     * @param follow
+     *            {@code true} to enable children following input, {@code false}
+     *            to disable.
+     */
+    public void setChildrenFollowInput(final boolean follow) {
+        if (follow != mChildrenFollowInput) {
+            mChildrenFollowInput = follow;
+            for (Widget child : mChildren) {
+                child.registerPickable();
+            }
+        }
+    }
+
+    /**
+     * Whether this {@link Widget} will be grouped with its parent for 
+     * receiving input. This is different from 
+     * {@link #setChildrenFollowInput(boolean) in that the parent is not in 
+     * control of whether or not the child follows input, as the following has 
+     * been initiated by the child.
+     * 
+     * @return {@code true} if this {@code Widget} is following its parent's
+     *         input, {@code false} if not.
+     */
+    public boolean getFollowParentInput() {
+        return mFollowParentInput;
+    }
+
+    public void setFollowParentInput(final boolean follow) {
+        if (follow != mFollowParentInput) {
+            mFollowParentInput = follow;
+            registerPickable();
+        }
+    }
+
     private final class FocusableImpl implements FocusManager.Focusable, FocusManager.LongFocusTimeout {
         /**
          * Hook method for handling changes in focus for this object.
@@ -413,7 +586,7 @@ public class Widget {
             return Widget.this.getLongFocusTimeout();
         }
     }
-    private FocusManager.Focusable focusableImpl = new FocusableImpl();
+    private FocusManager.Focusable mFocusableImpl = new FocusableImpl();
 
     /**
      * Set whether or not the {@code Widget} can receive touch and back key
@@ -1398,6 +1571,19 @@ public class Widget {
     }
 
     /**
+     * Determine whether the specified {@link GVRSceneObject} is the object
+     * wrapped by this {@link Widget}.
+     * 
+     * @param sceneObject
+     *            The {@code GVRSceneObject} to test against.
+     * @return {@code true} if {@code sceneObject} is wrapped by this instance,
+     *         {@code false} otherwise.
+     */
+    protected final boolean isSceneObject(GVRSceneObject sceneObject) {
+        return mSceneObject == sceneObject;
+    }
+
+    /**
      * Does layout on the {@link Widget}. If you override this method and don't
      * call {@code super}, bad things will almost certainly happen.
      */
@@ -1535,7 +1721,6 @@ public class Widget {
      * @return {@code True} to accept focus, {@code false} if not.
      */
     protected boolean onFocus(boolean focused) {
-        updateState();
         return true;
     }
 
@@ -1726,7 +1911,6 @@ public class Widget {
         if (parent != mParent) {
             create();
             mParent = parent;
-            mIsAttached = true;
             registerPickable();
             onAttached();
         }
@@ -1759,7 +1943,6 @@ public class Widget {
      * </ul>
      */
     private synchronized final void doOnDetached() {
-        mIsAttached = false;
         mParent = null;
         registerPickable();
         onDetached();
@@ -1772,9 +1955,10 @@ public class Widget {
      * called.
      */
     private boolean doOnFocus(boolean focused) {
-        mIsFocused = focused;
+        final boolean oldFocus = mIsFocused;
         if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "doOnFocus(): '%s', focused: %b", getName(), mIsFocused);
+            Log.v(TAG, "doOnFocus(%s): mIsFocused: %b, focused: %b",
+                  getName(), mIsFocused, focused);
         }
 
         for (OnFocusListener listener : mFocusListeners) {
@@ -1782,7 +1966,25 @@ public class Widget {
                 return true;
             }
         }
-        return onFocus(focused);
+        final boolean tookFocus = onFocus(focused);
+        Log.d(TAG, "doOnFocus(%s): tookFocus: %b", getName(), tookFocus);
+        if (focused) {
+            // onFocus() can refuse to take focus
+            mIsFocused = tookFocus;
+        } else {
+            // But when we lose focus, we don't get a choice about it
+            mIsFocused = focused;
+        }
+        updateState();
+        if (oldFocus != mIsFocused) {
+            for (Widget child : mChildren) {
+                if (child.mFocusEnabled && !child.isFocused()
+                        && (mChildrenFollowFocus || child.mFollowParentFocus)) {
+                    child.doOnFocus(mIsFocused);
+                }
+            }
+        }
+        return tookFocus;
     }
 
     /**
@@ -1799,6 +2001,12 @@ public class Widget {
             }
         }
         onLongFocus();
+        for (Widget child : mChildren) {
+            if (child.mFocusEnabled
+                    && (mChildrenFollowFocus || child.mFollowParentFocus)) {
+                child.doOnLongFocus();
+            }
+        }
     }
 
     private boolean doOnTouch() {
@@ -1807,7 +2015,19 @@ public class Widget {
                 return true;
             }
         }
-        return onTouch();
+
+        final boolean acceptedTouch = onTouch();
+        if (acceptedTouch) {
+            for (Widget child : mChildren) {
+                if (child.isTouchable()
+                        && (mChildrenFollowInput || child
+                                .getFollowParentInput())) {
+                    child.doOnTouch();
+                }
+            }
+        }
+
+        return acceptedTouch;
     }
 
     private boolean addChildInner(final Widget child) {
@@ -1894,31 +2114,42 @@ public class Widget {
     }
 
     private void registerPickable() {
-        final TouchManager touchManager = sTouchManager.get();
+        final TouchManager touchManager = TouchManager.get(getGVRContext());
         if (touchManager == null) {
             Log.e(TAG,
                   "Attempted to register widget as touchable with NULL TouchManager!");
             return;
         }
 
-        if (mIsAttached && (mIsTouchable || mFocusEnabled)) {
+        final boolean hasRenderData = getRenderData() != null;
+        final FocusManager focusManager = FocusManager.get(mContext);
+        if (mParent != null && hasRenderData && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
-                TouchManager.get(getGVRContext()).makeTouchable(mSceneObject,
-                                           mTouchHandler);
+                if (mFollowParentInput || mParent.mChildrenFollowInput) {
+                    touchManager.makeTouchable(mSceneObject,
+                                               mParent.mTouchHandler);
+                } else {
+                    touchManager.makeTouchable(mSceneObject, mTouchHandler);
+                }
             } else {
-                TouchManager.get(getGVRContext()).makePickable(mSceneObject);
+                touchManager.makePickable(mSceneObject);
             }
             if (mFocusEnabled) {
-                FocusManager.get(mContext).register(getSceneObject(),
-                                                    focusableImpl);
+                if (mFollowParentFocus || mParent.mChildrenFollowFocus) {
+                    focusManager.register(getSceneObject(),
+                                          mParent.mFocusableImpl);
+                } else {
+                    focusManager.register(getSceneObject(), mFocusableImpl);
+                }
             } else {
-                Log.d(TAG, "registerPickable(): '%s' is not focus-enabled", getName());
-                FocusManager.get(mContext).unregister(getSceneObject());
+                Log.d(TAG, "registerPickable(): '%s' is not focus-enabled",
+                      getName());
+                focusManager.unregister(getSceneObject());
             }
         } else {
             touchManager.removeHandlerFor(mSceneObject);
             Log.d(TAG, "registerPickable(): unregistering '%s'; focus-enabled: %b", getName(), mFocusEnabled);
-            FocusManager.get(mContext).unregister(getSceneObject());
+            focusManager.unregister(getSceneObject());
         }
     }
 
@@ -2007,12 +2238,15 @@ public class Widget {
     private BoundingBox mBoundingBox;
     private boolean mLayoutRequested;
     private boolean mChanged;
-    private boolean mIsAttached;
     private boolean mIsCreated;
 
     private boolean mFocusEnabled = true;
+    private boolean mChildrenFollowFocus = false;
+    private boolean mFollowParentFocus = false;
     private boolean mIsFocused;
     private long mLongFocusTimeout = FocusManager.LONG_FOCUS_TIMEOUT;
+    private boolean mChildrenFollowInput = false;
+    private boolean mFollowParentInput = false;
     private boolean mIsSelected;
     private boolean mIsTouchable = true;
     private Visibility mVisibility = Visibility.VISIBLE;
@@ -2041,7 +2275,6 @@ public class Widget {
     };
 
     private static WeakReference<Thread> sGLThread = new WeakReference<Thread>(null);
-    private static WeakReference<TouchManager> sTouchManager;
     private static GVRTexture sDefaultTexture;
 
     private static JSONObject sObjectMetadata;

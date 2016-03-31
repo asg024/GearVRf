@@ -30,7 +30,7 @@ class WidgetStateInfo {
         scene_object, material, animation, id
     }
 
-    public WidgetStateInfo(Widget widget, JSONObject info)
+    public WidgetStateInfo(Widget parent, JSONObject info)
             throws JSONException, NoSuchMethodException, IOException {
         Widget levelWidget = null;
         GVRMaterial material = null;
@@ -44,10 +44,10 @@ class WidgetStateInfo {
             final JSONObject typeInfo = info.optJSONObject(type);
             switch (Properties.valueOf(type)) {
                 case scene_object:
-                    levelWidget = getWidget(widget, typeInfo);
+                    levelWidget = getWidget(parent, typeInfo);
                     break;
                 case material:
-                    material = getMaterial(widget, typeInfo);
+                    material = getMaterial(parent, typeInfo);
                     break;
                 case animation:
                     factory = getAnimationFactory(typeInfo);
@@ -198,17 +198,19 @@ class WidgetStateInfo {
         }
     }
 
-    private Widget getWidget(Widget widget, JSONObject stateSpec)
+    private Widget getWidget(Widget parent, JSONObject stateSpec)
             throws JSONException {
         Widget levelWidget;
         String id = JSONHelpers.getString(stateSpec, Properties.id);
-        levelWidget = widget.findChildByName(id);
+        levelWidget = parent.findChildByName(id);
         if (levelWidget == null) {
             throw Exceptions
                     .RuntimeAssertion("State widget '%s' not found", id);
         }
         Log.d(TAG, "getWidget(): got state widget '%s'", id);
         levelWidget.setVisibility(Visibility.HIDDEN);
+        levelWidget.setFollowParentFocus(true);
+        levelWidget.setFollowParentInput(true);
         return levelWidget;
     }
 

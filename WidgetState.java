@@ -17,19 +17,19 @@ class WidgetState {
         NORMAL, FOCUSED, SELECTED, DISABLED
     }
 
-    public WidgetState(final Widget widget, final JSONObject stateSpec) {
-        Log.d(TAG, "WidgetState(): states for '%s': %s", widget.getName(), stateSpec);
+    public WidgetState(final Widget parent, final JSONObject stateSpec) {
+        Log.d(TAG, "WidgetState(): states for '%s': %s", parent.getName(), stateSpec);
         if (check(stateSpec, true)) {
             // One or more states are explicitly specified
-            loadStates(widget, stateSpec);
+            loadStates(parent, stateSpec);
         } else if (check(stateSpec, false)) {
             // No explicitly specified state; "NORMAL" is implied
             final WidgetState.State state = State.NORMAL;
-            loadState(widget, stateSpec, state);
+            loadState(parent, stateSpec, state);
         } else {
             // Either something is missing, or we've got a mix of fields
             throw RuntimeAssertion("Bad format in state spec for '%s': %s",
-                                      widget.getName(),
+                                      parent.getName(),
                                       stateSpec.toString());
         }
     }
@@ -90,39 +90,40 @@ class WidgetState {
         return spec.has(e.name().toLowerCase(Locale.ENGLISH));
     }
 
-    private void loadStates(final Widget widget, final JSONObject stateSpecs) {
-        Log.d(TAG, "loadStates(): for '%s': %s", widget.getName(), stateSpecs);
+    private void loadStates(final Widget parent, final JSONObject stateSpecs) {
+        Log.d(TAG, "loadStates(): for '%s': %s", parent.getName(), stateSpecs);
         if (stateSpecs != null) {
             Iterator<String> iter = stateSpecs.keys();
             while (iter.hasNext()) {
                 final String key = iter.next();
-                loadState(widget, stateSpecs, key);
+                loadState(parent, stateSpecs, key);
             }
         }
     }
 
-    private void loadState(final Widget widget, JSONObject states,
+    private void loadState(final Widget parent, JSONObject states,
             String key) {
         try {
             final JSONObject stateSpec = states.getJSONObject(key);
             Log.d(TAG, "loadState(): for state '%s': %s", key, stateSpec);
             key = key.toUpperCase(Locale.ENGLISH);
             final WidgetState.State state = State.valueOf(key);
-            loadState(widget, stateSpec, state);
+            loadState(parent, stateSpec, state);
         } catch (JSONException e) {
             throw RuntimeAssertion(e, "Invalid state spec for '%s': %s",
-                                      widget.getName(), states.opt(key));
+                                      parent.getName(), states.opt(key));
         }
     }
 
-    private void loadState(final Widget widget, final JSONObject stateSpec,
+    private void loadState(final Widget parent, final JSONObject stateSpec,
             final WidgetState.State state) {
         try {
-            mStates.put(state, new WidgetStateInfo(widget, stateSpec));
+            mStates.put(state, new WidgetStateInfo(parent, stateSpec));
         } catch (Exception e) {
+            e.printStackTrace();
             throw RuntimeAssertion(e,
                                       "Failed to load state '%s' for '%s'",
-                                      state, widget.getName());
+                                      state, parent.getName());
         }
     }
 
