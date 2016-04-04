@@ -146,7 +146,7 @@ public class LinearLayout extends GroupWidget {
         } else {
             axis = LayoutStrategy.Axis.Y;
             xFactor = 0;
-            yFactor = 1;
+            yFactor = -1;
             axisSize = mLayoutStrategy.getAxisSize(mHeight);
         }
         zFactor = 0;
