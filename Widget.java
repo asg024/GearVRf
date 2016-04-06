@@ -46,7 +46,7 @@ public class Widget {
      * Call to initialize the Widget infrastructure. Parses {@code objects.json}
      * to load metadata for {@code Widgets}, as well as animation and material
      * specs.
-     * 
+     *
      * @param context
      *            A valid Android {@link Context}.
      * @param touchManager
@@ -116,7 +116,7 @@ public class Widget {
     public interface OnFocusListener {
         /**
          * Called when a widget gains or loses focus.
-         * 
+         *
          * @param focused
          *            {@code True} is the widget has gained focus; {@code false}
          *            if the widget has lost focus.
@@ -129,7 +129,7 @@ public class Widget {
         /**
          * Called when a widget has had focus for more than
          * {@link Widget#getLongFocusTime()} milliseconds.
-         * 
+         *
          * @return {@code True} to indicate that no further processing of the
          *         event should take place; {@code false} to allow further
          *         processing.
@@ -144,7 +144,7 @@ public class Widget {
     public interface OnBackKeyListener {
         /**
          * Called when widget is target of back key event.
-         * 
+         *
          * @param widget
          *            {@link Widget} target by back key event.
          * @return {@code True} to indicate that no further processing of the
@@ -161,10 +161,10 @@ public class Widget {
     public interface OnTouchListener {
         /**
          * Called when a widget is touched (tapped).
-         * 
+         *
          * @param widget
          *            {@link Widget} target by touch event.
-         * 
+         *
          * @return {@code True} to indicate that no further processing of the
          *         touch event should take place; {@code false} to allow further
          *         processing.
@@ -188,7 +188,7 @@ public class Widget {
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
-     * 
+     *
      * @param context
      *            The current {@link GVRContext}.
      * @param sceneObject
@@ -212,14 +212,14 @@ public class Widget {
      * A constructor for wrapping existing {@link GVRSceneLayout} instances.
      * Deriving classes should override and do whatever processing is
      * appropriate.
-     * 
+     *
      * @param context
      *            The current {@link GVRContext}
      * @param sceneObject
      *            The {@link GVRSceneObject} to wrap.
      * @param attributes
      *            TODO
-     * @throws InstantiationException 
+     * @throws InstantiationException
      */
     public Widget(final GVRContext context, final GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
@@ -297,7 +297,7 @@ public class Widget {
      * notifications.
      * <p>
      * Focus is enabled by default.
-     * 
+     *
      * @param enabled
      *            {@code True} to enable line-of-sight focus, {@code false} to
      *            disable.
@@ -335,7 +335,7 @@ public class Widget {
     /**
      * Set the timeout, in milliseconds, before a continuous focus state trigger
      * an {@link #onLongFocus()} event.
-     * 
+     *
      * @param longFocusTimeout
      *            Timeout value, in milliseconds.
      */
@@ -347,7 +347,7 @@ public class Widget {
      * Add a listener for {@linkplain OnFocusListener#onFocus(boolean) focus}
      * and {@linkplain OnFocusListener#onLongFocus() long focus} notifications
      * for this object.
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnFocusListener}.
      * @return {@code True} if the listener was successfully registered,
@@ -360,7 +360,7 @@ public class Widget {
     /**
      * Remove a previously {@linkplain #addFocusListener(OnFocusListener)
      * registered} focus notification {@linkplain OnFocusListener listener}.
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnFocusListener}
      * @return {@code True} if the listener was successfully unregistered,
@@ -415,7 +415,7 @@ public class Widget {
      * one of the children does have focus, the focused child will first lose
      * focus, and then the entire group will gain focus</li>
      * </ul>
-     * 
+     *
      * @param follow
      *            {@code true} to enable children following focus, {@code false}
      *            to disable.
@@ -458,7 +458,7 @@ public class Widget {
      * {@link #setChildrenFollowFocus(boolean)} in that the parent is not in
      * control of whether or not the child follows focus, as the following has
      * been initiated by the child.
-     * 
+     *
      * @return {@code true} if this {@code Widget} is following its parent's
      *         focus, {@code false} if not.
      */
@@ -472,7 +472,7 @@ public class Widget {
      * that the child is independently grouping itself with the parent for
      * purposes of managing focus. If either feature is enabled, the child will
      * be focused with the parent.
-     * 
+     *
      * @param follow
      *            {@code true} to enable this {@link Widget} to follow its
      *            parent's focus, {@code false} to disable.
@@ -511,7 +511,7 @@ public class Widget {
      * {@code onTouch()}, but it will still be considered for dispatching touch
      * events to the entire group. However, if the parent disables touch,
      * neither it nor any of its children will receive touch events.
-     * 
+     *
      * @param follow
      *            {@code true} to enable children following input, {@code false}
      *            to disable.
@@ -526,12 +526,12 @@ public class Widget {
     }
 
     /**
-     * Whether this {@link Widget} will be grouped with its parent for 
-     * receiving input. This is different from 
-     * {@link #setChildrenFollowInput(boolean) in that the parent is not in 
-     * control of whether or not the child follows input, as the following has 
+     * Whether this {@link Widget} will be grouped with its parent for
+     * receiving input. This is different from
+     * {@link #setChildrenFollowInput(boolean) in that the parent is not in
+     * control of whether or not the child follows input, as the following has
      * been initiated by the child.
-     * 
+     *
      * @return {@code true} if this {@code Widget} is following its parent's
      *         input, {@code false} if not.
      */
@@ -549,7 +549,7 @@ public class Widget {
     private final class FocusableImpl implements FocusManager.Focusable, FocusManager.LongFocusTimeout {
         /**
          * Hook method for handling changes in focus for this object.
-         * 
+         *
          * @param focused
          *            {@code True} if the object has gained focus, {@code false}
          *            if it has lost focus.
@@ -606,7 +606,7 @@ public class Widget {
      * can also receive those notifications.
      * <p>
      * Objects are touchable by default.
-     * 
+     *
      * @param touchable
      *            {@code True} to enable touch events for this object,
      *            {@code false} to disable.
@@ -629,7 +629,7 @@ public class Widget {
     /**
      * Add a listener for {@linkplain OnBackKeyListener#onBackKey(Widget) back
      * key} notifications for this object.
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnBackKeyListener}.
      * @return {@code True} if the listener was successfully registered,
@@ -643,7 +643,7 @@ public class Widget {
      * Remove a previously {@linkplain #addBackKeyListener(OnBackKeyListener)
      * registered} back key notification {@linkplain OnBackKeyListener listener}
      * .
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnBackKeyListener}
      * @return {@code True} if the listener was successfully unregistered,
@@ -657,7 +657,7 @@ public class Widget {
     /**
      * Add a listener for {@linkplain OnTouchListener#onTouch() touch}
      * notifications for this object.
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnTouchListener}.
      * @return {@code True} if the listener was successfully registered,
@@ -670,7 +670,7 @@ public class Widget {
     /**
      * Remove a previously {@linkplain #addTouchListener(OnTouchListener)
      * registered} touch notification {@linkplain OnTouchListener listener}.
-     * 
+     *
      * @param listener
      *            An implementation of {@link OnTouchListener}
      * @return {@code True} if the listener was successfully unregistered,
@@ -686,7 +686,7 @@ public class Widget {
      * indicating different states that reflect a change in quantity (e.g.,
      * battery charge, WiFi signal strength, etc.). The visual change for each
      * level can be a change in material, an animation, or showing a sub-object.
-     * 
+     *
      * @param level
      *            The new level value. Values will be clamped to the range
      *            [0,num_levels).
@@ -716,7 +716,7 @@ public class Widget {
      * Sets the state of the {@link Widget} to "selected". This state may be
      * accompanied by visual changes -- material, animation, displayed mesh --
      * if it has been specified in the {@code Widget's} metadata.
-     * 
+     *
      * @param selected
      *            {@code True} to set the {@code Widget} as selected,
      *            {@code false} to set as unselected.
@@ -739,7 +739,7 @@ public class Widget {
 
     /**
      * Get the (optional) name of the {@link Widget}.
-     * 
+     *
      * @return The name of the {@code Widget}.
      */
     public String getName() {
@@ -749,7 +749,7 @@ public class Widget {
     /**
      * Set the (optional) name of the {@link Widget}. {@code Widget} names are
      * not needed: they are only for the application's convenience.
-     * 
+     *
      * @param name
      */
     public void setName(String name) {
@@ -771,7 +771,7 @@ public class Widget {
 
     /**
      * Set the order in which this {@link Widget} will be rendered.
-     * 
+     *
      * @param renderingOrder
      *            See {@link GVRRenderingOrder}.
      */
@@ -797,7 +797,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     * 
+     *
      * @param texture
      *            The new texture.
      */
@@ -808,7 +808,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     * 
+     *
      * @param name
      *            Name of the texture
      * @param texture
@@ -821,7 +821,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     * 
+     *
      * @param texture
      *            The new texture.
      */
@@ -832,7 +832,7 @@ public class Widget {
     /**
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
-     * 
+     *
      * @param bitmapId
      *            Resource ID of the bitmap to create the texture from.
      */
@@ -863,7 +863,7 @@ public class Widget {
      * so the bounding box may or may not be big enough to include them. If you
      * want to make sure that the bounding box fully encompasses the
      * {@code Widget}'s children, use {@link #getBoundingBox(boolean)}.
-     * 
+     *
      * @return A {@link BoundingBox} that contains the {@code Widget}.
      */
     public BoundingBox getBoundingBox() {
@@ -877,7 +877,7 @@ public class Widget {
      * {@linkplain BoundingBox#expand(BoundingBox) expanded} to contain the
      * bounding boxes of the {@code Widget}'s children that would otherwise lie
      * outside it.
-     * 
+     *
      * @param includeChildren
      *            {@code True} to explicitly include the {@code Widget}'s
      *            children, {@code false} to ignore them.
@@ -893,7 +893,7 @@ public class Widget {
 
     /**
      * Set the {@code GL_DEPTH_TEST} option
-     * 
+     *
      * @param depthTest
      *            {@code true} if {@code GL_DEPTH_TEST} should be enabled,
      *            {@code false} if not.
@@ -919,7 +919,7 @@ public class Widget {
 
     /**
      * Set the {@code GL_POLYGON_OFFSET_FILL} option
-     * 
+     *
      * @param offset
      *            {@code true} if {@code GL_POLYGON_OFFSET_FILL} should be
      *            enabled, {@code false} if not.
@@ -946,7 +946,7 @@ public class Widget {
     /**
      * Set the {@code factor} value passed to {@code glPolygonOffset()} if
      * {@code GL_POLYGON_OFFSET_FILL} is enabled.
-     * 
+     *
      * @param offsetFactor
      *            Per OpenGL docs: Specifies a scale factor that is used to
      *            create a variable depth offset for each polygon. The initial
@@ -976,7 +976,7 @@ public class Widget {
     /**
      * Set the {@code units} value passed to {@code glPolygonOffset()} if
      * {@code GL_POLYGON_OFFSET_FILL} is enabled.
-     * 
+     *
      * @param offsetUnits
      *            Per OpenGL docs: Is multiplied by an implementation-specific
      *            value to create a constant depth offset. The initial value is
@@ -1005,7 +1005,7 @@ public class Widget {
 
     /**
      * Get the X component of the widget's position.
-     * 
+     *
      * @return 'X' component of the widget's position.
      */
     public float getPositionX() {
@@ -1014,7 +1014,7 @@ public class Widget {
 
     /**
      * Get the 'Y' component of the widget's position.
-     * 
+     *
      * @return 'Y' component of the widget's position.
      */
     public float getPositionY() {
@@ -1023,7 +1023,7 @@ public class Widget {
 
     /**
      * Get the 'Z' component of the widget's position.
-     * 
+     *
      * @return 'Z' component of the widget's position.
      */
     public float getPositionZ() {
@@ -1032,9 +1032,9 @@ public class Widget {
 
     /**
      * Set absolute position.
-     * 
+     *
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     * 
+     *
      * @param x
      *            'X' component of the absolute position.
      * @param y
@@ -1051,9 +1051,9 @@ public class Widget {
 
     /**
      * Set the 'X' component of absolute position.
-     * 
+     *
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     * 
+     *
      * @param x
      *            New 'X' component of the absolute position.
      */
@@ -1066,9 +1066,9 @@ public class Widget {
 
     /**
      * Set the 'Y' component of the absolute position.
-     * 
+     *
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     * 
+     *
      * @param y
      *            New 'Y' component of the absolute position.
      */
@@ -1081,9 +1081,9 @@ public class Widget {
 
     /**
      * Set the 'Z' component of the absolute position.
-     * 
+     *
      * Use {@link #translate(float, float, float)} to <em>move</em> the object.
-     * 
+     *
      * @param z
      *            New 'Z' component of the absolute position.
      */
@@ -1096,7 +1096,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'W' component.
-     * 
+     *
      * @return 'W' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationW() {
@@ -1105,7 +1105,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'X' component.
-     * 
+     *
      * @return 'X' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationX() {
@@ -1114,7 +1114,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'Y' component.
-     * 
+     *
      * @return 'Y' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationY() {
@@ -1123,7 +1123,7 @@ public class Widget {
 
     /**
      * Get the quaternion 'Z' component.
-     * 
+     *
      * @return 'Z' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationZ() {
@@ -1132,7 +1132,7 @@ public class Widget {
 
     /**
      * Get the rotation around the 'Y' axis, in degrees.
-     * 
+     *
      * @return The widget's current rotation around the 'Y' axis, in degrees.
      */
     public float getRotationYaw() {
@@ -1141,7 +1141,7 @@ public class Widget {
 
     /**
      * Get the rotation around the 'X' axis, in degrees.
-     * 
+     *
      * @return The widget's rotation around the 'X' axis, in degrees.
      */
     public float getRotationPitch() {
@@ -1150,7 +1150,7 @@ public class Widget {
 
     /**
      * Get the rotation around the 'Z' axis, in degrees.
-     * 
+     *
      * @return The widget's rotation around the 'Z' axis, in degrees.
      */
     public float getRotationRoll() {
@@ -1159,14 +1159,14 @@ public class Widget {
 
     /**
      * Set rotation, as a quaternion.
-     * 
+     *
      * Sets the widget's current rotation in quaternion terms. Overrides any
      * previous rotations using {@link #rotate(float, float, float, float)
      * rotate()}, {@link #rotateByAxis(float, float, float, float)
      * rotateByAxis()} , or
      * {@link #rotateByAxisWithPivot(float, float, float, float, float, float, float)
      * rotateByAxisWithPivot()} .
-     * 
+     *
      * @param w
      *            'W' component of the quaternion.
      * @param x
@@ -1185,7 +1185,7 @@ public class Widget {
 
     /**
      * Get the 'X' scale
-     * 
+     *
      * @return The widget's current scaling on the 'X' axis.
      */
     public float getScaleX() {
@@ -1194,7 +1194,7 @@ public class Widget {
 
     /**
      * Get the 'Y' scale
-     * 
+     *
      * @return The widget's current scaling on the 'Y' axis.
      */
     public float getScaleY() {
@@ -1203,7 +1203,7 @@ public class Widget {
 
     /**
      * Get the 'Z' scale
-     * 
+     *
      * @return The widget's current scaling on the 'Z' axis.
      */
     public float getScaleZ() {
@@ -1212,7 +1212,7 @@ public class Widget {
 
     /**
      * Set [X, Y, Z] current scale
-     * 
+     *
      * @param x
      *            Scaling factor on the 'X' axis.
      * @param y
@@ -1229,7 +1229,7 @@ public class Widget {
 
     /**
      * Set the widget's current scaling on the 'X' axis.
-     * 
+     *
      * @param x
      *            Scaling factor on the 'X' axis.
      */
@@ -1242,7 +1242,7 @@ public class Widget {
 
     /**
      * Set the widget's current scaling on the 'Y' axis.
-     * 
+     *
      * @param y
      *            Scaling factor on the 'Y' axis.
      */
@@ -1255,7 +1255,7 @@ public class Widget {
 
     /**
      * Set the widget's current scaling on the 'Z' axis.
-     * 
+     *
      * @param z
      *            Scaling factor on the 'Z' axis.
      */
@@ -1268,7 +1268,7 @@ public class Widget {
 
     /**
      * Get the 4x4 single matrix.
-     * 
+     *
      * @return An array of 16 {@code float}s representing a 4x4 matrix in
      *         OpenGL-compatible column-major format.
      */
@@ -1279,7 +1279,7 @@ public class Widget {
     /**
      * Set the 4x4 model matrix and set current scaling, rotation, and
      * transformation based on this model matrix.
-     * 
+     *
      * @param mat
      *            An array of 16 {@code float}s representing a 4x4 matrix in
      *            OpenGL-compatible column-major format.
@@ -1293,10 +1293,10 @@ public class Widget {
 
     /**
      * Move the object, relative to its current position.
-     * 
+     *
      * Modify the tranform's current translation by applying translations on all
      * 3 axes.
-     * 
+     *
      * @param x
      *            'X' delta
      * @param y
@@ -1311,15 +1311,15 @@ public class Widget {
 
     /**
      * Sets the absolute rotation in angle/axis terms.
-     * 
+     *
      * Rotates using the right hand rule.
-     * 
+     *
      * <p>
      * Contrast this with {@link #rotate(float, float, float, float) rotate()},
      * {@link #rotateByAxis(float, float, float, float) rotateByAxis()}, or
      * {@link #rotateByAxisWithPivot(float, float, float, float, float, float, float)
      * rotateByAxisWithPivot()}, which all do relative rotations.
-     * 
+     *
      * @param angle
      *            Angle of rotation in degrees.
      * @param x
@@ -1336,7 +1336,7 @@ public class Widget {
 
     /**
      * Modify the tranform's current rotation in quaternion terms.
-     * 
+     *
      * @param w
      *            'W' component of the quaternion.
      * @param x
@@ -1354,7 +1354,7 @@ public class Widget {
     /**
      * Modify the tranform's current rotation in quaternion terms, around a
      * pivot other than the origin.
-     * 
+     *
      * @param w
      *            'W' component of the quaternion.
      * @param x
@@ -1378,7 +1378,7 @@ public class Widget {
 
     /**
      * Modify the widget's current rotation in angle/axis terms.
-     * 
+     *
      * @param angle
      *            Angle of rotation in degrees.
      * @param x
@@ -1390,13 +1390,13 @@ public class Widget {
      */
     public void rotateByAxis(float angle, float x, float y, float z) {
         getTransform().rotateByAxis(angle, x, y, z);
-        checkTransformChanged();        
+        checkTransformChanged();
     }
 
     /**
      * Modify the widget's current rotation in angle/axis terms, around a pivot
      * other than the origin.
-     * 
+     *
      * @param angle
      *            Angle of rotation in degrees.
      * @param axisX
@@ -1434,7 +1434,7 @@ public class Widget {
     /**
      * Set the widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
-     * 
+     *
      * @param opacity
      *            Value between {@code 0.0f} and {@code 0.1f}, inclusive.
      */
@@ -1445,7 +1445,7 @@ public class Widget {
     /**
      * Get the widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
-     * 
+     *
      * @return Current opacity value, between {@code 0.0f} and {@code 0.1f},
      *         inclusive.
      */
@@ -1455,7 +1455,7 @@ public class Widget {
 
     /**
      * Set the visibility of the object.
-     * 
+     *
      * @see Visibility
      * @param visibility
      *            The visibility of the object.
@@ -1569,7 +1569,7 @@ public class Widget {
 
     /**
      * Determine whether the calling thread is the GL thread.
-     * 
+     *
      * @return {@code True} if called from the GL thread, {@code false} if
      *         called from another thread, or if the {@link Widget} framework
      *         has not been {@linkplain #onInitListener GL initialized} yet.
@@ -1582,7 +1582,7 @@ public class Widget {
     /**
      * Determine whether the specified {@link GVRSceneObject} is the object
      * wrapped by this {@link Widget}.
-     * 
+     *
      * @param sceneObject
      *            The {@code GVRSceneObject} to test against.
      * @return {@code true} if {@code sceneObject} is wrapped by this instance,
@@ -1624,7 +1624,7 @@ public class Widget {
      * Note: if the {@link Widget} framework has not yet been
      * {@link #onInitListener GL initialized}, the {@code Runnable} will be
      * executed in the next frame.
-     * 
+     *
      * @param r
      *            {@link Runnable} to execute on the GL thread.
      */
@@ -1643,7 +1643,7 @@ public class Widget {
     /**
      * Get the {@link GVRMaterial material} for the underlying
      * {@link GVRSceneObject scene object}.
-     * 
+     *
      * @return The scene object's material or {@code null}.
      */
     protected GVRMaterial getMaterial() {
@@ -1657,7 +1657,7 @@ public class Widget {
     /**
      * Set the {@linkplain GVRMaterial material} for the underlying
      * {@linkplain GVRSceneObject scene object}.
-     * 
+     *
      * @param material
      *            The new material.
      */
@@ -1699,7 +1699,7 @@ public class Widget {
      * hooks and this method is <em>not</em> guaranteed. As a general rule, you
      * should not write code that has dependencies between the attachment hooks
      * and this method!
-     * 
+     *
      * @see #create()
      */
     protected void onCreate() {
@@ -1723,7 +1723,7 @@ public class Widget {
 
     /**
      * Hook method for handling changes in focus for this object.
-     * 
+     *
      * @param focused
      *            {@code True} if the object has gained focus, {@code false} if
      *            it has lost focus.
@@ -1756,7 +1756,7 @@ public class Widget {
 
     /**
      * Hook method for handling back key events.
-     * 
+     *
      * @return {@code True} if the back key event was successfully processed,
      *         {@code false} otherwise.
      */
@@ -1766,7 +1766,7 @@ public class Widget {
 
     /**
      * Hook method for handling touch events.
-     * 
+     *
      * @return {@code True} if the touch event was successfully processed,
      *         {@code false} otherwise.
      */
@@ -1789,7 +1789,7 @@ public class Widget {
     protected void onTransformChanged() {
         Log.d(TAG, "onTransformChanged(): %s", getName());
 //        new RuntimeException().printStackTrace();
-        
+
         // Even if the calling code that altered the transform doesn't request a
         // layout, we'll do a layout the next time a layout is requested on our
         // part of the scene graph.
@@ -1804,6 +1804,10 @@ public class Widget {
     boolean addChildInner(final Widget child, final GVRSceneObject childRootSceneObject, int index) {
         final boolean added = mChildren.indexOf(child) == -1;
         if (added) {
+            Widget parent = child.getParent();
+            if (parent != null) {
+                parent.removeChild(child, child.getSceneObject(), true);
+            }
             if (index == -1 || index > mChildren.size()) {
                 mChildren.add(child);
             } else {
@@ -1856,7 +1860,7 @@ public class Widget {
     Widget findChildByName(final String name) {
         final List<Widget> groups = new ArrayList<Widget>();
         groups.add(this);
-    
+
         return findChildByNameInAllGroups(name, groups);
     }
 
@@ -1911,7 +1915,7 @@ public class Widget {
      * <li>Registers for touch and focus notifications, if they are enabled</li>
      * <li>Invokes {@link #onAttached()}
      * </ul>
-     * 
+     *
      * @param parent
      *            The {@link GroupWidget} this instance is being
      *            {@linkplain GroupWidget#addChild(Widget) attached} to.
@@ -1938,7 +1942,7 @@ public class Widget {
         final int level = mLevel;
         mLevel = -1;
         setLevel(level);
-    
+
         onCreate();
     }
 
@@ -2054,7 +2058,7 @@ public class Widget {
      * Any non-matching {@code GroupWidget} children iterated prior to finding a
      * match will be added to {@code groupChildren}. If no match is found, all
      * immediate {@code GroupWidget} children will be added.
-     * 
+     *
      * @param name
      *            The name of the {@code Widget} to find.
      * @param groupWidget
@@ -2073,7 +2077,7 @@ public class Widget {
             }
             if (child instanceof GroupWidget) {
                 // Save the child for the next level of search if needed.
-                groupChildren.add((GroupWidget) child);
+                groupChildren.add(child);
             }
         }
         return null;
@@ -2095,7 +2099,7 @@ public class Widget {
         if (groups.isEmpty()) {
             return null;
         }
-    
+
         ArrayList<Widget> groupChildren = new ArrayList<Widget>();
         Widget result = null;
         for (Widget group : groups) {
@@ -2106,7 +2110,7 @@ public class Widget {
                 return result;
             }
         }
-    
+
         // No match; Search the children that are GroupWidgets.
         return findChildByNameInAllGroups(name, groupChildren);
     }
@@ -2340,7 +2344,7 @@ public class Widget {
     private Visibility mVisibility = Visibility.VISIBLE;
     private Widget mParent;
     private String mName;
-    
+
     private int mLevel = 0;
     private List<WidgetState> mLevelInfo = new ArrayList<WidgetState>();
 

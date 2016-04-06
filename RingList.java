@@ -79,7 +79,7 @@ public class RingList extends GroupWidget {
      * enabling for each displayed item is not tracked in any way.
      * {@code Adapters} should ensure that they enable or disable focus as
      * appropriate for their views.
-     * 
+     *
      * @param enabled
      *            {@code True} to enable focus for all items, {@code false} to
      *            disable.
@@ -226,7 +226,7 @@ public class RingList extends GroupWidget {
         if (mProportionalItemPadding) {
             int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() : mMaxItemsDisplayed;
             float uniformAngularWidth = (360.f - totalAngularWidths)
-                    / (float) totalNumPerPage;
+                    / totalNumPerPage;
             for (int i = 0; i < numItems; ++i) {
                 angularWidths[i] += uniformAngularWidth;
                 Log.d(TAG, "layout(): angular uniform width at %d: %f", i, angularWidths[i]);
@@ -432,7 +432,7 @@ public class RingList extends GroupWidget {
     /**
      * Rotate the items in the {@link RingList} until the item at {@code pos} is
      * rotated to {@code rotation}.
-     * 
+     *
      * @param pos
      *            Position of the item in the data set
      * @param rotation
@@ -461,7 +461,7 @@ public class RingList extends GroupWidget {
 
     /**
      * Scroll all items in the {@link RingList} by {@code rotation} degrees}.
-     * 
+     *
      * @param rotationDelta
      *            The amount to scroll, in degrees.
      */
@@ -688,7 +688,7 @@ public class RingList extends GroupWidget {
                   guest == null ? "<null>" : guest.getName(),
                   guest == guestWidget);
             if (guest != guestWidget) {
-                if (guestWidget != null) {
+                if (guestWidget != null && guestWidget.getParent() == this) {
                     removeChild(guestWidget, guestWidget.getSceneObject(), true);
                 }
                 guestWidget = guest;
@@ -733,7 +733,7 @@ public class RingList extends GroupWidget {
 
     /**
      * Select or deselect an item at position {@code pos}.
-     * 
+     *
      * @param pos
      *            item position
      * @param select
@@ -789,7 +789,7 @@ public class RingList extends GroupWidget {
 
     /**
      * Check whether the item at position {@code pos} is selected.
-     * 
+     *
      * @param pos
      *            item position
      * @return {@code true} if the item is selected, {@code false} otherwise.
