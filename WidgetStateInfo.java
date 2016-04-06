@@ -65,7 +65,18 @@ class WidgetStateInfo {
     public void set(Widget widget, boolean set) {
         if (set) {
             if (mLevelWidget != null) {
-                mLevelWidget.setVisibility(Visibility.VISIBLE);
+                // We shouldn't have to do this, but it's not a
+                // thread-safe operation and in some instances the
+                // geometry will render after it's been removed from
+                // it's parent, which can result in flashes when the
+                // geometry is rendered in the wrong location.
+                widget.runOnGlThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // TODO: Pull out of GL thread
+                        mLevelWidget.setVisibility(Visibility.VISIBLE);
+                    }
+                });
             }
             if (mMaterial != null) {
                 widget.setMaterial(mMaterial);
@@ -86,7 +97,13 @@ class WidgetStateInfo {
                 mAnimation.finish();
             }
             if (mLevelWidget != null) {
-                mLevelWidget.setVisibility(Visibility.HIDDEN);
+                widget.runOnGlThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // TODO: Pull out of GL thread
+                        mLevelWidget.setVisibility(Visibility.HIDDEN);
+                    }
+                });
             }
         }
     }
