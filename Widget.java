@@ -585,8 +585,17 @@ public class Widget {
             // the specified timeout.
             return Widget.this.getLongFocusTimeout();
         }
+
+        @Override
+        public String toString() {
+            return target().getName();
+        }
+
+        public Widget target() {
+            return Widget.this;
+        }
     }
-    private FocusManager.Focusable mFocusableImpl = new FocusableImpl();
+    private FocusableImpl mFocusableImpl = new FocusableImpl();
 
     /**
      * Set whether or not the {@code Widget} can receive touch and back key
@@ -1957,8 +1966,8 @@ public class Widget {
     private boolean doOnFocus(boolean focused) {
         final boolean oldFocus = mIsFocused;
         if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "doOnFocus(%s): mIsFocused: %b, focused: %b",
-                  getName(), mIsFocused, focused);
+            Log.v(TAG, "doOnFocus(%s): mIsFocused: %b, focused: %b", getName(),
+                  mIsFocused, focused);
         }
 
         for (OnFocusListener listener : mFocusListeners) {
@@ -1977,9 +1986,11 @@ public class Widget {
         }
         updateState();
         if (oldFocus != mIsFocused) {
+            final boolean inFollowFocusGroup = isInFollowFocusGroup();
             for (Widget child : mChildren) {
-                if (child.mFocusEnabled && !child.isFocused()
-                        && (mChildrenFollowFocus || child.mFollowParentFocus)) {
+                if (child.mFocusEnabled
+                        && !child.isFocused()
+                        && (mChildrenFollowFocus || child.mFollowParentFocus || inFollowFocusGroup)) {
                     child.doOnFocus(mIsFocused);
                 }
             }
@@ -2001,9 +2012,10 @@ public class Widget {
             }
         }
         onLongFocus();
+        final boolean inFollowFocusGroup = isInFollowFocusGroup();
         for (Widget child : mChildren) {
             if (child.mFocusEnabled
-                    && (mChildrenFollowFocus || child.mFollowParentFocus)) {
+                    && (mChildrenFollowFocus || child.mFollowParentFocus || inFollowFocusGroup)) {
                 child.doOnLongFocus();
             }
         }
@@ -2018,10 +2030,11 @@ public class Widget {
 
         final boolean acceptedTouch = onTouch();
         if (acceptedTouch) {
+            final boolean inFollowInputGroup = isInFollowInputGroup();
             for (Widget child : mChildren) {
                 if (child.isTouchable()
-                        && (mChildrenFollowInput || child
-                                .getFollowParentInput())) {
+                        && (mChildrenFollowInput
+                                || child.getFollowParentInput() || inFollowInputGroup)) {
                     child.doOnTouch();
                 }
             }
@@ -2113,6 +2126,38 @@ public class Widget {
         return mBoundingBox;
     }
 
+    /**
+     * @return {@code true} if one of this {@link Widget}'s ancestors has
+     *         {@linkplain #setChildrenFollowFocus(boolean) children follow
+     *         focus} set, {@code false} if not.
+     */
+    private boolean isInFollowFocusGroup() {
+        return mFocusableImpl != null
+                && mParent != null
+                && mFocusableImpl.target() != this
+                && (mParent.mChildrenFollowFocus || mFocusableImpl.target() != mParent);
+    }
+
+    /**
+     * @return {@code true} if one of this {@link Widget}'s ancestors has
+     *         {@linkplain #setChildrenFollowInput(boolean) children follow
+     *         input} set, {@code false} if not.
+     */
+    private boolean isInFollowInputGroup() {
+        return mTouchHandler != null
+                && mParent != null
+                && mTouchHandler.target() != this
+                && (mParent.mChildrenFollowInput || mTouchHandler.target() != mParent);
+    }
+
+    private boolean needsOwnFocusable() {
+        return mFocusableImpl.target() != this;
+    }
+
+    private boolean needsOwnTouchHandler() {
+        return mTouchHandler.target() != this;
+    }
+
     private void registerPickable() {
         final TouchManager touchManager = TouchManager.get(getGVRContext());
         if (touchManager == null) {
@@ -2123,33 +2168,48 @@ public class Widget {
 
         final boolean hasRenderData = getRenderData() != null;
         final FocusManager focusManager = FocusManager.get(mContext);
+        final TouchManager.OnTouch currentTouchHandler = mTouchHandler;
+        final FocusManager.Focusable currentFocusable = mFocusableImpl;
+
+        if (useParentFocusable()) {
+            mFocusableImpl = mParent.mFocusableImpl;
+        } else if (needsOwnFocusable()) {
+            mFocusableImpl = new FocusableImpl();
+        }
+        if (useParentTouchHandler()) {
+            mTouchHandler = mParent.mTouchHandler;
+        } else if (needsOwnTouchHandler()) {
+            mTouchHandler = new OnTouchImpl();
+        }
+
         if (mParent != null && hasRenderData && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
-                if (mFollowParentInput || mParent.mChildrenFollowInput) {
-                    touchManager.makeTouchable(mSceneObject,
-                                               mParent.mTouchHandler);
-                } else {
-                    touchManager.makeTouchable(mSceneObject, mTouchHandler);
-                }
+                touchManager.makeTouchable(getSceneObject(), mTouchHandler);
             } else {
-                touchManager.makePickable(mSceneObject);
+                touchManager.makePickable(getSceneObject());
             }
+
             if (mFocusEnabled) {
-                if (mFollowParentFocus || mParent.mChildrenFollowFocus) {
-                    focusManager.register(getSceneObject(),
-                                          mParent.mFocusableImpl);
-                } else {
-                    focusManager.register(getSceneObject(), mFocusableImpl);
-                }
+                focusManager.register(getSceneObject(), mFocusableImpl);
             } else {
                 Log.d(TAG, "registerPickable(): '%s' is not focus-enabled",
                       getName());
                 focusManager.unregister(getSceneObject());
             }
         } else {
-            touchManager.removeHandlerFor(mSceneObject);
+            touchManager.removeHandlerFor(getSceneObject());
             Log.d(TAG, "registerPickable(): unregistering '%s'; focus-enabled: %b", getName(), mFocusEnabled);
             focusManager.unregister(getSceneObject());
+        }
+
+        // If our focusable or touch handler have changed, we need to let any
+        // children that are part of the same focus/input group or might be
+        // following this widget know
+        if (currentFocusable != mFocusableImpl
+                || currentTouchHandler != mTouchHandler) {
+            for (Widget child : mChildren) {
+                child.registerPickable();
+            }
         }
     }
 
@@ -2230,6 +2290,34 @@ public class Widget {
         }
     }
 
+    private boolean useParentFocusable() {
+        return mParent != null
+                && (mFollowParentFocus || mParent.mChildrenFollowFocus || mParent
+                        .isInFollowFocusGroup());
+    }
+
+    private boolean useParentTouchHandler() {
+        return mParent != null
+                && (mFollowParentInput || mParent.mChildrenFollowInput || mParent
+                        .isInFollowInputGroup());
+    }
+
+    private final class OnTouchImpl implements TouchManager.OnBackKey {
+        @Override
+        public boolean touch(GVRSceneObject sceneObject) {// , float[] hit) {
+            return doOnTouch();
+        }
+
+        @Override
+        public boolean onBackKey(GVRSceneObject sceneObject) {
+            return doOnBackKey();
+        }
+
+        public Widget target() {
+            return Widget.this;
+        }
+    }
+
     private final GVRSceneObject mSceneObject;
 
     private final GVRContext mContext;
@@ -2262,17 +2350,7 @@ public class Widget {
     private final Set<OnFocusListener> mFocusListeners = new LinkedHashSet<OnFocusListener>();
     private final Set<OnTouchListener> mTouchListeners = new LinkedHashSet<OnTouchListener>();
 
-    private final TouchManager.OnTouch mTouchHandler = new TouchManager.OnBackKey() {
-        @Override
-        public boolean touch(GVRSceneObject sceneObject) {// , float[] hit) {
-            return doOnTouch();
-        }
-
-        @Override
-        public boolean onBackKey(GVRSceneObject sceneObject) {
-            return doOnBackKey();
-        }
-    };
+    private OnTouchImpl mTouchHandler = new OnTouchImpl();
 
     private static WeakReference<Thread> sGLThread = new WeakReference<Thread>(null);
     private static GVRTexture sDefaultTexture;

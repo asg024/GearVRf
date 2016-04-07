@@ -211,6 +211,8 @@ class WidgetStateInfo {
         levelWidget.setVisibility(Visibility.HIDDEN);
         levelWidget.setFollowParentFocus(true);
         levelWidget.setFollowParentInput(true);
+        levelWidget.setChildrenFollowFocus(true);
+        levelWidget.setChildrenFollowInput(true);
         return levelWidget;
     }
 
