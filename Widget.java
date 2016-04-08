@@ -1477,7 +1477,18 @@ public class Widget {
                     case HIDDEN:
                     case GONE:
                         if (mVisibility == Visibility.VISIBLE) {
-                            parentSceneObject.removeChildObject(mSceneObject);
+                            // We shouldn't have to do this, but it's not a
+                            // thread-safe operation and in some instances the
+                            // geometry will render after it's been removed from
+                            // it's parent, which can result in flashes when the
+                            // geometry is rendered in the wrong location.
+                            runOnGlThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // TODO: Pull out of GL thread
+                                    parentSceneObject.removeChildObject(mSceneObject);
+                                }
+                            });
                         }
                         break;
                     case PLACEHOLDER:
