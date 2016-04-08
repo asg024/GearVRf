@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRNotifications;
 import org.gearvrf.GVRSceneObject;
 
 import android.database.DataSetObserver;
@@ -449,6 +450,8 @@ public class RingList extends GroupWidget {
         if (Float.isNaN(mItems.get(pos).getPhi())) {
             Log.e(TAG, "Error: layout() has not been called!");
             requestLayout();
+            // skip current frame to make sure the layout is finished
+            GVRNotifications.waitAfterStep();
         }
 
         rotation = -(rotation - 180f);
