@@ -134,7 +134,7 @@ public class FocusManager {
         }
     };
 
-    final Runnable mFocusRunnable = new Runnable() {
+    private final Runnable mFocusRunnable = new Runnable() {
         @Override
         public void run() {
             final GVRScene mainScene = mContext.getMainScene();
@@ -149,9 +149,9 @@ public class FocusManager {
                 return;
             }
 
+            Focusable focusable = null;
             for (GVRPickedObject picked : pickedObjectList) {
                 final GVRSceneObject quad = picked.getHitObject();
-                Focusable focusable = null;
                 if (quad != null) {
                     log("onDrawFrame(): checking '%s' for focus",
                         quad.getName());
@@ -183,16 +183,21 @@ public class FocusManager {
                     break;
                 }
             }
+
+            if (mCurrentFocus != null && focusable != mCurrentFocus) {
+                log("onDrawFrame(): no eligible focusable found! (%s)", mCurrentFocusName);
+                releaseCurrentFocus();
+            }
         }
     };
 
     private boolean releaseCurrentFocus() {
         boolean ret = true;
         if (mCurrentFocus != null) {
+            log("releaseCurrentFocus(): releasing focus for '%s'", mCurrentFocusName);
             cancelLongFocusRunnable();
             ret = mCurrentFocus.onFocus(false);
             mCurrentFocus = null;
-            log("releaseCurrentFocus(): releasing focus for '%s'", mCurrentFocusName);
             mCurrentFocusName = null;
         }
         return ret;
