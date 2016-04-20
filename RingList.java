@@ -638,11 +638,10 @@ public class RingList extends GroupWidget {
 
         // Trim unused items
         Log.d(TAG, "onChanged(%s): trimming: %b", getName(), pos < mItems.size());
-        for (; pos < mItems.size(); ++pos) {
-            Widget item = mItems.remove(pos);
+        for (; mItems.size() > pos;) {
+            Widget item = mItems.remove(mItems.size() - 1);
             removeChild(item, true);
         }
-
         Log.d(TAG, "onChanged(%s): requesting layout", getName());
         requestLayout();
 
