@@ -433,6 +433,8 @@ public class RingList extends GroupWidget {
     /**
      * Rotate the items in the {@link RingList} until the item at {@code pos} is
      * rotated to {@code rotation}.
+     * 
+     * Do not call from the GL thread; notice the waitAfterStep.
      *
      * @param pos
      *            Position of the item in the data set
