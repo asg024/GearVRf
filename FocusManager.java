@@ -34,6 +34,10 @@ public class FocusManager {
         void onLongFocus();
     }
 
+    public interface FocusInterceptor {
+        boolean onFocus(GVRSceneObject sceneObject);
+    }
+
     interface LongFocusTimeout {
         long getLongFocusTimeout();
     }
@@ -134,6 +138,12 @@ public class FocusManager {
         }
     };
 
+    private FocusInterceptor focusInterceptor;
+
+    public void setFocusInterceptor(FocusInterceptor interceptor) {
+        focusInterceptor = interceptor;
+    }
+
     private final Runnable mFocusRunnable = new Runnable() {
         @Override
         public void run() {
@@ -177,7 +187,7 @@ public class FocusManager {
 
                 releaseCurrentFocus();
 
-                if (takeNewFocus(focusable)) {
+                if (takeNewFocus(quad, focusable)) {
                     mCurrentFocusName = quad.getName();
                     log("onDrawFrame(): '%s' took focus", mCurrentFocusName);
                     break;
@@ -203,12 +213,17 @@ public class FocusManager {
         return ret;
     }
 
-    private boolean takeNewFocus(final Focusable newFocusable) {
+    private boolean takeNewFocus(final GVRSceneObject quad, final Focusable newFocusable) {
         boolean ret = false;
         if (newFocusable != null &&
                 newFocusable.isFocusEnabled()) {
 
-            ret = newFocusable.onFocus(true);
+            if (focusInterceptor != null) {
+                ret = focusInterceptor.onFocus(quad);
+            } else {
+                ret = newFocusable.onFocus(true);
+            }
+
             if (ret) {
                 mCurrentFocus = newFocusable;
                 final long longFocusTimeout;

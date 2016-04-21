@@ -1588,7 +1588,7 @@ public class Widget {
      * @return {@code true} if {@code sceneObject} is wrapped by this instance,
      *         {@code false} otherwise.
      */
-    protected final boolean isSceneObject(GVRSceneObject sceneObject) {
+    public final boolean isSceneObject(GVRSceneObject sceneObject) {
         return mSceneObject == sceneObject;
     }
 
@@ -1729,7 +1729,7 @@ public class Widget {
      *            it has lost focus.
      * @return {@code True} to accept focus, {@code false} if not.
      */
-    protected boolean onFocus(boolean focused) {
+    public boolean onFocus(boolean focused) {
         return true;
     }
 
