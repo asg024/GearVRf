@@ -338,7 +338,7 @@ public class RingList extends GroupWidget {
 
 
     private void layoutItem(final int index,  final ListItemHostWidget item, final float phi) {
-        Log.d(TAG, "layout(%s): phi [%f]", item.getName(), phi);
+        Log.d(TAG, "layout(%s): phi [%f] (%s)", getName(), phi, item.guestWidget.getName());
         item.setRotation(1, 0, 0, 0);
         item.setPosition(0, 0, -(float) mRho);
         item.rotateByAxisWithPivot(phi, 0, 1, 0, 0, 0, 0);
