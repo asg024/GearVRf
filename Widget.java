@@ -1787,8 +1787,9 @@ public class Widget {
      * bounding box will get out of date.
      */
     protected void onTransformChanged() {
-        Log.d(TAG, "onTransformChanged(): %s", getName());
-//        new RuntimeException().printStackTrace();
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "onTransformChanged(): %s", getName());
+        }
 
         // Even if the calling code that altered the transform doesn't request a
         // layout, we'll do a layout the next time a layout is requested on our
