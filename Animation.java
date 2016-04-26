@@ -306,6 +306,11 @@ public abstract class Animation {
     }
 
     /* package */
+    Widget getTarget() {
+        return mTarget;
+    }
+
+    /* package */
     interface AnimationAdapter {
         void animate(GVRHybridObject target, float ratio);
 

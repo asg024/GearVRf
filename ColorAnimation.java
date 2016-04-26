@@ -1,7 +1,10 @@
 package com.samsung.smcl.vr.widgets;
 
+import java.util.Arrays;
+
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRColorAnimation;
+import org.gearvrf.utility.Colors;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -11,22 +14,28 @@ public class ColorAnimation extends MaterialAnimation {
 
     public ColorAnimation(final Widget target, final float duration,
             final int color) {
-        super(target);
-        mAdapter = new Adapter(target, duration, color);
+        this(target, duration, Colors.toColors(color));
     }
 
     public ColorAnimation(final Widget target, final float duration,
             final float[] rgb) {
         super(target);
+        mTargetColor = Arrays.copyOf(rgb, rgb.length);
         mAdapter = new Adapter(target, duration, rgb);
     }
 
     public ColorAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
-        super(target);
-        final float[] rgb = Helpers.getJSONColor(parameters, "color");
-        mAdapter = new Adapter(target,
-                (float) parameters.getDouble("duration"), rgb);
+        this(target, (float) parameters.getDouble("duration"), //
+                Helpers.getJSONColor(parameters, "color"));
+    }
+
+    public float[] getColor() {
+        return Arrays.copyOf(mTargetColor, mTargetColor.length);
+    }
+
+    public float[] getCurrentColor() {
+        return getTarget().getColor();
     }
 
     @Override
@@ -46,10 +55,6 @@ public class ColorAnimation extends MaterialAnimation {
             super(target.getSceneObject(), duration, rgb);
         }
 
-        public Adapter(Widget target, float duration, int color) {
-            super(target.getSceneObject(), duration, color);
-        }
-
         @Override
         public void animate(GVRHybridObject target, float ratio) {
             doAnimate(ratio);
@@ -61,4 +66,6 @@ public class ColorAnimation extends MaterialAnimation {
     }
 
     private final Adapter mAdapter;
+
+    private final float[] mTargetColor;
 }

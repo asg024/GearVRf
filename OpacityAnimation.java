@@ -10,15 +10,22 @@ public class OpacityAnimation extends MaterialAnimation {
     public OpacityAnimation(final Widget target, final float duration,
             final float opacity) {
         super(target);
+        mTargetOpacity = opacity;
         mAdapter = new Adapter(target, duration, opacity);
     }
 
     public OpacityAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
-        super(target);
-        mAdapter = new Adapter(target,
-                (float) parameters.getDouble("duration"),
+        this(target, (float) parameters.getDouble("duration"),
                 (float) parameters.getDouble("opacity"));
+    }
+
+    public float getOpacity() {
+        return mTargetOpacity;
+    }
+
+    public float getCurrentOpacity() {
+        return getTarget().getOpacity();
     }
 
     @Override
@@ -49,4 +56,5 @@ public class OpacityAnimation extends MaterialAnimation {
     }
     
     private final Adapter mAdapter;
+    private final float mTargetOpacity;
 }

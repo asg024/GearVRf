@@ -34,27 +34,66 @@ public class RotationByAxisWithPivotAnimation extends TransformAnimation {
             float duration, float angle, float axisX, float axisY, float axisZ,
             float pivotX, float pivotY, float pivotZ) {
         super(target);
+        mAngle = angle;
+        mAxisX = axisX;
+        mAxisY = axisY;
+        mAxisZ = axisZ;
+        mPivotX = pivotX;
+        mPivotY = pivotY;
+        mPivotZ = pivotZ;
         mAdapter = new Adapter(target, duration, angle, axisX, axisY, axisZ,
                 pivotX, pivotY, pivotZ);
     }
 
     public RotationByAxisWithPivotAnimation(final Widget target,
             final JSONObject params) throws JSONException {
-        super(target);
-        mAdapter = new Adapter(target, (float) params.getDouble("duration"),
-                (float) params.getDouble("angle"),
-                (float) params.getDouble("axis_x"),
-                (float) params.getDouble("axis_y"),
-                (float) params.getDouble("axis_z"),
-                (float) params.getDouble("pivot_x"),
-                (float) params.getDouble("pivot_y"),
+        this(target, (float) params.getDouble("duration"), //
+                (float) params.getDouble("angle"), //
+                (float) params.getDouble("axis_x"), //
+                (float) params.getDouble("axis_y"), //
+                (float) params.getDouble("axis_z"), //
+                (float) params.getDouble("pivot_x"), //
+                (float) params.getDouble("pivot_y"), //
                 (float) params.getDouble("pivot_z"));
+    }
+
+    public float getAngle() {
+        return mAngle;
+    }
+
+    public float getAxisX() {
+        return mAxisX;
+    }
+
+    public float getAxisY() {
+        return mAxisY;
+    }
+
+    public float getAxisZ() {
+        return mAxisZ;
+    }
+
+    public float getCurrentAngle() {
+        return mCurrentAngle;
+    }
+
+    public float getPivotX() {
+        return mPivotX;
+    }
+
+    public float getPivotY() {
+        return mPivotY;
+    }
+
+    public float getPivotZ() {
+        return mPivotZ;
     }
 
     @Override
     protected void animate(Widget target, float ratio) {
         mAdapter.superAnimate(target, ratio);
         target.checkTransformChanged();
+        mCurrentAngle = ratio * mAngle;
     }
 
     @Override
@@ -82,4 +121,12 @@ public class RotationByAxisWithPivotAnimation extends TransformAnimation {
     }
 
     private final Adapter mAdapter;
+    private final float mAngle;
+    private final float mAxisX;
+    private final float mAxisY;
+    private final float mAxisZ;
+    private final float mPivotX;
+    private final float mPivotY;
+    private final float mPivotZ;
+    private float mCurrentAngle;
 }

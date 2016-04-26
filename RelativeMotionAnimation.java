@@ -9,16 +9,42 @@ public class RelativeMotionAnimation extends TransformAnimation {
 
     public RelativeMotionAnimation(final Widget widget, float duration, float deltaX, float deltaY, float deltaZ) {
         super(widget);
+        mDeltaX = deltaX;
+        mDeltaY = deltaY;
+        mDeltaZ = deltaZ;
         mAdapter = new Adapter(widget, duration, deltaX, deltaY, deltaZ);
     }
 
     public RelativeMotionAnimation(final Widget widget, final JSONObject params)
             throws JSONException {
-        super(widget);
-        mAdapter = new Adapter(widget, (float) params.getDouble("duration"),
-                (float) params.getDouble("delta_x"),
-                (float) params.getDouble("delta_y"),
+        this(widget, (float) params.getDouble("duration"), //
+                (float) params.getDouble("delta_x"), //
+                (float) params.getDouble("delta_y"), //
                 (float) params.getDouble("delta_z"));
+    }
+
+    public float getDeltaX() {
+        return mDeltaX;
+    }
+
+    public float getDeltaY() {
+        return mDeltaY;
+    }
+
+    public float getDeltaZ() {
+        return mDeltaZ;
+    }
+
+    public float getCurrentX() {
+        return getTarget().getPositionX();
+    }
+
+    public float getCurrentY() {
+        return getTarget().getPositionY();
+    }
+
+    public float getCurrentZ() {
+        return getTarget().getPositionZ();
     }
 
     @Override
@@ -49,4 +75,7 @@ public class RelativeMotionAnimation extends TransformAnimation {
     }
     
     private final Adapter mAdapter;
+    private final float mDeltaX;
+    private final float mDeltaY;
+    private final float mDeltaZ;
 }

@@ -29,6 +29,7 @@ import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
@@ -1429,6 +1430,32 @@ public class Widget {
     public void reset() {
         getTransform().reset();
         checkTransformChanged();
+    }
+
+    public void setColor(final int color) {
+        getMaterial().setColor(color);
+    }
+
+    public void setColor(final float[] rgb) {
+        getMaterial().setColor(rgb[0], rgb[1], rgb[2]);
+    }
+
+    public void setColor(final float r, final float g, final float b) {
+        getMaterial().setColor(r, g, b);
+    }
+
+    public float[] getColor() {
+        return getMaterial().getColor();
+    }
+
+    /**
+     * A convenience method that wraps {@link #getColor()} and returns an
+     * Android {@link Color}
+     * 
+     * @return An Android {@link Color}
+     */
+    public int getRgbColor() {
+        return getMaterial().getRgbColor();
     }
 
     /**

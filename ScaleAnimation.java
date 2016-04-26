@@ -9,12 +9,16 @@ public class ScaleAnimation extends TransformAnimation {
 
     public ScaleAnimation(final Widget widget, float duration, float scale) {
         super(widget);
+        mScaleX = mScaleY = mScaleZ = scale;
         mAdapter = new Adapter(widget, duration, scale);
     }
 
     public ScaleAnimation(final Widget widget, float duration, float scaleX,
             float scaleY, float scaleZ) {
         super(widget);
+        mScaleX = scaleX;
+        mScaleY = scaleY;
+        mScaleZ = scaleZ;
         mAdapter = new Adapter(widget, duration, scaleX, scaleY, scaleZ);
     }
 
@@ -22,16 +26,43 @@ public class ScaleAnimation extends TransformAnimation {
             throws JSONException {
         super(target);
         if (params.has("scale")) {
+            final float scale = (float) params.getDouble("scale");
+            mScaleX = mScaleY = mScaleZ = scale;
             mAdapter = new Adapter(target,
                     (float) params.getDouble("duration"),
-                    (float) params.getDouble("scale"));
+                    scale);
         } else {
+            mScaleX = (float) params.getDouble("scale_x");
+            mScaleY = (float) params.getDouble("scale_y");
+            mScaleZ = (float) params.getDouble("scale_z");
             mAdapter = new Adapter(target,
-                    (float) params.getDouble("duration"),
-                    (float) params.getDouble("scale_x"),
-                    (float) params.getDouble("scale_y"),
-                    (float) params.getDouble("scale_z"));
+                    (float) params.getDouble("duration"), mScaleX, mScaleY,
+                    mScaleZ);
         }
+    }
+
+    public float getScaleX() {
+        return mScaleX;
+    }
+
+    public float getScaleY() {
+        return mScaleY;
+    }
+
+    public float getScaleZ() {
+        return mScaleZ;
+    }
+
+    public float getCurrentScaleX() {
+        return getTarget().getScaleX();
+    }
+
+    public float getCurrentScaleY() {
+        return getTarget().getScaleY();
+    }
+
+    public float getCurrentScaleZ() {
+        return getTarget().getScaleZ();
     }
 
     @Override
@@ -67,4 +98,7 @@ public class ScaleAnimation extends TransformAnimation {
     }
 
     private final Adapter mAdapter;
+    private final float mScaleX;
+    private final float mScaleY;
+    private final float mScaleZ;
 }

@@ -10,17 +10,42 @@ public class PositionAnimation extends TransformAnimation {
     public PositionAnimation(final Widget target, final float duration,
             final float x, final float y, final float z) {
         super(target);
+        mTargetX = x;
+        mTargetY = y;
+        mTargetZ = z;
         mAdapter = new Adapter(target, duration, x, y, z);
     }
 
     public PositionAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
-        super(target);
-        mAdapter = new Adapter(target,
-                (float) parameters.getDouble("duration"),
-                (float) parameters.getDouble("x"),
-                (float) parameters.getDouble("y"),
+        this(target, (float) parameters.getDouble("duration"),
+                (float) parameters.getDouble("x"), //
+                (float) parameters.getDouble("y"), //
                 (float) parameters.getDouble("z"));
+    }
+
+    public float getX() {
+        return mTargetX;
+    }
+
+    public float getY() {
+        return mTargetY;
+    }
+
+    public float getZ() {
+        return mTargetZ;
+    }
+
+    public float getCurrentX() {
+        return getTarget().getPositionX();
+    }
+
+    public float getCurrentY() {
+        return getTarget().getPositionY();
+    }
+
+    public float getCurrentZ() {
+        return getTarget().getPositionZ();
     }
 
     @Override
@@ -51,4 +76,7 @@ public class PositionAnimation extends TransformAnimation {
     }
 
     private final Adapter mAdapter;
+    private final float mTargetX;
+    private final float mTargetY;
+    private final float mTargetZ;
 }
