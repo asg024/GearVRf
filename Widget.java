@@ -50,15 +50,13 @@ public class Widget {
      *
      * @param context
      *            A valid Android {@link Context}.
-     * @param touchManager
-     *            The global {@link TouchManager} instance.
      * @throws JSONException
      *             if the {@code objects.json} file is invalid JSON
      * @throws NoSuchMethodException
      *             if a constructor can't be found for an animation type
      *             specified in {@code objects.json}.
      */
-    static public void init(Context context, TouchManager touchManager)
+    static public void init(Context context)
             throws JSONException, NoSuchMethodException {
         String rawJson = Utility.readTextFile(context, "objects.json");
         if (Policy.LOGGING_VERBOSE) {
@@ -83,7 +81,7 @@ public class Widget {
 
     /**
      * Register this with LauncherViewManager. An alternative would be to have
-     * {@link #init(Context, TouchManager) init()} do this work and just call it
+     * {@link #init(Context) init()} do this work and just call it
      * directly from LauncherViewManager.onInit().
      */
     static public final OnInitListener onInitListener = new OnInitListener() {

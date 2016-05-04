@@ -16,6 +16,7 @@ import org.gearvrf.periodic.GVRPeriodicEngine;
 import android.app.Activity;
 
 import com.samsung.smcl.vr.gvrf_launcher.Holder;
+import com.samsung.smcl.vr.gvrf_launcher.HolderHelper;
 import com.samsung.smcl.vr.gvrf_launcher.MainThread;
 import com.samsung.smcl.utility.Log;
 
@@ -43,7 +44,7 @@ public class FocusManager {
     }
 
     static public FocusManager get(Activity activity) {
-        return ((Holder) activity).getFocusManager();
+        return ((Holder) activity).get(FocusManager.class);
     }
 
     static public FocusManager get(GVRContext gvrContext) {
@@ -69,10 +70,7 @@ public class FocusManager {
      *             another instance of {@code FocusManager}.
      */
     public <T extends Activity & Holder> FocusManager(T holder) {
-        if (holder == null || holder.getFocusManager() != null) {
-            throw new IllegalArgumentException(
-                    "The holder already has a FocusManager instance!");
-        }
+        HolderHelper.register(holder, this);
     }
 
 
