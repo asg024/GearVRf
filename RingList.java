@@ -141,6 +141,11 @@ public class RingList extends GroupWidget {
         super(gvrContext, width, height);
         mRho = rho;
     }
+    
+    protected RingList(final GVRContext gvrContext, float width, float height) {
+        super(gvrContext, width, height);
+    }
+
 
     /**
      * Construct a new {@code RingList} instance with the specified radius, page
@@ -160,12 +165,12 @@ public class RingList extends GroupWidget {
 
     public RingList(final GVRContext gvrContext, float width, float height,
             final double rho, int pageNumber, int maxItemsDisplayed,
-            int itemIncrementPerPage) {
+            int maxNumPerPage) {
         super(gvrContext, width, height);
         mRho = rho;
         mPageNumber = pageNumber;
         mMaxItemsDisplayed = maxItemsDisplayed;
-        mItemIncrementPerPage = itemIncrementPerPage;
+        mMaxNumPerPage = maxNumPerPage;
     }
 
     /**
@@ -192,16 +197,23 @@ public class RingList extends GroupWidget {
         return mPageNumber;
     }
 
-    private int mPageNumber = 0;
+    protected int getMaxNumPerPage() {
+        return mMaxNumPerPage;
+    }
+
+    protected int getMaxItemsDisplayed() {
+        return mMaxItemsDisplayed;
+    }
+
     private int mMaxItemsDisplayed = 0;
-    private int mItemIncrementPerPage = 0;
+    private int mMaxNumPerPage = 0;
+    private int mPageNumber = 0;
     private LayoutType layoutType = LayoutType.LEFT_ORDER;
     private int mAroundItemAtId = -1;
 
     public enum LayoutType {
         LEFT_ORDER,
         BALANCED,
-        WRAP_AROUND_CENTER,
         AROUND_ITEM_AT, // can take the parameter int mAroundItemAtId
         AROUND_SELECTED_ITEM,
     }
@@ -212,7 +224,7 @@ public class RingList extends GroupWidget {
      * @return array of floats each mItems' angular width
      *
      */
-    private float[] calculateAngularWidth() {
+    protected float[] calculateAngularWidth(boolean isProportionalItemPadding) {
         final int numItems = mItems.size();
         float[] angularWidths = new float[numItems];
 
@@ -225,7 +237,7 @@ public class RingList extends GroupWidget {
                   getName(), i, angularWidths[i]);
         }
 
-        if (mProportionalItemPadding) {
+        if (isProportionalItemPadding) {
             int totalNumPerPage = mMaxItemsDisplayed == 0 ? mItems.size() : mMaxItemsDisplayed;
             float uniformAngularWidth = (360.f - totalAngularWidths)
                     / totalNumPerPage;
@@ -274,38 +286,6 @@ public class RingList extends GroupWidget {
         }
     }
 
-    private void wrapAroundCenterLayout(final float[] angularWidths) {
-        final int numItems = mItems.size();
-
-        int itemIndex = getLayoutStart();
-        int totalNumPerPage = getNumItemsToDisplay();
-        int numItemsFirstHalf = (totalNumPerPage / 2);
-
-        float phi = basePhi;
-        for (int i = 0; i < numItemsFirstHalf; i++) {
-            int appListIndex = itemIndex + i;
-            if (appListIndex >= numItems) {
-                appListIndex = appListIndex % numItems;
-            }
-            layoutItem(mItems.get(appListIndex), phi);
-            phi -= angularWidths[appListIndex] + mItemPadding;
-
-        }
-        phi = angularWidths[0];
-
-        int numItemsSecondHalf = totalNumPerPage - numItemsFirstHalf;
-        int index = numItems - (numItemsSecondHalf - itemIndex);
-
-        for (int j = index + numItemsSecondHalf - 1; j >= index; j--) {
-            int appListIndex = j;
-            if (j >= numItems) {
-                appListIndex = j % numItems;
-            }
-            layoutItem(mItems.get(appListIndex), phi);
-            phi += angularWidths[appListIndex] - mItemPadding;
-        }
-    }
-
     private void leftLayout(final float[] angularWidths) {
         float phi = basePhi;
         Log.d(TAG, "leftLayout(%s): starting phi: %5.2f", getName(), phi);
@@ -332,8 +312,7 @@ public class RingList extends GroupWidget {
         layoutItems(start, end, angularWidths, phi);
     }
 
-
-    private void layoutItem(final ListItemHostWidget item, final float phi) {
+    protected void layoutItem(final ListItemHostWidget item, final float phi) {
         Log.d(TAG, "layoutItem(%s): phi [%f] (%s)", getName(), phi, item.guestWidget.getName());
         item.setRotation(1, 0, 0, 0);
         item.setPosition(0, 0, -(float) mRho);
@@ -383,18 +362,18 @@ public class RingList extends GroupWidget {
         return phi;
     }
 
-    private int getLayoutStart() {
-        return mPageNumber * mItemIncrementPerPage;
+    protected int getLayoutStart() {
+        return mPageNumber * mMaxNumPerPage;
     }
 
-    private int getLayoutEnd(int start) {
+    protected int getLayoutEnd(int start) {
         final int limit = mItems.size() - start;
         final int layoutCount = mMaxItemsDisplayed == 0 ? limit : Math
                 .min(limit, mMaxItemsDisplayed);
         return start + layoutCount;
     }
 
-    private int getNumItemsToDisplay() {
+    protected int getNumItemsToDisplay() {
         final int limit = mItems.size();
         return mMaxItemsDisplayed == 0 ? limit :
             Math.min(limit, mMaxItemsDisplayed);
@@ -421,6 +400,13 @@ public class RingList extends GroupWidget {
             mProportionalItemPadding = false;
             requestLayout();
         }
+    }
+
+    /**
+     * @return proportional item padding boolean
+     */
+    public boolean getProportionalItemPadding() {
+        return mProportionalItemPadding;
     }
 
     public void enableProportionalItemPadding(final boolean enable) {
@@ -464,7 +450,6 @@ public class RingList extends GroupWidget {
             // no parameters
             case LEFT_ORDER:
             case BALANCED:
-            case WRAP_AROUND_CENTER:
             case AROUND_SELECTED_ITEM:
                 break;
         }
@@ -612,7 +597,7 @@ public class RingList extends GroupWidget {
             child.layout();
         }
 
-        final float[] angularWidths = calculateAngularWidth();
+        final float[] angularWidths = calculateAngularWidth(mProportionalItemPadding);
         final int numItems = mItems.size();
 
         if (numItems == 0) {
@@ -621,9 +606,6 @@ public class RingList extends GroupWidget {
             Log.d(TAG, "layout(%s): laying out %d items", getName(), numItems);
 
             switch (layoutType) {
-                case WRAP_AROUND_CENTER:
-                    wrapAroundCenterLayout(angularWidths);
-                    break;
                 case AROUND_ITEM_AT:
                     layoutAroundItemAt(mAroundItemAtId, angularWidths);
                     break;
@@ -756,7 +738,7 @@ public class RingList extends GroupWidget {
         return host;
     }
 
-    private class ListItemHostWidget extends AbsoluteLayout {
+    protected class ListItemHostWidget extends AbsoluteLayout {
         public ListItemHostWidget(GVRContext gvrContext) {
             super(gvrContext, 0, 0);
             setTouchable(false);
@@ -867,6 +849,13 @@ public class RingList extends GroupWidget {
         }
     }
 
+    protected ListItemHostWidget getItem(int pos) {
+        return mItems.get(pos);
+    }
+
+    protected int getNumItems() {
+        return mItems.size();
+    }
     /**
      * Check whether the item at position {@code pos} is selected.
      *
@@ -878,12 +867,13 @@ public class RingList extends GroupWidget {
         return mSelectedItems.get(pos);
     }
 
+    private List<ListItemHostWidget> mItems = new ArrayList<ListItemHostWidget>();
+
+    private double mRho;
     private Adapter mAdapter;
     private float mItemPadding;
     private boolean mProportionalItemPadding;
-    private List<ListItemHostWidget> mItems = new ArrayList<ListItemHostWidget>();
-    SparseBooleanArray mSelectedItems = new SparseBooleanArray();
-    private double mRho;
+    private SparseBooleanArray mSelectedItems = new SparseBooleanArray();
     private DataSetObserver mObserver = new DataSetObserver() {
         @Override
         public void onChanged() {
