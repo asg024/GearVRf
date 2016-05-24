@@ -252,6 +252,36 @@ public class RingList extends GroupWidget {
         return angularWidths;
     }
 
+    protected float[] calculateUniformAngularWidth(boolean isProportionalItemPadding) {
+        int firstElementIndex = 0;
+        Widget item = null;
+        ListItemHostWidget host = makeHost(getGVRContext());
+        item = mAdapter.getView(firstElementIndex, null, host);
+        final int numItems = mMaxItemsDisplayed;
+
+        float singleAngularWidth = LayoutHelpers.calculateAngularWidth(item,
+                                                                       mRho);
+        float[] angularWidths = new float[numItems];
+
+        if (!isProportionalItemPadding) {
+            for (int i = 0; i < numItems; ++i) {
+                angularWidths[i] = singleAngularWidth;
+            }
+        } else {
+            float totalAngularWidths = singleAngularWidth * numItems;
+            float uniformAngularWidth = (360.f - totalAngularWidths) / numItems;
+
+            for (int i = 0; i < numItems; ++i) {
+                angularWidths[i] += uniformAngularWidth;
+                Log.d(TAG,
+                      "calculateAngularWidth(%s): angular uniform width at %d: %f",
+                      getName(), i, angularWidths[i]);
+            }
+        }
+        return angularWidths;
+    }
+    
+
     private void layoutAroundItemAt(int position, final float[] angularWidths) {
         int start = getLayoutStart();
         int end = getLayoutEnd(start);
@@ -311,6 +341,7 @@ public class RingList extends GroupWidget {
               getName(), start, end - 1);
         layoutItems(start, end, angularWidths, phi);
     }
+
 
     protected void layoutItem(final ListItemHostWidget item, final float phi) {
         Log.d(TAG, "layoutItem(%s): phi [%f] (%s)", getName(), phi, item.guestWidget.getName());
@@ -373,8 +404,8 @@ public class RingList extends GroupWidget {
         return start + layoutCount;
     }
 
-    protected int getNumItemsToDisplay() {
-        final int limit = mItems.size();
+    protected int getNumItemsToDisplay(int numItems) {
+        final int limit = numItems;
         return mMaxItemsDisplayed == 0 ? limit :
             Math.min(limit, mMaxItemsDisplayed);
     }
@@ -589,7 +620,6 @@ public class RingList extends GroupWidget {
         }
         return selectionIndex;
     }
-
     @Override
     protected void onLayout() {
 
@@ -625,7 +655,6 @@ public class RingList extends GroupWidget {
         // Reset to accumulate until the next layout
         basePhiDelta = 0f;
     }
-
     private void onChanged() {
         onChanged(mAdapter);
     }
@@ -653,6 +682,12 @@ public class RingList extends GroupWidget {
     }
 
     private void onChangedImpl() {
+
+        //TODO remove this once RingList supports recycled views
+        if (this.getClass().getSimpleName()
+                .equals(WrapAroundList.class.getSimpleName())) {
+            return;
+        }
 
         final int itemCount = mAdapter.getCount();
         Log.d(TAG, "onChanged(%s): %d items", getName(), itemCount);
@@ -705,6 +740,61 @@ public class RingList extends GroupWidget {
         Log.d(TAG, "onChanged(%s): requesting layout", getName());
         requestLayout();
 
+    }
+
+    protected ListItemHostWidget getRecycleableView(int pos, int itemIndex) {
+        int numAdapterItems = mAdapter.getCount();
+        int numViews = Math.min(getMaxItemsDisplayed(), numAdapterItems);
+
+        ListItemHostWidget host = null;
+
+        // Trim unused items
+        if (mItems.size() > numViews) {
+            int index = mItems.size() - 1;
+            for (; mItems.size() > numViews; index--) {
+                Widget item = mItems.remove(index);
+                removeChild(item, true);
+            }
+        }
+
+        // Recycle any items we already have
+        if (mItems.size() == numViews) {
+            host = mItems.get(pos);
+            final Widget item = mAdapter.getView(itemIndex, host.guestWidget,
+                                                 host);
+            if (!mItemFocusEnabled) {
+                item.setFocusEnabled(false);
+            }
+            item.addFocusListener(mFocusListener);
+            host.setHostedWidget(item, itemIndex, mAdapter.getItemId(itemIndex));
+            updateItemSelection(item, mSelectedItems.get(itemIndex));
+        } else if (mItems.size() < numViews) {
+            Widget item = null;
+            host = makeHost(getGVRContext());
+            try {
+                item = mAdapter.getView(itemIndex, null, host);
+                if (item == null) {
+                    return null;
+                }
+                if (!mItemFocusEnabled) {
+                    item.setFocusEnabled(false);
+                }
+                item.addFocusListener(mFocusListener);
+                host.setHostedWidget(item, itemIndex,
+                                     mAdapter.getItemId(itemIndex));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+            mItems.add(host);
+            Log.d(TAG, "onChanged(%s): added item at %d", getName(), pos);
+            addChild(host, true);
+            updateItemSelection(item, mSelectedItems.get(itemIndex));
+        }
+
+        host.layout();
+
+        return host;
     }
 
     private OnFocusListener mFocusListener = new OnFocusListener() {
@@ -855,6 +945,10 @@ public class RingList extends GroupWidget {
 
     protected int getNumItems() {
         return mItems.size();
+    }
+    
+    protected int getAdapterCount() {
+        return mAdapter.getCount();
     }
     /**
      * Check whether the item at position {@code pos} is selected.
