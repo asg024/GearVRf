@@ -11,14 +11,13 @@ import org.gearvrf.GVRPicker;
 import org.gearvrf.GVRPicker.GVRPickedObject;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
-import org.gearvrf.periodic.GVRPeriodicEngine;
 
 import android.app.Activity;
 
+import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.Holder;
 import com.samsung.smcl.vr.gvrf_launcher.HolderHelper;
 import com.samsung.smcl.vr.gvrf_launcher.MainThread;
-import com.samsung.smcl.utility.Log;
 
 /**
  * A class for tracking line-of-sight focus for {@link Widget} instances. In
@@ -115,17 +114,13 @@ public class FocusManager {
     }
 
     private void cancelLongFocusRunnable() {
-        if (mLongFocusEvent != null) {
-            mLongFocusEvent.cancel();
-            mLongFocusEvent = null;
-        }
+        MainThread.get(mContext).removeCallbacks(mLongFocusRunnable);
     }
 
     private void postLongFocusRunnable(long timeout) {
         if (mCurrentFocus != null) {
-            LongFocusRunnable r = new LongFocusRunnable(mCurrentFocus);
-            mLongFocusEvent = GVRPeriodicEngine.getInstance(mContext)
-                    .runAfter(r, timeout / 1000.0f);
+            MainThread.get(mContext).runOnMainThreadDelayed(mLongFocusRunnable,
+                                                            timeout);
         }
     }
 
@@ -151,8 +146,10 @@ public class FocusManager {
 
             // release old focus
             if (pickedObjectList == null || pickedObjectList.isEmpty()) {
-                log("onDrawFrame(): empty/null pick list; releasing current focus (%s)",
-                    mCurrentFocusName);
+                if (mCurrentFocus != null) {
+                    log("onDrawFrame(): empty/null pick list; releasing current focus (%s)",
+                        mCurrentFocusName);
+                }
                 releaseCurrentFocus();
                 return;
             }
@@ -248,24 +245,17 @@ public class FocusManager {
     private String mCurrentFocusName = "";
     private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<GVRSceneObject, WeakReference<Focusable>>();
 
-    static class LongFocusRunnable implements Runnable {
-        Focusable mFocusable;
-
-        LongFocusRunnable(Focusable focusable) {
-            mFocusable = focusable;
-        }
-
+    private final Runnable mLongFocusRunnable = new Runnable() {
+        
         @Override
         public void run() {
-            if (mFocusable != null) {
-                mFocusable.onLongFocus();
+            if (mCurrentFocus != null) {
+                mCurrentFocus.onLongFocus();
             }
         }
-    }
+    };
 
-    private GVRPeriodicEngine.PeriodicEvent mLongFocusEvent;
-
-    private static final boolean LOGGING_ENABLED = false;
+    private static final boolean LOGGING_ENABLED = true;
     static final int LONG_FOCUS_TIMEOUT = 5000;
 
     @SuppressWarnings("unused")
