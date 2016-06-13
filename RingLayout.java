@@ -3,7 +3,6 @@ package com.samsung.smcl.vr.widgets;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
-import com.samsung.smcl.utility.RuntimeAssertion;
 import com.samsung.smcl.utility.Utility;
 
 /**

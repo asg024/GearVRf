@@ -2201,11 +2201,13 @@ public class Widget {
         final TouchManager.OnTouch currentTouchHandler = mTouchHandler;
         final FocusManager.Focusable currentFocusable = mFocusableImpl;
 
+        final boolean needsOwnFocusable = needsOwnFocusable();
         if (useParentFocusable()) {
             mFocusableImpl = mParent.mFocusableImpl;
-        } else if (needsOwnFocusable()) {
+        } else if (needsOwnFocusable) {
             mFocusableImpl = new FocusableImpl();
         }
+
         if (useParentTouchHandler()) {
             mTouchHandler = mParent.mTouchHandler;
         } else if (needsOwnTouchHandler()) {
@@ -2224,12 +2226,12 @@ public class Widget {
             } else {
                 Log.d(TAG, "registerPickable(): '%s' is not focus-enabled",
                       getName());
-                focusManager.unregister(getSceneObject());
+                focusManager.unregister(getSceneObject(), needsOwnFocusable);
             }
         } else {
             touchManager.removeHandlerFor(getSceneObject());
             Log.d(TAG, "registerPickable(): unregistering '%s'; focus-enabled: %b", getName(), mFocusEnabled);
-            focusManager.unregister(getSceneObject());
+            focusManager.unregister(getSceneObject(), needsOwnFocusable);
         }
 
         // If our focusable or touch handler have changed, we need to let any

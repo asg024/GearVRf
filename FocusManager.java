@@ -85,14 +85,21 @@ public class FocusManager {
     }
 
     public void unregister(final GVRSceneObject sceneObject) {
+        unregister(sceneObject, false);
+    }
+
+    void unregister(final GVRSceneObject sceneObject,
+            final boolean softUnregister) {
         log("unregister sceneObject %s", sceneObject.getName());
         final WeakReference<Focusable> focusableRef = mFocusableMap
                 .remove(sceneObject);
         if (focusableRef != null) {
+            final boolean allowRelease = !softUnregister
+                    || !containsFocusable(focusableRef);
             MainThread.get(mContext).runOnMainThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (mCurrentFocus == focusableRef.get()) {
+                    if (allowRelease && mCurrentFocus == focusableRef.get()) {
                         releaseCurrentFocus();
                     }
                 }
@@ -111,6 +118,18 @@ public class FocusManager {
         if (mContext != null) {
             mContext.unregisterDrawFrameListener(mDrawFrameListener);
         }
+    }
+
+    private boolean containsFocusable(
+            final WeakReference<Focusable> focusableRef) {
+        final Focusable focusable = focusableRef.get();
+        for (WeakReference<Focusable> ref : mFocusableMap.values()) {
+            final Focusable f = ref.get();
+            if (f != null && f == focusable) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void cancelLongFocusRunnable() {
@@ -158,8 +177,10 @@ public class FocusManager {
             for (GVRPickedObject picked : pickedObjectList) {
                 final GVRSceneObject quad = picked.getHitObject();
                 if (quad != null) {
-                    log("onDrawFrame(): checking '%s' for focus",
-                        quad.getName());
+                    if (!compareCurrentFocusName(quad)) {
+                        log("onDrawFrame(): checking '%s' for focus",
+                            quad.getName());
+                    }
                     WeakReference<Focusable> ref = mFocusableMap.get(quad);
                     if (null != ref) {
                         focusable = ref.get();
@@ -193,6 +214,13 @@ public class FocusManager {
                 log("onDrawFrame(): no eligible focusable found! (%s)", mCurrentFocusName);
                 releaseCurrentFocus();
             }
+        }
+
+        private boolean compareCurrentFocusName(final GVRSceneObject quad) {
+            final String quadName = quad.getName();
+            return (mCurrentFocusName == null && quadName == null)
+                    || (mCurrentFocusName != null && mCurrentFocusName
+                            .equalsIgnoreCase(quadName));
         }
     };
 
@@ -255,7 +283,7 @@ public class FocusManager {
         }
     };
 
-    private static final boolean LOGGING_ENABLED = true;
+    private static final boolean LOGGING_ENABLED = false;
     static final int LONG_FOCUS_TIMEOUT = 5000;
 
     @SuppressWarnings("unused")
