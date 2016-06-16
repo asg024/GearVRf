@@ -560,6 +560,12 @@ public class RingList extends GroupWidget {
      *            The amount to scroll, in degrees.
      */
     public void scrollBy(float rotationDelta) {
+        if (Float.isInfinite(rotationDelta) || Float.isNaN(rotationDelta)) {
+            Log.e(TAG, new IllegalArgumentException(),
+                  "Invalid rotation delta: %f", rotationDelta);
+            return;
+        }
+
         basePhiDelta += rotationDelta;
         basePhi += rotationDelta;
         requestLayout();
