@@ -1449,7 +1449,7 @@ public class Widget {
     /**
      * A convenience method that wraps {@link #getColor()} and returns an
      * Android {@link Color}
-     * 
+     *
      * @return An Android {@link Color}
      */
     public int getRgbColor() {
@@ -1568,7 +1568,7 @@ public class Widget {
     /**
      * Get a recursive count of the number of {@link Widget} children of this
      * {@code Widget}.
-     * 
+     *
      * @param includeHidden
      *            Pass {@code false} to only count children whose
      *            {@link #setVisibility(Visibility) visibility} is
@@ -1608,12 +1608,12 @@ public class Widget {
     /**
      * Get a recursive set of {@link ChildInfo} instances describing the
      * {@link Widget} children of this {@code Widget}.
-     * 
+     *
      * @param includeHidden
      *            Pass {@code false} to only count children whose
      *            {@link #setVisibility(Visibility) visibility} is
      *            {@link Visibility#VISIBLE}.
-     * 
+     *
      * @return A {@link List} of {@code ChildInfo}.
      */
     public List<ChildInfo> getChildInfo(boolean includeHidden) {
@@ -2056,6 +2056,10 @@ public class Widget {
      * called.
      */
     private boolean doOnFocus(boolean focused) {
+        if (!mFocusEnabled) {
+            return false;
+        }
+
         final boolean oldFocus = mIsFocused;
         if (Policy.LOGGING_VERBOSE) {
             Log.v(TAG, "doOnFocus(%s): mIsFocused: %b, focused: %b", getName(),
