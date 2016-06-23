@@ -1565,6 +1565,68 @@ public class Widget {
         return mLayoutRequested;
     }
 
+    /**
+     * Get a recursive count of the number of {@link Widget} children of this
+     * {@code Widget}.
+     * 
+     * @param includeHidden
+     *            Pass {@code false} to only count children whose
+     *            {@link #setVisibility(Visibility) visibility} is
+     *            {@link Visibility#VISIBLE}.
+     * @return The count of child {@code Widgets}.
+     */
+    public int getChildCount(boolean includeHidden) {
+        int count = 0;
+        for (Widget child : mChildren) {
+            if (includeHidden || child.mVisibility == Visibility.VISIBLE) {
+                ++count;
+                count += child.getChildCount(includeHidden);
+            }
+        }
+        return count;
+    }
+
+    /**
+     * A small class for {@linkplain Widget#getChildInfo(boolean) building} a
+     * recursive set of information about a {@link Widget Widget's} children.
+     */
+    public static class ChildInfo {
+        /** The {@link Widget#getName() name} of the child {@link Widget}. */
+        public final String name;
+        /**
+         * A {@link List} of information about this child's {@link Widget}
+         * children.
+         */
+        public final List<ChildInfo> children;
+
+        private ChildInfo(final String n, final List<ChildInfo> c) {
+            name = n;
+            children = c;
+        }
+    }
+
+    /**
+     * Get a recursive set of {@link ChildInfo} instances describing the
+     * {@link Widget} children of this {@code Widget}.
+     * 
+     * @param includeHidden
+     *            Pass {@code false} to only count children whose
+     *            {@link #setVisibility(Visibility) visibility} is
+     *            {@link Visibility#VISIBLE}.
+     * 
+     * @return A {@link List} of {@code ChildInfo}.
+     */
+    public List<ChildInfo> getChildInfo(boolean includeHidden) {
+        List<ChildInfo> children = new ArrayList<ChildInfo>();
+        for (Widget child : mChildren) {
+            if (includeHidden || child.mVisibility == Visibility.VISIBLE) {
+                children.add(new ChildInfo(child.getName(), child
+                        .getChildInfo(includeHidden)));
+            }
+        }
+        return children;
+    }
+
     protected Widget(final GVRContext context, final GVRMesh mesh) {
         this(context, new GVRSceneObject(context, mesh, sDefaultTexture));
     }
