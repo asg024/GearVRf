@@ -704,18 +704,28 @@ public class RingList extends GroupWidget {
 
         for (pos = 0; pos < mItems.size() && pos < itemCount; ++pos) {
             final ListItemHostWidget host = mItems.get(pos);
-            final Widget item = mAdapter.getView(pos, host.guestWidget, host);
-            if (!mItemFocusEnabled) {
-                item.setFocusEnabled(false);
+            final Widget item;
+            try {
+                item = mAdapter.getView(pos, host.guestWidget, host);
+                if (item == null) {
+                    break;
+                }
+                if (!mItemFocusEnabled) {
+                    item.setFocusEnabled(false);
+                }
+                item.addFocusListener(mFocusListener);
+                host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
+            } catch (Throwable t) {
+                Log.e(TAG, t, "onChanged(%s) exception at %d: %s", getName(),
+                      pos, t.getMessage());
+                break;
             }
-            item.addFocusListener(mFocusListener);
-            host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
             updateItemSelection(item, mSelectedItems.get(pos));
         }
 
         // Get any additional items
         for (; pos < itemCount; ++pos) {
-            Widget item = null;
+            final Widget item;
             ListItemHostWidget host = makeHost(getGVRContext());
             try {
                 item = mAdapter.getView(pos, null, host);
@@ -727,8 +737,9 @@ public class RingList extends GroupWidget {
                 }
                 item.addFocusListener(mFocusListener);
                 host.setHostedWidget(item, pos, mAdapter.getItemId(pos));
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Throwable t) {
+                Log.e(TAG, t, "onChanged(%s) exception at %d: %s", getName(),
+                      pos, t.getMessage());
                 break;
             }
             mItems.add(host);
@@ -740,12 +751,12 @@ public class RingList extends GroupWidget {
         // Trim unused items
         Log.d(TAG, "onChanged(%s): trimming: %b", getName(), pos < mItems.size());
         for (; mItems.size() > pos;) {
-            Widget item = mItems.remove(mItems.size() - 1);
+            ListItemHostWidget item = mItems.remove(mItems.size() - 1);
+            item.setHostedWidget(null, 0, 0);
             removeChild(item, true);
         }
         Log.d(TAG, "onChanged(%s): requesting layout", getName());
         requestLayout();
-
     }
 
     protected ListItemHostWidget getRecycleableView(int pos, int itemIndex) {
@@ -758,7 +769,8 @@ public class RingList extends GroupWidget {
         if (mItems.size() > numViews) {
             int index = mItems.size() - 1;
             for (; mItems.size() > numViews; index--) {
-                Widget item = mItems.remove(index);
+                ListItemHostWidget item = mItems.remove(index);
+                item.setHostedWidget(null, 0, 0);
                 removeChild(item, true);
             }
         }
@@ -766,13 +778,20 @@ public class RingList extends GroupWidget {
         // Recycle any items we already have
         if (mItems.size() == numViews) {
             host = mItems.get(pos);
-            final Widget item = mAdapter.getView(itemIndex, host.guestWidget,
-                                                 host);
-            if (!mItemFocusEnabled) {
-                item.setFocusEnabled(false);
+            Widget item = null;
+            try {
+                item = mAdapter.getView(itemIndex, host.guestWidget, host);
+                if (!mItemFocusEnabled) {
+                    item.setFocusEnabled(false);
+                }
+                item.addFocusListener(mFocusListener);
+                host.setHostedWidget(item, itemIndex,
+                                     mAdapter.getItemId(itemIndex));
+            } catch (Exception e) {
+                Log.e(TAG, e, "getRecycleableView(%s): exception at %d: %s",
+                      getName(), pos, e.getMessage());
+                return null;
             }
-            item.addFocusListener(mFocusListener);
-            host.setHostedWidget(item, itemIndex, mAdapter.getItemId(itemIndex));
             updateItemSelection(item, mSelectedItems.get(itemIndex));
         } else if (mItems.size() < numViews) {
             Widget item = null;
@@ -789,11 +808,12 @@ public class RingList extends GroupWidget {
                 host.setHostedWidget(item, itemIndex,
                                      mAdapter.getItemId(itemIndex));
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, e, "getRecycleableView(%s): exception at %d: %s",
+                      getName(), pos, e.getMessage());
                 return null;
             }
             mItems.add(host);
-            Log.d(TAG, "onChanged(%s): added item at %d", getName(), pos);
+            Log.d(TAG, "getRecycleableView(%s): added item at %d", getName(), pos);
             addChild(host, true);
             updateItemSelection(item, mSelectedItems.get(itemIndex));
         }

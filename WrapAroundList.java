@@ -155,14 +155,19 @@ public class WrapAroundList extends RingList {
     @Override
     protected void onLayout() {
         boolean proportionalItemPadding = getProportionalItemPadding();
-        final float[] angularWidths = calculateUniformAngularWidth(proportionalItemPadding);
         final int numItems = getAdapterCount();
 
         if (numItems == 0) {
             Log.d(TAG, "layout(%s): no items to layout!", getName());
         } else {
             Log.d(TAG, "layout(%s): laying out %d items", getName(), numItems);
-            wrapAroundCenterLayout(angularWidths, numItems);
+            try {
+                final float[] angularWidths = calculateUniformAngularWidth(proportionalItemPadding);
+                wrapAroundCenterLayout(angularWidths, numItems);
+            } catch (Throwable t) {
+                Log.e(TAG, t, "onLayout(%s): exception: %s", getName(),
+                      t.getMessage());
+            }
         }
         for (Widget child : getChildren()) {
             child.layout();
