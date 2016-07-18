@@ -1,46 +1,52 @@
 package com.samsung.smcl.vr.widgets;
 
-import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
+import java.util.List;
 
 /**
  * A layout class that leaves widgets exactly where they are placed.
  */
-public class AbsoluteLayout extends GroupWidget {
-
-    /**
-     * Construct a wrapper for an existing {@link GVRSceneObject}.
-     *
-     * @param context
-     *            The current {@link GVRContext}.
-     * @param sceneObject
-     *            The {@link GVRSceneObject} to wrap.
-     */
-    public AbsoluteLayout(GVRContext context, GVRSceneObject sceneObject) {
-        super(context, sceneObject);
-    }
-
-    public AbsoluteLayout(GVRContext context, GVRSceneObject sceneObject,
-                          NodeEntry attributes) throws InstantiationException {
-        super(context, sceneObject, attributes);
-    }
-
-    /**
-     * Construct a new {@link AbsoluteLayout}.
-     *
-     * @param context
-     *            A valid {@link GVRContext} instance.
-     * @param width
-     * @param height
-     */
-    public AbsoluteLayout(GVRContext context, float width, float height) {
-        super(context, width, height);
+public class AbsoluteLayout extends Layout {
+    @Override
+    protected float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis) {
+        return getChildSize(dataIndex, axis) + getDividerPadding(axis);
     }
 
     @Override
-    protected void onLayout() {
-        for (Widget child : getChildren()) {
-            child.layout();
-        }
+    protected void shiftBy(final float offset, final Axis axis) {
+    }
+
+    @Override
+    protected boolean postMeasurement() {
+        return true;
+    }
+
+    @Override
+    protected void resetChildLayout(final int dataIndex) {
+    }
+
+    @Override
+    boolean inViewPort(final int dataIndex) {
+        return true;
+    }
+
+    @Override
+    protected int getCenterChild() {
+        return 0;
+    }
+
+    @Override
+    protected Direction getDirectionToChild(int dataIndex, Axis axis) {
+        return Direction.NONE;
+    }
+
+    @Override
+    protected float getDistanceToChild(int dataIndex, Axis axis) {
+        return 0;
+    }
+
+    @Override
+    protected float preMeasureNext(final List<Widget> measuredChildren,
+            final Axis axis, final Direction direction) {
+        return 0;
     }
 }

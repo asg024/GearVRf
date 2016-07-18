@@ -1,14 +1,14 @@
 package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
-import org.gearvrf.animation.GVRRotationByAxisWithPivotAnimation;
+import org.gearvrf.animation.GVRTransformAnimation;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class RotationByAxisWithPivotAnimation extends TransformAnimation {
     /**
      * Convenience method; assumes the pivot is at the origin (0, 0, 0).
-     * 
+     *
      * @param target
      *            The {@link Widget} to rotate.
      * @param duration
@@ -101,13 +101,22 @@ public class RotationByAxisWithPivotAnimation extends TransformAnimation {
         return mAdapter;
     }
 
-    private class Adapter extends GVRRotationByAxisWithPivotAnimation implements
-            Animation.AnimationAdapter {
+    private class Adapter extends GVRTransformAnimation implements
+
+    Animation.AnimationAdapter {
         Adapter(Widget widget, float duration, float angle, float axisX,
                 float axisY, float axisZ, float pivotX, float pivotY,
                 float pivotZ) {
-            super(widget.getSceneObject(), duration, angle, axisX, axisY,
-                    axisZ, pivotX, pivotY, pivotZ);
+
+            super(widget.getSceneObject(), duration);
+
+            mAngle = angle;
+            mAxisX = axisX;
+            mAxisY = axisY;
+            mAxisZ = axisZ;
+            mPivotX = pivotX;
+            mPivotY = pivotY;
+            mPivotZ = pivotZ;
         }
 
         @Override
@@ -116,9 +125,21 @@ public class RotationByAxisWithPivotAnimation extends TransformAnimation {
         }
 
         void superAnimate(Widget target, float ratio) {
-            super.animate(target.getSceneObject(), ratio);
+            float angle = ratio * mAngle;
+            mTransform.rotateByAxisWithPivot(angle - mRotatedBy, mAxisX, mAxisY, mAxisZ,
+                    mPivotX, mPivotY, mPivotZ);
+            mRotatedBy = angle;
         }
+        private final float mAngle;
+        private final float mAxisX;
+        private final float mAxisY;
+        private final float mAxisZ;
+        private final float mPivotX;
+        private final float mPivotY;
+        private final float mPivotZ;
+        private float mRotatedBy;
     }
+
 
     private final Adapter mAdapter;
     private final float mAngle;

@@ -11,6 +11,8 @@ import org.gearvrf.animation.GVROnFinish;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.R.integer;
+
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
@@ -72,11 +74,13 @@ public abstract class Animation {
     }
 
     public Animation setInterpolator(GVRInterpolator interpolator) {
+        mInterpolator = interpolator;
         getAnimation().setInterpolator(interpolator);
         return this;
     }
 
     public Animation setRepeatMode(int mode) {
+        mMode = mode;
         getAnimation().setRepeatMode(mode);
         return this;
     }
@@ -102,7 +106,7 @@ public abstract class Animation {
      * {@linkplain Widget#isChanged() is changed} during each animation frame.
      * <p>
      * By default, this feature is enabled.
-     * 
+     *
      * @param enable
      *            {@code true} to enable this feature, {@code false} to disable
      *            it.
@@ -145,10 +149,10 @@ public abstract class Animation {
 
     /**
      * Start the animation.
-     * 
+     *
      * Changing properties once the animation is running can have unpredictable
      * results.
-     * 
+     *
      * @return {@code this}, so you can save the instance at the end of a chain
      *         of calls.
      */
@@ -158,10 +162,10 @@ public abstract class Animation {
 
     /**
      * Start the animation.
-     * 
+     *
      * Changing properties once the animation is running can have unpredictable
      * results.
-     * 
+     *
      * @param engine
      *            The global animation engine.
      * @return {@code this}, so you can save the instance at the end of a chain
@@ -176,7 +180,7 @@ public abstract class Animation {
     /**
      * Stop the animation, even if it is still running: the animated object will
      * be left in its current state, not reset to the start or end values.
-     * 
+     *
      * This is probably not what you want to do! Usually you will either
      * <ul>
      * <li>Use {@link #setRepeatCount(int) setRepeatCount(0)} to 'schedule'
@@ -196,7 +200,7 @@ public abstract class Animation {
     /**
      * Stop the animation, even if it is still running: the animated object will
      * be left in its current state, not reset to the start or end values.
-     * 
+     *
      * This is probably not what you want to do! Usually you will either
      * <ul>
      * <li>Use {@link #setRepeatCount(int) setRepeatCount(0)} to 'schedule'
@@ -208,7 +212,7 @@ public abstract class Animation {
      * removing the animated object the same time. For example, you may be
      * spinning some sort of In Progress object. In a case like this, stopping
      * in mid-animation is harmless.
-     * 
+     *
      * @param engine
      *            The global animation engine.
      */
@@ -221,7 +225,7 @@ public abstract class Animation {
      * If the animation is still running, stops the animation, runs the last
      * frame, and calls any {@linkplain #addOnFinish(OnFinish) registered}
      * {@linkplain OnFinish listeners}.
-     * 
+     *
      * @return {@code True} if the animation was running and finishing was
      *         successful; {@code false} if the animation was not running.
      */
@@ -233,7 +237,7 @@ public abstract class Animation {
      * If the animation is still running, stops the animation, runs the last
      * frame, and calls any {@linkplain #addOnFinish(OnFinish) registered}
      * {@linkplain OnFinish listeners}.
-     * 
+     *
      * @param engine
      *            The global animation engine.
      * @return {@code True} if the animation was running and finishing was
@@ -381,9 +385,11 @@ public abstract class Animation {
         private Set<OnFinish> mListeners = new LinkedHashSet<OnFinish>();
     }
 
+    protected GVRInterpolator mInterpolator;
+    protected int mMode = -1;
     private final Widget mTarget;
     private AnimationAdapter mAnimation;
-    private OnFinishManager mOnFinish;
+    protected OnFinishManager mOnFinish;
     private boolean mIsRunning;
     private boolean mRequestLayoutOnTargetChange = true;
 

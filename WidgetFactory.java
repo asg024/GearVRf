@@ -18,9 +18,9 @@ public class WidgetFactory {
      * another {@code Widget} class is specified in {@code sceneObject}'s
      * metadata (as "{@code class_WidgetClassName}"), it will be wrapped in an
      * instance of the specified class instead.
-     * 
+     *
      * @see NameDemangler#demangleString(String)
-     * 
+     *
      * @param sceneObject
      *            The {@code GVRSceneObject} to wrap.
      * @return A new {@code Widget} instance.
@@ -30,7 +30,7 @@ public class WidgetFactory {
     @SuppressWarnings("unchecked")
     public static Widget createWidget(final GVRSceneObject sceneObject)
             throws InstantiationException {
-        Class<? extends Widget> widgetClass = AbsoluteLayout.class;
+        Class<? extends Widget> widgetClass = GroupWidget.class;
         NodeEntry attributes = new NodeEntry(sceneObject);
 
         String className = attributes.getClassName();
@@ -52,7 +52,7 @@ public class WidgetFactory {
     /**
      * Create a {@link Widget} of the specified {@code widgetClass} to wrap
      * {@link GVRSceneObject sceneObject}.
-     * 
+     *
      * @param sceneObject
      *            The {@code GVRSceneObject} to wrap
      * @param widgetClass
@@ -72,7 +72,7 @@ public class WidgetFactory {
      * Create an {@link AbsoluteLayout} {@link Widget} to wrap a
      * {@link GVRSceneObject} that is a child of the specified {@code root}
      * {@code GVRSceneObject}.
-     * 
+     *
      * @param root
      *            The root {@code GVRSceneObject} containing the desired child.
      * @param childName
@@ -83,14 +83,16 @@ public class WidgetFactory {
      */
     public static Widget createWidget(final GVRSceneObject root,
             final String childName) throws InstantiationException {
-        return createWidget(root, childName, AbsoluteLayout.class);
+        GroupWidget widget = (GroupWidget)createWidget(root, childName, GroupWidget.class);
+        widget.applyLayout(new AbsoluteLayout());
+        return widget;
     }
 
     /**
      * Create an {@link Widget} of the specified {@code widgetClass} to wrap a
      * {@link GVRSceneObject} that is a child of the specified {@code root}
      * {@code GVRSceneObject}.
-     * 
+     *
      * @param root
      *            The root {@code GVRSceneObject} containing the desired child.
      * @param childName
@@ -132,7 +134,7 @@ public class WidgetFactory {
     /**
      * Create an {@link AbsoluteLayout} to wrap the root {@link GVRSceneObject}
      * of the scene graph loaded from a file.
-     * 
+     *
      * @param gvrContext
      *            The {@link GVRContext} to load the model into.
      * @param modelFile
@@ -145,14 +147,16 @@ public class WidgetFactory {
      */
     public static Widget createWidgetFromModel(final GVRContext gvrContext,
             final String modelFile) throws InstantiationException, IOException {
-        return createWidgetFromModel(gvrContext, modelFile,
-                                     AbsoluteLayout.class);
+        GroupWidget widget = (GroupWidget) createWidgetFromModel(gvrContext, modelFile,
+                                     GroupWidget.class);
+        widget.applyLayout(new AbsoluteLayout());
+        return widget;
     }
 
     /**
      * Create a {@link Widget} of the specified {@code widgetClass} to wrap the
      * root {@link GVRSceneObject} of the scene graph loaded from a file.
-     * 
+     *
      * @param gvrContext
      *            The {@link GVRContext} to load the model into.
      * @param modelFile
@@ -177,7 +181,7 @@ public class WidgetFactory {
      * Create an {@link AbsoluteLayout} {@link Widget} to wrap a
      * {@link GVRSceneObject} that is a child of the {@code root}
      * {@code GVRSceneObject} of the scene graph loaded from a file.
-     * 
+     *
      * @param gvrContext
      *            The {@link GVRContext} to load the model into.
      * @param modelFile
@@ -194,15 +198,17 @@ public class WidgetFactory {
     public static Widget createWidgetFromModel(final GVRContext gvrContext,
             final String modelFile, final String nodeName)
             throws InstantiationException, IOException {
-        return createWidgetFromModel(gvrContext, modelFile, nodeName,
-                                     AbsoluteLayout.class);
+        GroupWidget widget = (GroupWidget)createWidgetFromModel(gvrContext, modelFile, nodeName,
+                                     GroupWidget.class);
+        widget.applyLayout(new AbsoluteLayout());
+        return widget;
     }
 
     /**
      * Create a {@link Widget} of the specified {@code widgetClass} to wrap a
      * {@link GVRSceneObject} that is a child of the {@code root}
      * {@code GVRSceneObject} of the scene graph loaded from a file.
-     * 
+     *
      * @param gvrContext
      *            The {@link GVRContext} to load the model into.
      * @param modelFile

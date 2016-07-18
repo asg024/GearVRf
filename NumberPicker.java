@@ -21,7 +21,8 @@ public class NumberPicker extends GVRSceneObject {
     public NumberPicker(GVRContext gvrContext,
             float width, float height) {
         super(gvrContext, width, height);
-        mWidgetWrapper = new AbsoluteLayout(gvrContext, this);
+        mWidgetWrapper = new GroupWidget(gvrContext, this);
+        mWidgetWrapper.applyLayout(new AbsoluteLayout());
 
         final float selectionHeight = height / 3;
         final float buttonHeight = selectionHeight / 2;
@@ -120,7 +121,7 @@ public class NumberPicker extends GVRSceneObject {
     private final GVRSceneObject mUpButton;
     private final GVRSceneObject mDownButton;
     private final TextWidget mSelection;
-    private final AbsoluteLayout mWidgetWrapper;
+    private final GroupWidget mWidgetWrapper;
     private int mMinValue = 0;
     private int mMaxValue = Integer.MAX_VALUE;
     private int mValue;

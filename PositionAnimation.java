@@ -64,7 +64,6 @@ public class PositionAnimation extends TransformAnimation {
         public Adapter(Widget target, float duration, float x, float y, float z) {
             super(target.getSceneObject(), duration, x, y, z);
         }
-
         @Override
         public void animate(GVRHybridObject target, float ratio) {
             doAnimate(ratio);

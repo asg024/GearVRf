@@ -1,144 +1,152 @@
 package com.samsung.smcl.vr.widgets;
 
-import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
+import org.joml.Vector3f;
 
-import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
 
 /**
  * A specialized {@link LinearLayout} that lays its children out in an arc on
  * either the {@linkplain Orientation#HORIZONTAL horizontal} plane (the plane
  * lying on the x and z axes) or the {@linkplain Orientation#VERTICAL vertical}
- * plane (the plane lying on the x and y axes). If there are enough children, a
- * complete ring will be formed.
- * <p>
- * By default, {@code RingLayout} arranges its children in a ring around its
- * local origin. There are instances, however, when it's useful to add one
- * {@code RingLayout} to another {@code RingLayout}, and have the first layout
- * blend into the second, rather than laying out as a ring <em>on</em> a ring.
- * To enable this, call {@link #setUseVirtualOrigin(boolean)
- * setUseVirtualOrigin(true)}. When using a virtual origin, {@code RingLayout}
- * calculates curvature using a point on it's local z-axis that is
- * {@code radius} units away from its local origin. It's origin, therefore,
- * remains in the edge of the "ring". This distinction allows {@code RingLayout}
- * to be a child of other {@code RingLayouts} and {@link RingList RingLists} and
- * match their curvature without introducing offsetting issues.
- * <p>
- * Some illustration:<br>
- * Be default, {@code RingLayout} arranges its children around its local origin:
- * <br>
+ * plane (the plane lying on the x and y axes). The length of the arc and the
+ * radius of the arc can be specified in the class constructor.
  *
- * <img src="ring-layout-local-origin.png" />
- * <p>
- * Using a virtual origin, {@code RingLayout} arranges its children to the left
- * and right (for {@link Orientation#HORIZONTAL horizontal} orientation) of its
- * local origin, centered on the virtual origin; with enough children, the
- * left-most and right-most children will be next to each other:<br>
- *
- * <img src="ring-layout-virtual-origin.png" />
- * <p>
- * As a child of another {@code RingLayout} using its local origin:<br>
- *
- * <img src="ring-ring-layout-local-origin.png" />
- * <p>
- * As a child of another {@code RingLayout} using a virtual origin:<br>
- *
- * <img src="ring-ring-layout-virtual-origin.png" />
  */
 public class RingLayout extends LinearLayout {
 
     /**
-     * Construct a wrapper for an existing {@link GVRSceneObject}.
-     *
-     * @param context
-     *            The current {@link GVRContext}.
-     * @param sceneObject
-     *            The {@link GVRSceneObject} to wrap.
+     * Units to define the size . {@link Units#DEGREE} - define the angle in
+     * degrees {@link Units#ARC_LENGTH} - defines the arc length
      */
-    public RingLayout(GVRContext context, GVRSceneObject sceneObject) {
-        super(context, sceneObject);
+    public enum Units {
+        DEGREE, ARC_LENGTH
     }
 
-    public RingLayout(GVRContext context, GVRSceneObject sceneObject,NodeEntry attributes)
-            throws InstantiationException {
-        super(context, sceneObject, attributes);
+    /**
+     * Construct a new {@link RingLayout} with the radius. The size of the
+     * container is calculated as the size of the scene object.
+     *
+     * @param radius
+     *            - ring radius.
+     */
+    public RingLayout(float radius) {
+        super();
+
+        if (radius <= 0) {
+            Log.d(TAG, "setRadius: Radius cannot be negative [%f] !", radius);
+        } else {
+            mRadius = radius;
+        }
     }
 
-    public RingLayout(GVRContext context, float width, float height) {
-        super(context, width, height);
-    }
-
-    public RingLayout(GVRContext context, float width, float height,
-            float radius) {
-        super(context, width, height);
-        mRadius = radius;
-    }
-
+    /**
+     * @return ring radius
+     */
     public float getRadius() {
         return mRadius;
     }
 
-    public void setRadius(final float radius) {
-        if (!Utility.equal(radius, mRadius)) {
-            mRadius = radius;
-            requestLayout();
+    /**
+     * Set the amount of padding between child objects. The actual padding can
+     * be different from that if the {@link Gravity#FILL } is set. The divider
+     * padding can be specified by either angle or length of the arch.
+     *
+     * @param padding
+     * @param units
+     *            {@link Units} units the padding is defined in
+     */
+    public void setDividerPadding(final float padding, final Units units, final Axis axis) {
+        super.setDividerPadding(units == Units.ARC_LENGTH ?
+                getSizeAngle(padding) : padding, axis);
+    }
+
+    private static final String pattern = "\nRL attributes======  radius = %f";
+
+    @Override
+    public String toString() {
+        return super.toString() + String.format(pattern, mRadius);
+    }
+
+    /**
+     * Calculate the angle by arc length
+     *
+     * @param arcLength
+     * @return angle
+     */
+    protected float getSizeAngle(float arcLength) {
+        if (mRadius <= 0) {
+            throw new IllegalArgumentException("mRadius is not specified!");
         }
+        return LayoutHelpers.angleOfArc(arcLength, mRadius);
     }
 
-    public boolean getUseVirtualOrigin() {
-        return mUseVirtualOrigin;
-    }
-
-    public void setUseVirtualOrigin(boolean useVirtualOrigin) {
-        mUseVirtualOrigin = useVirtualOrigin;
+    /**
+     * Calculate the arc length by angle and radius
+     *
+     * @param angle
+     * @return arc length
+     */
+    protected float getSizeArcLength(float angle) {
+        if (mRadius <= 0) {
+            throw new IllegalArgumentException("mRadius is not specified!");
+        }
+        return angle == Float.MAX_VALUE ? Float.MAX_VALUE : LayoutHelpers
+                .lengthOfArc(angle, mRadius);
     }
 
     @Override
-    LinearLayoutStrategy getLayoutStrategy() {
-        return new RadialLayoutStrategy();
+    void onLayoutApplied(final WidgetContainer container, final Vector3Axis viewPort) {
+        super.onLayoutApplied(container,
+                              new Vector3Axis(getSizeAngle(viewPort.x),
+                                              getSizeAngle(viewPort.y),
+                                              getSizeAngle(viewPort.z)));
     }
 
-    class RadialLayoutStrategy extends LinearLayoutStrategy {
-        @Override
-        protected float getChildSize(final Widget child, Axis axis) {
-            final float segment = super.getChildSize(child, axis);
-            final float angle = LayoutHelpers.calculateAngularWidth(segment,
-                                                                    mRadius);
-            return angle;
+    @Override
+    protected float getChildSize(final int dataIndex, Axis axis) {
+        final float segment = super.getChildSize(dataIndex, axis);
+        Log.d(TAG, "getChildSize for %d segment = %f", dataIndex, segment);
+        return getSizeAngle(segment);
+    }
+
+    @Override
+    protected int getOffsetSign() {
+        int sign = 1;
+        switch (mOrientation) {
+            case VERTICAL:
+                sign = -1;
+                break;
+            case HORIZONTAL:
+            case STACK:
+                sign = 1;
+                break;
+            default:
+                Log.w(TAG, "Unsupported orientation %s", mOrientation);
+                break;
         }
 
-        @Override
-        protected float getAxisSize(final float size) {
-            return LayoutHelpers.angleOfArc(size, mRadius);
-        }
+        return sign;
+    }
 
-        @Override
-        protected float getDivider() {
-            return LayoutHelpers.angleOfArc(getDividerPadding(), mRadius);
-        }
+    @Override
+    protected void updateTransform(Widget child, final Vector3f factor, float childOffset) {
+        child.setRotation(1, 0, 0, 0);
+        child.setPosition(0, 0, -(float) mRadius);
+        child.rotateByAxisWithPivot(-childOffset, factor.y, factor.x,
+                                    factor.z, 0, 0, 0);
+        child.onTransformChanged();
+    }
 
-        @Override
-        protected int getOffsetSign() {
-            return -1;
-        }
-
-        @Override
-        protected void positionChild(final Widget child,
-                final float childOffset, float xFactor, float yFactor,
-                float zFactor) {
-
-            final float pivotZ;
-            if (mUseVirtualOrigin) {
-                pivotZ = mRadius;
-            } else {
-                child.setPosition(0, 0, -(float) mRadius);
-                pivotZ = 0;
-            }
-            child.rotateByAxisWithPivot(childOffset, xFactor, yFactor, zFactor,
-                                        0, 0, pivotZ);
+    @Override
+    protected void resetChildLayout(final int dataIndex) {
+        Widget child = mContainer.get(dataIndex);
+        if (child != null) {
+            Log.d(TAG, "clearChildPosition %s", child);
+            child.setRotation(1, 0, 0, 0);
+            child.setPosition(0, 0, -(float) mRadius);
         }
     }
 
-    private float mRadius = 1;
-    private boolean mUseVirtualOrigin;
+    private float mRadius = 0;
 }

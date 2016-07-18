@@ -15,14 +15,14 @@ import android.database.DataSetObserver;
 public interface Adapter {
     /**
      * How many items are in the data set represented by this Adapter
-     * 
+     *
      * @return Count of items.
      */
     int getCount();
 
     /**
      * Get the data item associated with the specified position in the data set.
-     * 
+     *
      * @param position
      *            Position of the item whose data we want within the adapter's
      *            data set.
@@ -32,7 +32,7 @@ public interface Adapter {
 
     /**
      * Get the row id associated with the specified position in the list.
-     * 
+     *
      * @param position
      *            The position of the item within the adapter's data set whose
      *            row id we want.
@@ -44,7 +44,7 @@ public interface Adapter {
      * Get the type of view that will be created by
      * {@link #getView(int, GVRSceneObject, GVRSceneObject)} for the specified
      * item.
-     * 
+     *
      * @param position
      *            The position of the item within the adapter's data set whose
      *            view type we want.
@@ -60,7 +60,7 @@ public interface Adapter {
     /**
      * Get a {@link Widget} that displays the data at the specified position in
      * the data set. Should only be called from GL thread.
-     * 
+     *
      * @param position
      *            The position of the item within the adapter's data set of the
      *            item whose view we want.
@@ -86,7 +86,7 @@ public interface Adapter {
      * {@link #getView(int, GVRSceneObject, GVRSceneObject)}. If the adapter
      * always returns the same type of View for all items, this method should
      * return 1.
-     * 
+     *
      * @return The number of types of views that will be created by this
      *         adapter.
      */
@@ -95,7 +95,7 @@ public interface Adapter {
     /**
      * Indicates whether the item ids are stable across changes to the
      * underlying data.
-     * 
+     *
      * @return True if the same id always refers to the same object.
      */
     boolean hasStableIds();
@@ -108,7 +108,7 @@ public interface Adapter {
     /**
      * Register an observer that is called when changes happen to the data used
      * by this adapter.
-     * 
+     *
      * @param observer
      *            the object that gets notified when the data set changes.
      */
@@ -117,10 +117,9 @@ public interface Adapter {
     /**
      * Unregister an observer that has previously been registered with this
      * adapter via {@link #registerDataSetObserver(DataSetObserver)}.
-     * 
+     *
      * @param observer
      *            the object to unregister.
      */
     void unregisterDataSetObserver(DataSetObserver observer);
-
 }

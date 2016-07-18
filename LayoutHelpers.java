@@ -15,13 +15,13 @@ public final class LayoutHelpers {
      * <p>
      * It is assumed that the {@code segment} is oriented perpendicularly to the
      * radius's origin and parallel to the y-axis.
-     * 
+     *
      * @see <a href="http://bit.ly/1Zf7ZGJ">Angular diameter</a>
      * @see <a href="http://bit.ly/22vjbRB">Visual angle</a>
-     * 
+     *
      * @param segment
      *            The segment whose angular width to calculate.
-     * 
+     *
      * @param radius
      *            Distance between the origin and {@code item}.
      * @return The angular width of {@code item}, in degrees.
@@ -134,4 +134,9 @@ public final class LayoutHelpers {
     public static float angleOfArc(float arcLength, float radius) {
         return (float) ((arcLength * 180) / (radius * Math.PI));
     }
+
+    public static float lengthOfArc(float angle, float radius) {
+        return  ((float)(angle * Math.PI * radius) /180);
+    }
+
 }

@@ -188,6 +188,18 @@ public class Widget {
     }
 
     /**
+     * Options for {@link Widget#setViewPortVisibility(ViewPortVisibility)}.
+     */
+    public enum ViewPortVisibility {
+        /** The object is fully visible in layout ViewPort */
+        FULLY_VISIBLE,
+        /** The object is partially visible in layout ViewPort */
+        PARTIALLY_VISIBLE,
+        /** The object is not visible in layout ViewPort */
+        INVISIBLE
+    }
+
+    /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
      *
      * @param context
@@ -1039,8 +1051,8 @@ public class Widget {
      */
     public void setOffsetFactor(float offsetFactor) {
         GVRRenderData renderData = getRenderData();
-        renderData.setOffsetFactor(offsetFactor);
         if (renderData != null) {
+            renderData.setOffsetFactor(offsetFactor);
         }
     }
 
@@ -1128,7 +1140,7 @@ public class Widget {
      */
     public void setPosition(float x, float y, float z) {
         getTransform().setPosition(x, y, z);
-        if (mTransformCache.setPosition(x, y, z) && !mChanged) {
+        if (mTransformCache.setPosition(x, y, z)) {
             onTransformChanged();
         }
     }
@@ -1143,7 +1155,7 @@ public class Widget {
      */
     public void setPositionX(float x) {
         getTransform().setPositionX(x);
-        if (mTransformCache.setPosX(x) && !mChanged) {
+        if (mTransformCache.setPosX(x)) {
             onTransformChanged();
         }
     }
@@ -1158,7 +1170,7 @@ public class Widget {
      */
     public void setPositionY(float y) {
         getTransform().setPositionY(y);
-        if (mTransformCache.setPosY(y) && !mChanged) {
+        if (mTransformCache.setPosY(y)) {
             onTransformChanged();
         }
     }
@@ -1173,7 +1185,7 @@ public class Widget {
      */
     public void setPositionZ(float z) {
         getTransform().setPositionZ(z);
-        if (mTransformCache.setPosZ(z) && !mChanged) {
+        if (mTransformCache.setPosZ(z)) {
             onTransformChanged();
         }
     }
@@ -1262,7 +1274,7 @@ public class Widget {
      */
     public void setRotation(float w, float x, float y, float z) {
         getTransform().setRotation(w, x, y, z);
-        if (mTransformCache.setRotation(w, x, y, z) && !mChanged) {
+        if (mTransformCache.setRotation(w, x, y, z)) {
             onTransformChanged();
         }
     }
@@ -1306,7 +1318,7 @@ public class Widget {
      */
     public void setScale(float x, float y, float z) {
         getTransform().setScale(x, y, z);
-        if (mTransformCache.setScale(x, y, z) && !mChanged) {
+        if (mTransformCache.setScale(x, y, z)) {
             onTransformChanged();
         }
     }
@@ -1319,7 +1331,7 @@ public class Widget {
      */
     public void setScaleX(float x) {
         getTransform().setScaleX(x);
-        if (mTransformCache.setScaleX(x) && !mChanged) {
+        if (mTransformCache.setScaleX(x)) {
             onTransformChanged();
         }
     }
@@ -1332,7 +1344,7 @@ public class Widget {
      */
     public void setScaleY(float y) {
         getTransform().setScaleY(y);
-        if (mTransformCache.setScaleY(y) && !mChanged) {
+        if (mTransformCache.setScaleY(y)) {
             onTransformChanged();
         }
     }
@@ -1345,7 +1357,7 @@ public class Widget {
      */
     public void setScaleZ(float z) {
         getTransform().setScaleZ(z);
-        if (mTransformCache.setScaleZ(z) && !mChanged) {
+        if (mTransformCache.setScaleZ(z)) {
             onTransformChanged();
         }
     }
@@ -1575,30 +1587,7 @@ public class Widget {
     public boolean setVisibility(final Visibility visibility) {
         if (visibility != mVisibility) {
             Log.d(TAG, "setVisibility(%s) for %s", visibility, getName());
-            if (mParent != null) {
-                final GVRSceneObject parentSceneObject = mParent
-                        .getSceneObject();
-                switch (visibility) {
-                    case VISIBLE:
-                        if (mSceneObject.getParent() != parentSceneObject) {
-                            parentSceneObject.addChildObject(mSceneObject);
-                        }
-                        break;
-                    case HIDDEN:
-                    case GONE:
-                        if (mVisibility == Visibility.VISIBLE) {
-                            parentSceneObject.removeChildObject(mSceneObject);
-                        }
-                        break;
-                    case PLACEHOLDER:
-                        getSceneObject().detachRenderData();
-                        break;
-                }
-                if (mVisibility == Visibility.GONE
-                        || visibility == Visibility.GONE) {
-                    mParent.requestLayout();
-                }
-            }
+            updateVisibility(visibility);
             mVisibility = visibility;
             return true;
         }
@@ -1611,6 +1600,74 @@ public class Widget {
      */
     public Visibility getVisibility() {
         return mVisibility;
+    }
+
+    private void updateVisibility(final Visibility visibility) {
+        Log.d(TAG, "change visibility for widget<%s> to visibility = %s mParent = %s mSceneObject.getParent() = %s parentSceneObject = %s",
+              getName(), visibility, mParent, mSceneObject.getParent(), mParent != null ? mParent.getSceneObject() : "null");
+        if (mParent != null) {
+            final GVRSceneObject parentSceneObject = mParent
+                    .getSceneObject();
+            switch (visibility) {
+                case VISIBLE:
+                    if (mSceneObject.getParent() != parentSceneObject &&
+                        mIsVisibleInViewPort != ViewPortVisibility.INVISIBLE) {
+                        parentSceneObject.addChildObject(mSceneObject);
+                    }
+                    break;
+                case HIDDEN:
+                case GONE:
+                    if (mVisibility == Visibility.VISIBLE) {
+                        parentSceneObject.removeChildObject(mSceneObject);
+                    }
+                    break;
+                case PLACEHOLDER:
+                    getSceneObject().detachRenderData();
+                    break;
+            }
+            if (mVisibility == Visibility.GONE
+                    || visibility == Visibility.GONE) {
+                mParent.requestLayout();
+            }
+        }
+    }
+
+    /**
+     * Set ViewPort visibility of the object.
+     *
+     * @see ViewPortVisibility
+     * @param viewportVisibility
+     *            The ViewPort visibility of the object.
+     * @return {@code true} if the ViewPort visibility was changed, {@code false} if it
+     *         wasn't.
+     */
+    public boolean setViewPortVisibility(final ViewPortVisibility viewportVisibility) {
+        boolean visibilityIsChanged = viewportVisibility != mIsVisibleInViewPort;
+        if (visibilityIsChanged) {
+            Visibility visibility = mVisibility;
+
+            switch(viewportVisibility) {
+                case FULLY_VISIBLE:
+                case PARTIALLY_VISIBLE:
+                    break;
+                case INVISIBLE:
+                    visibility = Visibility.HIDDEN;
+                    break;
+            }
+
+            mIsVisibleInViewPort = viewportVisibility;
+
+            updateVisibility(visibility);
+        }
+        return visibilityIsChanged;
+    }
+
+    /**
+     * @see ViewPortVisibility
+     * @return The object's current ViewPort visibility
+     */
+    public ViewPortVisibility getViewPortVisibility() {
+        return mIsVisibleInViewPort;
     }
 
     /**
@@ -1988,7 +2045,8 @@ public class Widget {
             } else {
                 mChildren.add(index, child);
             }
-            if (child.getVisibility() == Visibility.VISIBLE) {
+            if (child.getVisibility() == Visibility.VISIBLE
+                && child.getViewPortVisibility() != ViewPortVisibility.INVISIBLE) {
                 if (childRootSceneObject.getParent() != getSceneObject()) {
                     getSceneObject().addChildObject(childRootSceneObject);
                 } else if (Policy.LOGGING_VERBOSE) {
@@ -1996,6 +2054,10 @@ public class Widget {
                           "addChildInner(): child '%s' already attached to this Group ('%s')",
                           child.getName(), getName());
                 }
+            } else {
+                Log.v(TAG,
+                      "addChildInner(): child '%s' is not visible visibility = %s, mIsVisibleInViewPort = %s ",
+                      child.getName(), child.getVisibility(), child.getViewPortVisibility());
             }
             child.doOnAttached(this);
         }
@@ -2003,7 +2065,7 @@ public class Widget {
     }
 
     void checkTransformChanged() {
-        if (mTransformCache.save(this, true) && !mChanged) {
+        if (mTransformCache.save(this, true)) {
             onTransformChanged();
         }
     }
@@ -2562,7 +2624,7 @@ public class Widget {
 
     private final GVRContext mContext;
 
-    private final TransformCache mTransformCache;
+    protected final TransformCache mTransformCache;
     private BoundingBox mBoundingBox;
     private boolean mLayoutRequested;
     private boolean mChanged;
@@ -2635,6 +2697,7 @@ public class Widget {
     private boolean mIsSelected;
     private boolean mIsTouchable = true;
     private Visibility mVisibility = Visibility.VISIBLE;
+    private ViewPortVisibility mIsVisibleInViewPort = ViewPortVisibility.FULLY_VISIBLE;
     private Widget mParent;
     private String mName;
 

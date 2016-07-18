@@ -63,8 +63,8 @@ public class TransformCache {
                 && Utility.equal(rotY, transform.getRotationY())
                 && Utility.equal(rotZ, transform.getRotationZ())
                 && Utility.equal(scaleX, transform.getScaleX())
-                && Utility.equal(scaleY, transform.getScaleY()) && Utility
-                    .equal(scaleZ, transform.getScaleZ()));
+                && Utility.equal(scaleY, transform.getScaleY())
+                && Utility.equal(scaleZ, transform.getScaleZ()));
     }
 
     public void save(final Widget widget) {

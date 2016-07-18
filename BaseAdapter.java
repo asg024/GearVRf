@@ -4,7 +4,6 @@ import android.database.DataSetObservable;
 import android.database.DataSetObserver;
 
 public abstract class BaseAdapter implements Adapter {
-
     /**
      * Notifies the attached observers that the underlying data has been changed
      * and any View reflecting the data set should refresh itself.

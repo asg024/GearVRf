@@ -9,8 +9,9 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.vr.widgets.Layout.Axis;
 
-public class PageIndicatorWidget extends LinearLayout {
+public class PageIndicatorWidget extends GroupWidget {
     private static final int DEFAULT_STATE = 0;
     private int mCheckedChildIndex = -1;
 
@@ -19,7 +20,9 @@ public class PageIndicatorWidget extends LinearLayout {
             OnTouchListener listener, float indicatorWidth,
             float indicatorHeight) {
         super(context, sceneObject);
-        setDividerPadding(padding);
+        LinearLayout layout = new LinearLayout();
+        layout.setDividerPadding(padding, Axis.X);
+        applyLayout(layout);
         addIndicatorChildren(context, resIds, numIndicators, listener,
                 indicatorWidth, indicatorHeight);
 
@@ -31,9 +34,9 @@ public class PageIndicatorWidget extends LinearLayout {
     }
 
     public void setCheckedId(int index, int textureId) {
-        if (mCheckedChildIndex != index) {
+        if (mCheckedChildIndex != index - 1) {
             clearCheck();
-            mCheckedChildIndex = index;
+            mCheckedChildIndex = index - 1;
             ButtonWidget child = (ButtonWidget) this.getChildren().get(
                     mCheckedChildIndex);
             if (child != null) {
