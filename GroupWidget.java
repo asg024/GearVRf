@@ -403,6 +403,12 @@ public class GroupWidget extends Widget implements WidgetContainer {
     @Override
     protected void onLayout() {
         Log.d(TAG, "layout() called (%s)", getName());
+        if (null == mLayouts) {
+            //see RootWidget's hierarchy and ctor; onLayout gets called before the GroupWidget is
+            //fully constructed; this is not the correct fix; should be refactored so this never
+            //can happen
+            return;
+        }
         if (mLayouts.isEmpty()) {
             Log.w(TAG, "No any layout has been applied! %s", getName());
             return;
@@ -430,7 +436,7 @@ public class GroupWidget extends Widget implements WidgetContainer {
         }
     }
 
-    protected List<Layout> mLayouts = new ArrayList<Layout>();
+    protected final List<Layout> mLayouts = new ArrayList<Layout>();
 
     @SuppressWarnings("unused")
     private static final String TAG = GroupWidget.class.getSimpleName();

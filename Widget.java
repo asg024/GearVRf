@@ -42,6 +42,8 @@ import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
 
 public class Widget {
 
+    private static final String MATERIAL_DIFFUSE_TEXTURE = "diffuseTexture";
+
     /**
      * Call to initialize the Widget infrastructure. Parses {@code objects.json}
      * to load metadata for {@code Widgets}, as well as animation and material
@@ -891,7 +893,10 @@ public class Widget {
      *            The new texture.
      */
     public void setTexture(final GVRTexture texture) {
-        getMaterial().setMainTexture(texture);
+        final GVRMaterial material = getMaterial();
+        material.setMainTexture(texture);
+        //models use the new shader framework which has no single main texture
+        material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
     }
 
     /**
@@ -915,7 +920,9 @@ public class Widget {
      *            The new texture.
      */
     public void setTexture(final Future<GVRTexture> texture) {
-        getMaterial().setMainTexture(texture);
+        final GVRMaterial material = getMaterial();
+        material.setMainTexture(texture);
+        material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
     }
 
     /**
@@ -1598,31 +1605,35 @@ public class Widget {
     private void updateVisibility(final Visibility visibility) {
         Log.d(TAG, "change visibility for widget<%s> to visibility = %s mParent = %s mSceneObject.getParent() = %s parentSceneObject = %s",
               getName(), visibility, mParent, mSceneObject.getParent(), mParent != null ? mParent.getSceneObject() : "null");
-        if (mParent != null) {
-            final GVRSceneObject parentSceneObject = mParent
-                    .getSceneObject();
-            switch (visibility) {
-                case VISIBLE:
-                    if (mSceneObject.getParent() != parentSceneObject &&
-                        mIsVisibleInViewPort != ViewPortVisibility.INVISIBLE) {
-                        parentSceneObject.addChildObject(mSceneObject);
-                    }
-                    break;
-                case HIDDEN:
-                case GONE:
-                    if (mVisibility == Visibility.VISIBLE) {
-                        parentSceneObject.removeChildObject(mSceneObject);
-                    }
-                    break;
-                case PLACEHOLDER:
-                    getSceneObject().detachRenderData();
-                    break;
+            if (mParent != null) {
+                final GVRSceneObject parentSceneObject = mParent
+                        .getSceneObject();
+                switch (visibility) {
+                    case VISIBLE:
+                        final GVRSceneObject sceneObjectParent = mSceneObject.getParent();
+                        if (sceneObjectParent != parentSceneObject) {
+                            if (null != sceneObjectParent) {
+                                sceneObjectParent.removeChildObject(mSceneObject);
+                            }
+                            parentSceneObject.addChildObject(mSceneObject);
+                            getGVRContext().getMainScene().bindShaders(parentSceneObject);
+                        }
+                        break;
+                    case HIDDEN:
+                    case GONE:
+                        if (mVisibility == Visibility.VISIBLE) {
+                            parentSceneObject.removeChildObject(mSceneObject);
+                        }
+                        break;
+                    case PLACEHOLDER:
+                        getSceneObject().detachRenderData();
+                        break;
+                }
+                if (mVisibility == Visibility.GONE
+                        || visibility == Visibility.GONE) {
+                    mParent.requestLayout();
+                }
             }
-            if (mVisibility == Visibility.GONE
-                    || visibility == Visibility.GONE) {
-                mParent.requestLayout();
-            }
-        }
     }
 
     /**
@@ -1852,11 +1863,7 @@ public class Widget {
      *            {@link Runnable} to execute on the GL thread.
      */
     protected final void runOnGlThread(final Runnable r) {
-        if (isGLThread()) {
-            r.run();
-        } else {
-            getGVRContext().runOnGlThread(r);
-        }
+        getGVRContext().runOnGlThread(r);
     }
 
     protected final GVRContext getGVRContext() {
@@ -2078,9 +2085,12 @@ public class Widget {
             } else {
                 mChildren.add(index, child);
             }
-            if (child.getVisibility() == Visibility.VISIBLE
-                && child.getViewPortVisibility() != ViewPortVisibility.INVISIBLE) {
-                if (childRootSceneObject.getParent() != getSceneObject()) {
+            if (child.getVisibility() == Visibility.VISIBLE) {
+                final GVRSceneObject childRootSceneObjectParent = childRootSceneObject.getParent();
+                if (childRootSceneObjectParent != getSceneObject()) {
+                    if (null != childRootSceneObjectParent) {
+                        childRootSceneObjectParent.removeChildObject(childRootSceneObject);
+                    }
                     getSceneObject().addChildObject(childRootSceneObject);
                 } else if (Policy.LOGGING_VERBOSE) {
                     Log.v(TAG,
