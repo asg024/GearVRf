@@ -90,7 +90,7 @@ public class Widget {
             FocusManager.get(gvrContext).init(gvrContext);
             sGLThread = new WeakReference<Thread>(Thread.currentThread());
             sDefaultTexture = gvrContext.loadTexture(new GVRAndroidResource(
-                    gvrContext, R.drawable.default_bkgd));
+                    gvrContext, R.raw.default_bkgd));
             Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
         }
     };
