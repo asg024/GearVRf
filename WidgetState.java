@@ -14,7 +14,7 @@ import com.samsung.smcl.utility.Log;
 
 class WidgetState {
     public enum State {
-        NORMAL, FOCUSED, SELECTED, DISABLED
+        NORMAL, FOCUSED, SELECTED, PRESSED, CHECKED, DISABLED
     }
 
     public WidgetState(final Widget parent, final JSONObject stateSpec) {

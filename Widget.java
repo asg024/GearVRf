@@ -711,6 +711,17 @@ public class Widget {
         return mLevel;
     }
 
+    public void setPressed(final boolean pressed) {
+        if (pressed != mIsPressed) {
+            mIsPressed = pressed;
+            updateState();
+        }
+    }
+
+    public boolean isPressed() {
+        return mIsPressed;
+    }
+
     /**
      * Sets the state of the {@link Widget} to "selected". This state may be
      * accompanied by visual changes -- material, animation, displayed mesh --
@@ -2373,19 +2384,29 @@ public class Widget {
     }
 
     private void updateState() {
+        final WidgetState.State state = getState();
+
+        Log.d(TAG, "updateState(): %s for '%s'", state, getName());
+        if (!mLevelInfo.isEmpty()) {
+            mLevelInfo.get(mLevel).setState(this, state);
+        }
+    }
+
+    /* package : Overridden by CheckableButton to return CHECKED state */
+    // NOT protected because states are defined internally and are not for
+    // external consumption
+    WidgetState.State getState() {
         final WidgetState.State state;
-        if (mIsSelected) {
+        if (mIsPressed) {
+            state = WidgetState.State.PRESSED;
+        } else if (mIsSelected) {
             state = WidgetState.State.SELECTED;
         } else if (mIsFocused) {
             state = WidgetState.State.FOCUSED;
         } else {
             state = WidgetState.State.NORMAL;
         }
-
-        Log.d(TAG, "updateState(): %s for '%s'", state, getName());
-        if (!mLevelInfo.isEmpty()) {
-            mLevelInfo.get(mLevel).setState(this, state);
-        }
+        return state;
     }
 
     private boolean useParentFocusable() {
@@ -2433,6 +2454,7 @@ public class Widget {
     private long mLongFocusTimeout = FocusManager.LONG_FOCUS_TIMEOUT;
     private boolean mChildrenFollowInput = false;
     private boolean mFollowParentInput = false;
+    private boolean mIsPressed;
     private boolean mIsSelected;
     private boolean mIsTouchable = true;
     private Visibility mVisibility = Visibility.VISIBLE;

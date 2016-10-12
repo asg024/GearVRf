@@ -9,7 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.widget.TextView;
 
 @SuppressWarnings("deprecation")
-public class TextWidget extends Widget {
+public class TextWidget extends Widget implements TextContainer {
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
@@ -21,7 +21,6 @@ public class TextWidget extends Widget {
      */
     public TextWidget(final GVRContext context, final GVRSceneObject sceneObject) {
         super(context, sceneObject);
-        // TODO: Implement property fetching
         mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
     }
 
