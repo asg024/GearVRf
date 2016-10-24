@@ -34,7 +34,30 @@ public class FocusManager {
         void onLongFocus();
     }
 
+    /**
+     * Similar to
+     * {@link com.samsung.smcl.vr.gvrf_launcher.TouchManager#setTouchInterceptor(com.samsung.smcl.vr.gvrf_launcher.TouchManager.OnTouch)
+     * TouchManager.setTouchInterceptor(OnTouch)}, instances of this interface
+     * can be used to filter the delivery of focus events to
+     * {@linkplain GVRSceneObject scene objects}.
+     */
     public interface FocusInterceptor {
+        /**
+         * If the interceptor has completely handled the event and no further
+         * processing is necessary -- including the normal focus event mechanism
+         * -- return {@code true}. To allow the normal focus mechanism to be
+         * executed, return {@code false}.
+         * <p>
+         * Generally this is useful for restricting focus events to a subset of
+         * visible {@linkplain GVRSceneObject scene objects}: return
+         * {@code false} for the objects you want to get normal focus processing
+         * for, and {@code true} for the ones you don't.
+         *
+         * @param sceneObject
+         *            The {@code GVRSceneObject} to filter
+         * @return {@code True} if the focus event has been handled,
+         *         {@code false} otherwise.
+         */
         boolean onFocus(GVRSceneObject sceneObject);
     }
 
@@ -237,17 +260,14 @@ public class FocusManager {
     }
 
     private boolean takeNewFocus(final GVRSceneObject quad, final Focusable newFocusable) {
-        boolean ret = false;
         if (newFocusable != null &&
                 newFocusable.isFocusEnabled()) {
 
-            if (focusInterceptor != null) {
-                ret = focusInterceptor.onFocus(quad);
-            } else {
-                ret = newFocusable.onFocus(true);
+            if (focusInterceptor != null && focusInterceptor.onFocus(quad)) {
+                return false;
             }
 
-            if (ret) {
+            if (newFocusable.onFocus(true)) {
                 mCurrentFocus = newFocusable;
                 final long longFocusTimeout;
                 if (newFocusable instanceof LongFocusTimeout) {
@@ -257,9 +277,11 @@ public class FocusManager {
                     longFocusTimeout = LONG_FOCUS_TIMEOUT;
                 }
                 postLongFocusRunnable(longFocusTimeout);
+
+                return true;
             }
         }
-        return ret;
+        return false;
     }
 
     private void log(final String msg, Object...args) {
@@ -274,7 +296,7 @@ public class FocusManager {
     private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<GVRSceneObject, WeakReference<Focusable>>();
 
     private final Runnable mLongFocusRunnable = new Runnable() {
-        
+
         @Override
         public void run() {
             if (mCurrentFocus != null) {

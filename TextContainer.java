@@ -8,11 +8,15 @@ public interface TextContainer {
 
     public abstract Drawable getBackGround();
 
+    public abstract int getBackgroundColor();
+
     public abstract int getGravity();
 
     public abstract IntervalFrequency getRefreshFrequency();
 
     public abstract CharSequence getText();
+
+    public abstract int getTextColor();
 
     public abstract float getTextSize();
 

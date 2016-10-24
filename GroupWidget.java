@@ -117,7 +117,7 @@ public abstract class GroupWidget extends Widget {
      *         was successfully removed; {@code false} if {@code child} is not a
      *         child of this instance.
      */
-    protected boolean removeChild(Widget child, boolean preventLayout) {
+    public boolean removeChild(Widget child, boolean preventLayout) {
         return removeChild(child, child.getSceneObject(), preventLayout);
     }
 

@@ -5,11 +5,117 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.view.Gravity;
 import android.widget.TextView;
 
 @SuppressWarnings("deprecation")
 public class TextWidget extends Widget implements TextContainer {
+
+    static public class TextParams implements TextContainer {
+
+        @Override
+        public Drawable getBackGround() {
+            return mBackground;
+        }
+
+        @Override
+        public void setBackGround(Drawable drawable) {
+            mBackground = drawable;
+        }
+
+        @Override
+        public int getBackgroundColor() {
+            return mBackgroundColor;
+        }
+
+        @Override
+        public void setBackgroundColor(int color) {
+            mBackgroundColor = color;
+        }
+
+        @Override
+        public int getGravity() {
+            return mGravity;
+        }
+
+        @Override
+        public void setGravity(int gravity) {
+            mGravity = gravity;
+        }
+
+        @Override
+        public IntervalFrequency getRefreshFrequency() {
+            return mIntervalFreq;
+        }
+
+        @Override
+        public void setRefreshFrequency(IntervalFrequency frequency) {
+            mIntervalFreq = frequency;
+        }
+
+        @Override
+        public CharSequence getText() {
+            return mText;
+        }
+
+        @Override
+        public void setText(CharSequence text) {
+            mText = text;
+        }
+
+        @Override
+        public int getTextColor() {
+            return mTextColor;
+        }
+
+        @Override
+        public void setTextColor(int color) {
+            mTextColor = color;
+        }
+
+        @Override
+        public float getTextSize() {
+            return mTextSize;
+        }
+
+        @Override
+        public void setTextSize(float size) {
+            mTextSize = size;
+        }
+
+        @Override
+        public String getTextString() {
+            return mText.toString();
+        }
+
+        private Drawable mBackground;
+        private int mBackgroundColor = Color.TRANSPARENT;
+        private int mGravity = Gravity.CENTER;
+        private IntervalFrequency mIntervalFreq = IntervalFrequency.MEDIUM;
+        private CharSequence mText;
+        private int mTextColor = Color.BLACK;
+        private float mTextSize = 15; // Android's default text size
+    }
+
+    public static TextContainer copy(TextContainer src, TextContainer dest) {
+        dest.setBackGround(src.getBackGround());
+
+        dest.setBackgroundColor(src.getBackgroundColor());
+
+        dest.setGravity(src.getGravity());
+
+        dest.setRefreshFrequency(src.getRefreshFrequency());
+
+        dest.setText(src.getText());
+
+        dest.setTextSize(src.getTextSize());
+
+        dest.setTextColor(src.getTextColor());
+
+        return dest;
+    }
 
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
@@ -35,11 +141,11 @@ public class TextWidget extends Widget implements TextContainer {
      *            The {@link GVRSceneObject} to wrap.
      * @param attributes
      *            A set of class-specific attributes.
-     * @throws InstantiationException 
+     * @throws InstantiationException
      */
     @SuppressWarnings("deprecation")
     public TextWidget(GVRContext context, GVRSceneObject sceneObject,
-                      NodeEntry attributes) throws InstantiationException {
+            NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
 
         String attribute = attributes.getProperty("text");
@@ -132,6 +238,10 @@ public class TextWidget extends Widget implements TextContainer {
         return mTextViewSceneObject.getBackGround();
     }
 
+    public int getBackgroundColor() {
+        return mBackgroundColor;
+    }
+
     public int getGravity() {
         return mTextViewSceneObject.getGravity();
     }
@@ -142,6 +252,10 @@ public class TextWidget extends Widget implements TextContainer {
 
     public CharSequence getText() {
         return mTextViewSceneObject.getText();
+    }
+
+    public int getTextColor() {
+        return mTextColor;
     }
 
     public float getTextSize() {
@@ -180,16 +294,28 @@ public class TextWidget extends Widget implements TextContainer {
         mTextViewSceneObject.setTextSize(size);
     }
 
+    public TextParams getTextParams() {
+        return (TextParams) TextWidget.copy(this, new TextParams());
+    }
+
+    public void setTextParams(final TextContainer textInfo) {
+        TextWidget.copy(textInfo, this);
+    }
+
     private GVRTextViewSceneObject maybeWrap(GVRSceneObject sceneObject) {
         if (sceneObject instanceof GVRTextViewSceneObject) {
             return (GVRTextViewSceneObject) sceneObject;
         } else {
-            final float sizes[] = LayoutHelpers.calculateGeometricDimensions(sceneObject);
-            final GVRSceneObject temp = new GVRTextViewSceneObject(sceneObject.getGVRContext(), sizes[0], sizes[1], "");
+            final float sizes[] = LayoutHelpers
+                    .calculateGeometricDimensions(sceneObject);
+            final GVRSceneObject temp = new GVRTextViewSceneObject(
+                    sceneObject.getGVRContext(), sizes[0], sizes[1], "");
             sceneObject.addChildObject(temp);
             return (GVRTextViewSceneObject) temp;
         }
     }
 
     private final GVRTextViewSceneObject mTextViewSceneObject;
+    private int mBackgroundColor;
+    private int mTextColor;
 }

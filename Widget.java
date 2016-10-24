@@ -56,8 +56,8 @@ public class Widget {
      *             if a constructor can't be found for an animation type
      *             specified in {@code objects.json}.
      */
-    static public void init(Context context)
-            throws JSONException, NoSuchMethodException {
+    static public void init(Context context) throws JSONException,
+            NoSuchMethodException {
         String rawJson = Utility.readTextFile(context, "objects.json");
         if (Policy.LOGGING_VERBOSE) {
             Log.v(TAG, "init(): raw JSON: %s", rawJson);
@@ -69,20 +69,22 @@ public class Widget {
         sObjectMetadata = new UnmodifiableJSONObject(
                 json.optJSONObject("objects"));
         if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): loaded object metadata: %s", sObjectMetadata.toString());
+            Log.v(TAG, "init(): loaded object metadata: %s",
+                  sObjectMetadata.toString());
         }
 
         JSONObject animationMetadata = json.optJSONObject("animations");
         AnimationFactory.init(animationMetadata);
         if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): loaded animation metadata: %s", animationMetadata);
+            Log.v(TAG, "init(): loaded animation metadata: %s",
+                  animationMetadata);
         }
     }
 
     /**
      * Register this with LauncherViewManager. An alternative would be to have
-     * {@link #init(Context) init()} do this work and just call it
-     * directly from LauncherViewManager.onInit().
+     * {@link #init(Context) init()} do this work and just call it directly from
+     * LauncherViewManager.onInit().
      */
     static public final OnInitListener onInitListener = new OnInitListener() {
         @Override
@@ -233,7 +235,8 @@ public class Widget {
 
         attribute = attributes.getProperty("touchable");
         if (attribute != null) {
-            setTouchable(hasRenderData && attribute.compareToIgnoreCase("false") != 0);
+            setTouchable(hasRenderData
+                    && attribute.compareToIgnoreCase("false") != 0);
         }
 
         attribute = attributes.getProperty("focusenabled");
@@ -258,14 +261,15 @@ public class Widget {
         }
     }
 
-//    private static final String pattern = Widget.class.getSimpleName()
-//            + "name : %s size = (%f, %f, %f) \n"
-//            + "touchable = %b focus_enabled = %b Visibile = %s selected = %b";
-//
-//    public String toString() {
-//        return String.format(pattern, getName(), getWidth(), getHeight(), getDepth(),
-//                             mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
-//    }
+    // private static final String pattern = Widget.class.getSimpleName()
+    // + "name : %s size = (%f, %f, %f) \n"
+    // + "touchable = %b focus_enabled = %b Visibile = %s selected = %b";
+    //
+    // public String toString() {
+    // return String.format(pattern, getName(), getWidth(), getHeight(),
+    // getDepth(),
+    // mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
+    // }
 
     public Widget(final GVRContext context, final float width,
             final float height) {
@@ -320,6 +324,38 @@ public class Widget {
      */
     public boolean isFocused() {
         return mIsFocused;
+    }
+
+    /**
+     * Determines whether this {@link Widget} is currently handling focus events
+     * for the specified {@link GVRSceneObject}. This will be true if either
+     * <p>
+     * <ul>
+     * <li>
+     * The {@code GVRSceneObject} is wrapped by this {@code Widget} <em>and</em>
+     * this {@code Widget} is not following its parent's focus</li>
+     * <li>The {@code GVRSceneObject} is wrapped by a child of this
+     * {@code Widget} and the child <em>is</em> following this {@code Widget's}
+     * focus</li>
+     * </ul>
+     *
+     * @param sceneObject
+     *            The {@code GVRSceneObject} to check
+     * @return {@code True} if this {@code Widget} handles focus events for the
+     *         {@code GVRSceneObject}, {@code false} if it doesn't.
+     */
+    public boolean handlesFocusFor(final GVRSceneObject sceneObject) {
+        return handlesEventFor(sceneObject, mHandlesFocusEvent);
+    }
+
+    /**
+     * {@link Widget} version of {@link #handlesFocusFor(GVRSceneObject)}.
+     *
+     * @param widget
+     *            The {@code Widget} to check
+     */
+    public boolean handlesFocusFor(final Widget widget) {
+        return handlesFocusFor(widget.getSceneObject());
     }
 
     /**
@@ -445,7 +481,9 @@ public class Widget {
                     }
                 }
 
-                Log.d(TAG, "setChildrenFollowFocus(%s): calling registerPickable", getName());
+                Log.d(TAG,
+                      "setChildrenFollowFocus(%s): calling registerPickable",
+                      getName());
                 child.registerPickable();
             }
         }
@@ -479,7 +517,8 @@ public class Widget {
     public void setFollowParentFocus(final boolean follow) {
         if (follow != mFollowParentFocus) {
             mFollowParentFocus = follow;
-            Log.d(TAG, "setFollowParentFocus(%s): calling registerPickable", getName());
+            Log.d(TAG, "setFollowParentFocus(%s): calling registerPickable",
+                  getName());
             registerPickable();
         }
     }
@@ -524,7 +563,7 @@ public class Widget {
         }
     }
 
-    /**
+/**
      * Whether this {@link Widget} will be grouped with its parent for
      * receiving input. This is different from
      * {@link #setChildrenFollowInput(boolean) in that the parent is not in
@@ -545,7 +584,8 @@ public class Widget {
         }
     }
 
-    private final class FocusableImpl implements FocusManager.Focusable, FocusManager.LongFocusTimeout {
+    private final class FocusableImpl implements FocusManager.Focusable,
+            FocusManager.LongFocusTimeout {
         /**
          * Hook method for handling changes in focus for this object.
          *
@@ -594,6 +634,7 @@ public class Widget {
             return Widget.this;
         }
     }
+
     private FocusableImpl mFocusableImpl = new FocusableImpl();
 
     /**
@@ -623,6 +664,39 @@ public class Widget {
      */
     public boolean isTouchable() {
         return mIsTouchable;
+    }
+
+    /**
+     * Determines whether this {@link Widget} is currently handling touch events
+     * for the specified {@link GVRSceneObject}. This will be true if either
+     * <p>
+     * <ul>
+     * <li>
+     * The {@code GVRSceneObject} is wrapped by this {@code Widget} <em>and</em>
+     * this {@code Widget} is not following its parent's input</li>
+     * <li>The {@code GVRSceneObject} is wrapped by a child of this
+     * {@code Widget} and the child <em>is</em> following this {@code Widget's}
+     * input</li>
+     * </ul>
+     *
+     *
+     * @param sceneObject
+     *            The {@code GVRSceneObject} to check
+     * @return {@code True} if this {@code Widget} handles focus events for the
+     *         {@code GVRSceneObject}, {@code false} if it doesn't.
+     */
+    public boolean handlesTouchFor(final GVRSceneObject sceneObject) {
+        return handlesEventFor(sceneObject, mHandlesTouchEvent);
+    }
+
+    /**
+     * {@link Widget} version of {@link #handlesTouchFor(GVRSceneObject)}.
+     *
+     * @param widget
+     *            The {@code Widget} to check
+     */
+    public boolean handlesTouchFor(final Widget widget) {
+        return handlesTouchFor(widget.getSceneObject());
     }
 
     /**
@@ -1560,7 +1634,7 @@ public class Widget {
             }
 
             mParent.requestLayout();
-//            new RuntimeException().printStackTrace();
+            // new RuntimeException().printStackTrace();
         }
     }
 
@@ -1697,7 +1771,8 @@ public class Widget {
     @SuppressLint("WrongCall")
     protected void layout() {
         if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "layout(%s): changed: %b, requested: %b", getName(), mChanged, mLayoutRequested);
+            Log.v(TAG, "layout(%s): changed: %b, requested: %b", getName(),
+                  mChanged, mLayoutRequested);
         }
 
         if (mChanged || mLayoutRequested) {
@@ -1827,7 +1902,7 @@ public class Widget {
      *            it has lost focus.
      * @return {@code True} to accept focus, {@code false} if not.
      */
-    public boolean onFocus(boolean focused) {
+    protected boolean onFocus(boolean focused) {
         return true;
     }
 
@@ -1900,7 +1975,8 @@ public class Widget {
     }
 
     /* package */
-    boolean addChildInner(final Widget child, final GVRSceneObject childRootSceneObject, int index) {
+    boolean addChildInner(final Widget child,
+            final GVRSceneObject childRootSceneObject, int index) {
         final boolean added = mChildren.indexOf(child) == -1;
         if (added) {
             Widget parent = child.getParent();
@@ -1969,7 +2045,8 @@ public class Widget {
     }
 
     /* package */
-    boolean removeChild(final Widget child, final GVRSceneObject childRootSceneObject, boolean preventLayout) {
+    boolean removeChild(final Widget child,
+            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
         final boolean removed = mChildren.remove(child);
         if (removed) {
             Log.d(TAG, "removeChild(): '%s' removed", child.getName());
@@ -2198,7 +2275,8 @@ public class Widget {
      * @return The first {@code Widget} with the specified name or {@code null}
      *         if no child of {@code groups} has that name.
      */
-    private static Widget findChildByNameInAllGroups(final String name, List<Widget> groups) {
+    private static Widget findChildByNameInAllGroups(final String name,
+            List<Widget> groups) {
         if (groups.isEmpty()) {
             return null;
         }
@@ -2231,6 +2309,43 @@ public class Widget {
             mBoundingBox = new BoundingBox(this);
         }
         return mBoundingBox;
+    }
+
+    private interface HandlesEvent {
+        boolean isInFollowEventGroup();
+
+        boolean getChildrenFollowEvent();
+
+        boolean followsParentEvent(Widget widget);
+
+        boolean handlesEvent(Widget widget, GVRSceneObject sceneObject);
+
+        String getName();
+    }
+
+    private boolean handlesEventFor(final GVRSceneObject sceneObject,
+            final HandlesEvent handler) {
+        if (getSceneObject() == sceneObject) {
+            final boolean handlesEvent = !handler.followsParentEvent(this)
+                    && !handler.isInFollowEventGroup();
+            Log.d(TAG, "handlesEventFor(%s): handles '%s' for scene object %s",
+                  getName(), handler.getName(), sceneObject.getName());
+            return handlesEvent;
+        } else {
+            final boolean childrenFollowEvent = handler
+                    .getChildrenFollowEvent();
+            for (Widget child : mChildren) {
+                if ((childrenFollowEvent || handler.followsParentEvent(child))
+                        && (child.isSceneObject(sceneObject) || handler
+                                .handlesEvent(child, sceneObject))) {
+                    Log.d(TAG,
+                          "handlesEventFor(%s): handles '%s' for child '%s'",
+                          getName(), handler.getName(), child.getName());
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -2307,7 +2422,9 @@ public class Widget {
             }
         } else {
             touchManager.removeHandlerFor(getSceneObject());
-            Log.d(TAG, "registerPickable(): unregistering '%s'; focus-enabled: %b", getName(), mFocusEnabled);
+            Log.d(TAG,
+                  "registerPickable(): unregistering '%s'; focus-enabled: %b",
+                  getName(), mFocusEnabled);
             focusManager.unregister(getSceneObject(), needsOwnFocusable);
         }
 
@@ -2329,12 +2446,16 @@ public class Widget {
     private void setupMetadata() throws JSONException, NoSuchMethodException {
         JSONObject metaData = getObjectMetadata();
         if (metaData != null) {
-            Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s", getName(), metaData);
+            Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
+                  getName(), metaData);
 
-            mIsTouchable = optBoolean(metaData, Properties.touchable, mIsTouchable);
-            mFocusEnabled = optBoolean(metaData, Properties.focusenabled, mFocusEnabled);
+            mIsTouchable = optBoolean(metaData, Properties.touchable,
+                                      mIsTouchable);
+            mFocusEnabled = optBoolean(metaData, Properties.focusenabled,
+                                       mFocusEnabled);
             mIsSelected = optBoolean(metaData, Properties.selected, mIsSelected);
-            Visibility visibility = optEnum(metaData, Properties.visibility, mVisibility);
+            Visibility visibility = optEnum(metaData, Properties.visibility,
+                                            mVisibility);
             setVisibility(visibility);
 
             final boolean hasStates = has(metaData, Properties.states);
@@ -2346,7 +2467,7 @@ public class Widget {
             if (hasStates) {
                 if (hasLevels || hasLevel) {
                     throw RuntimeAssertion("Invalid metadata for '%s': both 'states' and 'levels' are present",
-                                              getName());
+                                           getName());
                 }
                 setupStates(metaData);
             } else if (hasLevels) {
@@ -2356,7 +2477,7 @@ public class Widget {
                 }
             } else if (hasLevel) {
                 throw RuntimeAssertion("Invalid metadata for '%s': 'level' specified without level specifications",
-                                          getName());
+                                       getName());
             }
         }
     }
@@ -2450,10 +2571,66 @@ public class Widget {
     private boolean mFocusEnabled = true;
     private boolean mChildrenFollowFocus = false;
     private boolean mFollowParentFocus = false;
+    private HandlesEvent mHandlesFocusEvent = new HandlesEvent() {
+
+        @Override
+        public boolean isInFollowEventGroup() {
+            return isInFollowFocusGroup();
+        }
+
+        @Override
+        public boolean handlesEvent(Widget widget, GVRSceneObject sceneObject) {
+            return widget.handlesFocusFor(sceneObject);
+        }
+
+        @Override
+        public String getName() {
+            return "focus";
+        }
+
+        @Override
+        public boolean getChildrenFollowEvent() {
+            return getChildrenFollowFocus();
+        }
+
+        @Override
+        public boolean followsParentEvent(Widget widget) {
+            return widget.getFollowParentFocus();
+        }
+    };
+
     private boolean mIsFocused;
     private long mLongFocusTimeout = FocusManager.LONG_FOCUS_TIMEOUT;
     private boolean mChildrenFollowInput = false;
     private boolean mFollowParentInput = false;
+    private HandlesEvent mHandlesTouchEvent = new HandlesEvent() {
+
+        @Override
+        public boolean isInFollowEventGroup() {
+            return isInFollowInputGroup();
+        }
+
+        @Override
+        public boolean getChildrenFollowEvent() {
+            return getChildrenFollowInput();
+        }
+
+        @Override
+        public boolean followsParentEvent(Widget widget) {
+            return widget.getFollowParentInput();
+        }
+
+        @Override
+        public boolean handlesEvent(Widget widget, GVRSceneObject sceneObject) {
+            return widget.handlesTouchFor(sceneObject);
+        }
+
+        @Override
+        public String getName() {
+            return "touch";
+        }
+
+    };
     private boolean mIsPressed;
     private boolean mIsSelected;
     private boolean mIsTouchable = true;
@@ -2472,10 +2649,10 @@ public class Widget {
 
     private OnTouchImpl mTouchHandler = new OnTouchImpl();
 
-    private static WeakReference<Thread> sGLThread = new WeakReference<Thread>(null);
+    private static WeakReference<Thread> sGLThread = new WeakReference<Thread>(
+            null);
     private static GVRTexture sDefaultTexture;
 
     private static JSONObject sObjectMetadata;
     private static final String TAG = Widget.class.getSimpleName();
 }
-
