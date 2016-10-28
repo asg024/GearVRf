@@ -34,7 +34,6 @@ import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.UnmodifiableJSONObject;
-import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.Policy;
@@ -58,27 +57,7 @@ public class Widget {
      */
     static public void init(Context context) throws JSONException,
             NoSuchMethodException {
-        String rawJson = Utility.readTextFile(context, "objects.json");
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): raw JSON: %s", rawJson);
-        }
-        if (rawJson == null) {
-            rawJson = "";
-        }
-        final JSONObject json = new JSONObject(rawJson);
-        sObjectMetadata = new UnmodifiableJSONObject(
-                json.optJSONObject("objects"));
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): loaded object metadata: %s",
-                  sObjectMetadata.toString());
-        }
-
-        JSONObject animationMetadata = json.optJSONObject("animations");
-        AnimationFactory.init(animationMetadata);
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): loaded animation metadata: %s",
-                  animationMetadata);
-        }
+        loadMetadata(context);
     }
 
     /**
@@ -208,17 +187,7 @@ public class Widget {
      *            The {@link GVRSceneObject} to wrap.
      */
     public Widget(final GVRContext context, final GVRSceneObject sceneObject) {
-        mContext = context;
-        mSceneObject = sceneObject;
-
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG,
-                  "Widget constructor: %s width = %f height = %f depth = %f",
-                  sceneObject.getName(), getWidth(), getHeight(), getDepth());
-        }
-
-        mTransformCache = new TransformCache(getTransform());
-        requestLayout();
+        this(context, sceneObject, true);
     }
 
     /**
@@ -236,7 +205,9 @@ public class Widget {
      */
     public Widget(final GVRContext context, final GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
-        this(context, sceneObject);
+        // Skip setting up the metadata so that it gets processed after
+        // attributes
+        this(context, sceneObject, false);
 
         // This gives us the demangled name, which is the name we'll use to
         // refer to the widget
@@ -292,7 +263,7 @@ public class Widget {
             GVRMaterial material = new GVRMaterial(mContext,
                     GVRShaderType.Texture.ID);
             material.setMainTexture(sDefaultTexture);
-            renderData.setMaterial(material);
+            setMaterial(material);
         }
     }
 
@@ -575,7 +546,7 @@ public class Widget {
         }
     }
 
-/**
+    /**
      * Whether this {@link Widget} will be grouped with its parent for
      * receiving input. This is different from
      * {@link #setChildrenFollowInput(boolean) in that the parent is not in
@@ -764,6 +735,28 @@ public class Widget {
      */
     public boolean removeTouchListener(final OnTouchListener listener) {
         return mTouchListeners.remove(listener);
+    }
+
+    public boolean getChildrenFollowState() {
+        return mChildrenFollowState;
+    }
+
+    public void setChildrenFollowState(final boolean follow) {
+        if (follow != mChildrenFollowState) {
+            mChildrenFollowState = follow;
+            updateState();
+        }
+    }
+
+    public boolean getFollowParentState() {
+        return mFollowParentState;
+    }
+
+    public void setFollowParentState(final boolean follow) {
+        if (follow != mFollowParentState) {
+            mFollowParentState = follow;
+            updateState();
+        }
     }
 
     /**
@@ -1898,8 +1891,48 @@ public class Widget {
         }
     }
 
+    /**
+     * Get the {@link GVRMesh mesh} for the underlying {@link GVRSceneObject
+     * scene object}.
+     *
+     * @return The scene object's mesh or {@code null}.
+     */
+    protected GVRMesh getMesh() {
+        final GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            return renderData.getMesh();
+        }
+        return null;
+    }
+
+    /**
+     * Set the {@linkplain GVRMesh mesh} for the underlying
+     * {@linkplain GVRSceneObject scene object}.
+     *
+     * @param mesh
+     *            The new mesh.
+     */
+    protected void setMesh(final GVRMesh mesh) {
+        final GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            renderData.setMesh(mesh);
+        }
+    }
+
     final protected JSONObject getObjectMetadata() {
-        return sObjectMetadata.optJSONObject(getName());
+        final JSONObject metadata = sObjectMetadata.optJSONObject(getName());
+        final JSONObject defaultMetadata = getDefaultMetadata(getClass(),
+                                                              getName());
+
+        if (defaultMetadata == null) {
+            return metadata;
+        } else if (metadata == null) {
+            return defaultMetadata;
+        }
+
+        // Overwrite default metadata for this widget type with scene-specific
+        // metadata for this widget instance
+        return JSONHelpers.merge(metadata, defaultMetadata);
     }
 
     /**
@@ -2146,6 +2179,28 @@ public class Widget {
         return mSceneObject.getTransform();
     }
 
+    private Widget(final GVRContext context, final GVRSceneObject sceneObject,
+            final boolean setupMetadata) {
+        mContext = context;
+        mSceneObject = sceneObject;
+
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG,
+                  "Widget constructor: %s width = %f height = %f depth = %f",
+                  sceneObject.getName(), getWidth(), getHeight(), getDepth());
+        }
+
+        mTransformCache = new TransformCache(getTransform());
+        requestLayout();
+        if (setupMetadata) {
+            try {
+                setupMetadata();
+            } catch (Exception e) {
+                throw new RuntimeException(e.getLocalizedMessage());
+            }
+        }
+    }
+
     /**
      * Does post-{@linkplain GroupWidget#addChild(Widget) attachment} setup:
      * <ul>
@@ -2235,7 +2290,7 @@ public class Widget {
             final boolean inFollowFocusGroup = isInFollowFocusGroup();
             for (Widget child : mChildren) {
                 if (child.mFocusEnabled
-                        && !child.isFocused()
+                        && child.isFocused() != focused
                         && (mChildrenFollowFocus || child.mFollowParentFocus || inFollowFocusGroup)) {
                     child.doOnFocus(mIsFocused);
                 }
@@ -2373,6 +2428,25 @@ public class Widget {
         return mBoundingBox;
     }
 
+    /* package */
+    @SuppressWarnings("unchecked")
+    private JSONObject getDefaultMetadata(Class<? extends Widget> clazz, String name) {
+        final String canonicalName = clazz.getCanonicalName();
+        final JSONObject defaultMetadata = sDefaultMetadata
+                .optJSONObject(canonicalName);
+        Log.d(TAG,
+              "getDefaultMetadata(%s): getting default metadata for %s: %s",
+              getName(), canonicalName, defaultMetadata);
+        if (defaultMetadata == null) {
+            // Recursively check for default metadata up the class hierarchy
+            final Class<?> superclass = clazz.getSuperclass();
+            if (Widget.class.isAssignableFrom(superclass)) {
+                return getDefaultMetadata((Class<? extends Widget>) superclass, name);
+            }
+        }
+        return defaultMetadata;
+    }
+
     private interface HandlesEvent {
         boolean isInFollowEventGroup();
 
@@ -2432,6 +2506,15 @@ public class Widget {
                 && mParent != null
                 && mTouchHandler.target() != this
                 && (mParent.mChildrenFollowInput || mTouchHandler.target() != mParent);
+    }
+
+    /**
+     * @return {@code true} is one of this {@link Widget}'s ancestors has
+     *         {@linkplain #setChildrenFollowState(boolean) children follow
+     *         state set, {@code false} if not.
+     */
+    private boolean isInFollowStateGroup() {
+        return mParent != null && mParent.mChildrenFollowState;
     }
 
     private boolean needsOwnFocusable() {
@@ -2505,6 +2588,42 @@ public class Widget {
         touchable, focusenabled, visibility, states, levels, level, selected
     }
 
+    private static JSONObject loadDefaultMetadata(Context context)
+            throws JSONException {
+        JSONObject json = JSONHelpers.loadJSONAsset(context,
+                                                    "default_metadata.json");
+        Log.d(TAG, "loadDefaultMetadata(): %s", json);
+        sDefaultMetadata = new UnmodifiableJSONObject(
+                json.optJSONObject("objects"));
+        return json;
+    }
+
+    private static void loadMetadata(Context context) throws JSONException,
+            NoSuchMethodException {
+        loadDefaultMetadata(context);
+        final JSONObject json = loadSceneMetadata(context);
+
+        JSONObject animationMetadata = json.optJSONObject("animations");
+        AnimationFactory.init(animationMetadata);
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "init(): loaded animation metadata: %s",
+                  animationMetadata);
+        }
+    }
+
+    private static JSONObject loadSceneMetadata(Context context)
+            throws JSONException {
+        final JSONObject json = JSONHelpers.loadJSONAsset(context,
+                                                          "objects.json");
+        sObjectMetadata = new UnmodifiableJSONObject(
+                json.optJSONObject("objects"));
+        if (Policy.LOGGING_VERBOSE) {
+            Log.v(TAG, "init(): loaded object metadata: %s",
+                  sObjectMetadata.toString());
+        }
+        return json;
+    }
+
     private void setupMetadata() throws JSONException, NoSuchMethodException {
         JSONObject metaData = getObjectMetadata();
         if (metaData != null) {
@@ -2566,12 +2685,28 @@ public class Widget {
         mLevelInfo.add(new WidgetState(this, states));
     }
 
-    private void updateState() {
-        final WidgetState.State state = getState();
+    /* package : Called by CheckableButton to update CHECKED state */
+    // NOT protected because states are defined internally and are not for
+    // external consumption
+    void updateState() {
+        final WidgetState.State state;
+        if (useParentState() || getFollowParentState()) {
+            state = mParent.getState();
+        } else {
+            state = getState();
+        }
 
         Log.d(TAG, "updateState(): %s for '%s'", state, getName());
         if (!mLevelInfo.isEmpty()) {
             mLevelInfo.get(mLevel).setState(this, state);
+        }
+
+        boolean updateChildren = isInFollowStateGroup()
+                || getChildrenFollowState();
+        for (Widget child : mChildren) {
+            if (updateChildren || child.getFollowParentState()) {
+                child.updateState();
+            }
         }
     }
 
@@ -2602,6 +2737,12 @@ public class Widget {
         return mParent != null
                 && (mFollowParentInput || mParent.mChildrenFollowInput || mParent
                         .isInFollowInputGroup());
+    }
+
+    private boolean useParentState() {
+        return mParent != null
+                && (mFollowParentState || mParent.mChildrenFollowState || mParent
+                        .isInFollowStateGroup());
     }
 
     private final class OnTouchImpl implements TouchManager.OnBackKey {
@@ -2696,6 +2837,10 @@ public class Widget {
     private boolean mIsPressed;
     private boolean mIsSelected;
     private boolean mIsTouchable = true;
+
+    private boolean mChildrenFollowState;
+    private boolean mFollowParentState;
+
     private Visibility mVisibility = Visibility.VISIBLE;
     private ViewPortVisibility mIsVisibleInViewPort = ViewPortVisibility.FULLY_VISIBLE;
     private Widget mParent;
@@ -2716,6 +2861,8 @@ public class Widget {
             null);
     private static GVRTexture sDefaultTexture;
 
+    private static JSONObject sDefaultMetadata;
     private static JSONObject sObjectMetadata;
+
     private static final String TAG = Widget.class.getSimpleName();
 }

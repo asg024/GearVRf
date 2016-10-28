@@ -39,11 +39,12 @@ class WidgetState {
     }
 
     public void setState(final Widget widget, final WidgetState.State state) {
-        Log.d(TAG, "setState(): for '%s'; is %s, setting to %s", widget.getName(), mState, state);
+        Log.d(TAG, "setState(%s): state is %s, setting to %s", widget.getName(), mState, state);
         if (state != mState) {
             final WidgetState.State nextState = getNextState(state);
-            Log.d(TAG, "setState(): setting '%s' for '%s'", nextState, widget.getName());
+            Log.d(TAG, "setState(%s): next state '%s'", widget.getName(), nextState);
             if (nextState != mState) {
+                Log.d(TAG, "setState(%s): setting state to '%s'", widget.getName(), nextState);
                 setCurrentState(widget, false);
                 mState = nextState;
                 setCurrentState(widget, true);
@@ -91,11 +92,12 @@ class WidgetState {
     }
 
     private void loadStates(final Widget parent, final JSONObject stateSpecs) {
-        Log.d(TAG, "loadStates(): for '%s': %s", parent.getName(), stateSpecs);
+        Log.d(TAG, "loadStates(%s): states: %s", parent.getName(), stateSpecs);
         if (stateSpecs != null) {
             Iterator<String> iter = stateSpecs.keys();
             while (iter.hasNext()) {
                 final String key = iter.next();
+                Log.d(TAG, "loadStates(%s): key: %s", parent.getName(), key);
                 loadState(parent, stateSpecs, key);
             }
         }
@@ -105,7 +107,7 @@ class WidgetState {
             String key) {
         try {
             final JSONObject stateSpec = states.getJSONObject(key);
-            Log.d(TAG, "loadState(): for state '%s': %s", key, stateSpec);
+            Log.d(TAG, "loadState(%s): for state '%s': %s", parent.getName(), key, stateSpec);
             key = key.toUpperCase(Locale.ENGLISH);
             final WidgetState.State state = State.valueOf(key);
             loadState(parent, stateSpec, state);

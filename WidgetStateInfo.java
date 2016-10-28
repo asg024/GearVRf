@@ -39,7 +39,7 @@ class WidgetStateInfo {
         Iterator<String> iter = info.keys();
         while (iter.hasNext()) {
             final String type = iter.next();
-            Log.d(TAG, "WidgetStateInfo(): type: %s", type);
+            Log.d(TAG, "WidgetStateInfo(%s): type: %s", parent.getName(), type);
 
             final JSONObject typeInfo = info.optJSONObject(type);
             switch (Properties.valueOf(type)) {
@@ -64,7 +64,9 @@ class WidgetStateInfo {
 
     public void set(Widget widget, boolean set) {
         if (set) {
+            Log.d(TAG, "set(%s): setting state ...", widget.getName());
             if (mLevelWidget != null) {
+                Log.d(TAG, "set(%s): setting level widget %s", widget.getName(), mLevelWidget);
                 // We shouldn't have to do this, but it's not a
                 // thread-safe operation and in some instances the
                 // geometry will render after it's been removed from
@@ -79,6 +81,7 @@ class WidgetStateInfo {
                 });
             }
             if (mMaterial != null) {
+                Log.d(TAG, "set(%s): setting material ...", widget.getName(), mMaterial);
                 widget.setMaterial(mMaterial);
             }
             if (mAnimation != null) {
@@ -86,6 +89,7 @@ class WidgetStateInfo {
             }
             if (mAnimationFactory != null) {
                 try {
+                    Log.d(TAG, "set(%s): setting animation ...", widget.getName());
                     mAnimation = mAnimationFactory.create(widget);
                     mAnimation.start();
                 } catch (Exception e) {
@@ -197,21 +201,19 @@ class WidgetStateInfo {
     }
 
     static private int getDrawableId(Context context, String id) {
-        if (id.startsWith("R.drawable")) {
-            Resources r = context.getResources();
-            int resId = r.getIdentifier(id, "drawable",
-                                        context.getPackageName());
-            if (resId > 0) {
-                return resId;
-            } else {
-                throw Exceptions
-                        .RuntimeAssertion("Specified resource '%s' could not be found",
-                                          id);
-            }
+        if (id.startsWith("R.drawable.")) {
+            id = id.substring("R.drawable.".length());
+        }
+
+        Resources r = context.getResources();
+        int resId = r.getIdentifier(id, "drawable",
+                                    context.getPackageName());
+        if (resId > 0) {
+            return resId;
         } else {
             throw Exceptions
-                    .RuntimeAssertion("Unsupported resource type specified (%s)",
-                                      id);
+            .RuntimeAssertion("Specified resource '%s' could not be found",
+                              id);
         }
     }
 

@@ -227,7 +227,6 @@ public class TextWidget extends Widget implements TextContainer {
      * @param text
      *            {@link CharSequence} to show on the textView
      */
-
     public TextWidget(GVRContext context, float width, float height,
             CharSequence text) {
         super(context, new GVRTextViewSceneObject(context, width, height, text));
