@@ -24,7 +24,7 @@ public class ArchLayout extends AbsoluteLayout {
         super();
 
         if (radius <= 0) {
-            Log.d(TAG, "setRadius: Radius cannot be negative [%f] !", radius);
+            Log.w(TAG, "setRadius: Radius cannot be negative [%f] !", radius);
         } else {
             mRadius = radius;
         }
@@ -141,9 +141,10 @@ public class ArchLayout extends AbsoluteLayout {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
             Vector3f factor = getFactor();
-            Log.d(TAG, "positionChild %s with radius = %f factor = %s",
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "positionChild %s with radius = %f factor = %s",
                   child.getName(), mRadius, factor);
-
+            }
             child.setPositionZ(-(float) mRadius);
 
             if (factor.x != 0) {

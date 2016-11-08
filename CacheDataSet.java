@@ -123,8 +123,9 @@ class LinearCacheDataSet implements CacheDataSet {
                           new CacheData(mCacheDataSet.valueAt(pos)));
                 copy.mIdsSet.add(pos, mIdsSet.get(pos));
             }
-
-            to.dump();
+            if (Layout.LOGGING_VERBOSE) {
+                to.dump();
+            }
 
         } else {
             Log.w(TAG, "Cannot copy the data set to %s", to);
@@ -132,10 +133,15 @@ class LinearCacheDataSet implements CacheDataSet {
     }
 
     public void dump() {
-        Log.d(TAG, "\n==== DUMP CACHE start ======\nCache size = %d totalSize = %f totalPadding = %f", count(), mTotalSize, mTotalPadding);
+        Log.d(TAG, "\n==== DUMP CACHE start ======\nCache size = %d " +
+                "totalSize = %f totalPadding = %f",
+                count(), mTotalSize, mTotalPadding);
+
         for (int pos = 0; pos < count(); ++pos) {
-            Log.d(TAG, "data[%d]: %s" , mIdsSet.get(pos),  mCacheDataSet.valueAt(pos).toString());
+            Log.d(TAG, "data[%d]: %s" , mIdsSet.get(pos),
+                  mCacheDataSet.valueAt(pos).toString());
         }
+
         Log.d(TAG, "\n==== DUMP CACHE end ======\n");
     }
 
@@ -403,7 +409,10 @@ class LinearCacheDataSet implements CacheDataSet {
     public void shiftBy(final float amount) {
         for (int pos = mCacheDataSet.size(); --pos >= 0;) {
             CacheData data =  mCacheDataSet.valueAt(pos);
-            Log.d(TAG, "shiftBy item[%s] newOffset = %f", data, (data.getOffset() + amount));
+            if (Layout.LOGGING_VERBOSE) {
+                Log.d(TAG, "shiftBy item[%s] newOffset = %f",
+                      data, (data.getOffset() + amount));
+            }
             data.setOffset(data.getOffset() + amount);
             mCacheDataSet.setValueAt(pos, data);
         }
@@ -412,13 +421,17 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     public float getTotalSizeWithPadding() {
-        Log.d(TAG, "getTotalSizeWithPadding = %f", (mTotalPadding + mTotalSize));
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "getTotalSizeWithPadding = %f", (mTotalPadding + mTotalSize));
+        }
         return mTotalPadding + mTotalSize;
     }
 
     @Override
     public float getTotalSize() {
-        Log.d(TAG, "mTotalSize = %f", mTotalSize);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "mTotalSize = %f", mTotalSize);
+        }
         return mTotalSize;
     }
 

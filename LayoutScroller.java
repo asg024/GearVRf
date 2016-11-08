@@ -109,15 +109,17 @@ public class LayoutScroller {
 
     public boolean fling(float velocityX, float velocityY, float velocityZ) {
         boolean scrolled = true;
-        Log.d(TAG, "fling() velocity = [%f, %f, %f]", velocityX, velocityY, velocityZ);
-
         float maxX = mScrollable.getViewPortSize(Axis.X) * MAX_VIEWPORT_LENGTHS;
         float maxY = mScrollable.getViewPortSize(Axis.Y) * MAX_VIEWPORT_LENGTHS;
 
         float xOffset = (maxX * velocityX)/VELOCITY_MAX;
         float yOffset = (maxY * velocityY)/VELOCITY_MAX;
 
-        Log.d(TAG, "fling() offset = [%f, %f]", xOffset, yOffset);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "fling() velocity = [%f, %f, %f] offset = [%f, %f]",
+                  velocityX, velocityY, velocityZ,
+                  xOffset, yOffset);
+        }
 
         if (Utility.equal(xOffset, 0)) {
             xOffset = Float.NaN;
@@ -128,14 +130,17 @@ public class LayoutScroller {
         }
 
 // TODO: Think about Z-scrolling
-        mScrollable.scrollByOffset(-xOffset, -yOffset, Float.NaN);
+        mScrollable.scrollByOffset(xOffset, yOffset, Float.NaN);
 
         return scrolled;
     }
 
     public boolean flingToPosition(int vilocity) {
         boolean scrolled = true;
-        Log.d(TAG, "flingToPosition() startIndex =%d vilocity = %d", mCurrentItemIndex, vilocity);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "flingToPosition() startIndex =%d vilocity = %d",
+                  mCurrentItemIndex, vilocity);
+        }
 
         vilocity /= -mScrollable.getCount();
 
@@ -143,15 +148,18 @@ public class LayoutScroller {
             mScroller.forceFinished(true);
         }
 
-        mScroller.fling(mCurrentItemIndex, 0, vilocity, 0, -mScrollable.getCount(), 2 * mScrollable.getCount(), 0, 0);
+        mScroller.fling(mCurrentItemIndex, 0, vilocity, 0,
+            -mScrollable.getCount(), 2 * mScrollable.getCount(), 0, 0);
         mScroller.computeScrollOffset();
         scrollToPosition(mScroller.getFinalX());
         return scrolled;
     }
 
     public int scrollToNextPage() {
-	    Log.d(TAG, "scrollToNextPage getCurrentPage() = %d currentIndex = %d",
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "scrollToNextPage getCurrentPage() = %d currentIndex = %d",
 	          getCurrentPage(), mCurrentItemIndex);
+        }
         if (mSupportScrollByPage) {
             scrollToPage(getCurrentPage() + 1);
         } else {
@@ -162,8 +170,10 @@ public class LayoutScroller {
 	}
 
 	public int scrollToPrevPage() {
-        Log.d(TAG, "scrollToPrevPage getCurrentPage() = %d currentIndex = %d",
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "scrollToPrevPage getCurrentPage() = %d currentIndex = %d",
               getCurrentPage(), mCurrentItemIndex);
+        }
         if (mSupportScrollByPage) {
             scrollToPage(getCurrentPage() - 1);
         } else {
@@ -173,7 +183,10 @@ public class LayoutScroller {
 	}
 
 	public int scrollToPage(int pageNumber) {
-	    Log.d(TAG, "scrollToPage pageNumber = %d mPageCount = %d", pageNumber, mPageCount);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "scrollToPage pageNumber = %d mPageCount = %d",
+                  pageNumber, mPageCount);
+        }
         if (mSupportScrollByPage) {
             scrollToItem(getFirstItemIndexOnPage(pageNumber));
         } else {
@@ -199,15 +212,19 @@ public class LayoutScroller {
     }
 
     public int scrollToItem(int position) {
-        Log.d(TAG, "scrollToItem position = %d", position);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "scrollToItem position = %d", position);
+        }
         scrollToPosition(position);
         return mCurrentItemIndex;
     }
 
     public int getCurrentPage() {
         int currentPage = 1;
-        if (mSupportScrollByPage && mCurrentItemIndex >= 0 && mCurrentItemIndex < mScrollable.getCount()) {
-            currentPage = (int) Math.ceil((float)(mCurrentItemIndex + 1)/(float)mPageSize);
+        if (mSupportScrollByPage && mCurrentItemIndex >= 0 &&
+                mCurrentItemIndex < mScrollable.getCount()) {
+            currentPage = (int) Math.ceil(
+            (float)(mCurrentItemIndex + 1)/(float)mPageSize);
         }
         return currentPage;
     }
@@ -216,7 +233,9 @@ public class LayoutScroller {
         int index = 0;
         if (mSupportScrollByPage) {
             index = ((pageNumber - 1) * mPageSize);
-            Log.d(TAG, "getFirstItemIndexOnPage = %d", index);
+            if (Layout.LOGGING_VERBOSE) {
+                Log.d(TAG, "getFirstItemIndexOnPage = %d", index);
+            }
         }
         return index;
     }
@@ -246,7 +265,10 @@ public class LayoutScroller {
 
     private boolean scrollToPosition(int newPosition) {
         boolean scrolled = false;
-        Log.d(TAG, "scrollToPosition() mCurrentItemIndex=%d newPosition = %d", mCurrentItemIndex, newPosition);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "scrollToPosition() mCurrentItemIndex=%d newPosition = %d",
+                  mCurrentItemIndex, newPosition);
+        }
 
         if (newPosition != mCurrentItemIndex) {
             for (OnScrollListener listener: listeners) {

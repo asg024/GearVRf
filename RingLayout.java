@@ -34,7 +34,7 @@ public class RingLayout extends LinearLayout {
         super();
 
         if (radius <= 0) {
-            Log.d(TAG, "setRadius: Radius cannot be negative [%f] !", radius);
+            Log.w(TAG, "setRadius: Radius cannot be negative [%f] !", radius);
         } else {
             mRadius = radius;
         }
@@ -106,7 +106,9 @@ public class RingLayout extends LinearLayout {
     @Override
     protected float getChildSize(final int dataIndex, Axis axis) {
         final float segment = super.getChildSize(dataIndex, axis);
-        Log.d(TAG, "getChildSize for %d segment = %f", dataIndex, segment);
+        if (LOGGING_VERBOSE) {
+            Log.d(TAG, "getChildSize for %d segment = %f", dataIndex, segment);
+        }
         return getSizeAngle(segment);
     }
 
@@ -142,7 +144,9 @@ public class RingLayout extends LinearLayout {
     protected void resetChildLayout(final int dataIndex) {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
-            Log.d(TAG, "clearChildPosition %s", child);
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "clearChildPosition %s", child);
+            }
             child.setRotation(1, 0, 0, 0);
             child.setPosition(0, 0, -(float) mRadius);
         }

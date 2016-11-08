@@ -9,10 +9,13 @@ import org.joml.Vector3f;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.RuntimeAssertion;
 import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Widget.ViewPortVisibility;
 
 abstract public class Layout {
+    static final boolean LOGGING_VERBOSE = false;
+
     /**
      * Base Layout strategy class for applying various organization/setup on layout
      *
@@ -161,7 +164,9 @@ abstract public class Layout {
      */
     protected float getAxisSize(final Axis axis) {
         float size =  mViewPort == null ? 0 : mViewPort.get(axis);
-        Log.d(TAG, "getAxisSize for %s %f mViewPort = %s", axis, size, mViewPort);
+        if (LOGGING_VERBOSE) {
+            Log.d(TAG, "getAxisSize for %s %f mViewPort = %s", axis, size, mViewPort);
+        }
         return size;
     }
 
@@ -200,9 +205,10 @@ abstract public class Layout {
      * @return true item fits the container, false - otherwise
      */
     synchronized Widget measureChild(final int dataIndex) {
-        Log.d(TAG, "measureChild dataIndex = %d", dataIndex);
+        if (LOGGING_VERBOSE) {
+            Log.d(TAG, "measureChild dataIndex = %d", dataIndex);
+        }
         mMeasuredChildren.add(dataIndex);
-       // resetChildLayout(dataIndex);
         return mContainer.get(dataIndex);
     }
 
@@ -283,8 +289,11 @@ abstract public class Layout {
         for (; dataIndex < mContainer.size() && inBounds; ++dataIndex) {
             Widget view = measureChild(dataIndex);
             inBounds = postMeasurement() || !isViewPortEnabled();
-            Log.d(TAG, "measureUntilFull: measureChild view = %s isBounds = %b dataIndex = %d layout = %s",
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "measureUntilFull: measureChild view = %s " +
+                        "isBounds = %b dataIndex = %d layout = %s",
                   view == null ? "null" : view.getName(), inBounds, dataIndex, this);
+            }
             if (measuredChildren != null && view != null) {
                 measuredChildren.add(view);
             }
@@ -307,7 +316,10 @@ abstract public class Layout {
             boolean visibleInLayout = !isViewPortEnabled() || inViewPort(dataIndex);
             ViewPortVisibility visibility = visibleInLayout ?
                   ViewPortVisibility.FULLY_VISIBLE : ViewPortVisibility.INVISIBLE;
-            Log.d(TAG, "onLayout: child with dataId [%d] viewportVisibility = %s", dataIndex, visibility);
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "onLayout: child with dataId [%d] viewportVisibility = %s",
+                      dataIndex, visibility);
+            }
             Widget childWidget = mContainer.get(dataIndex);
             if (childWidget != null) {
                 childWidget.setViewPortVisibility(visibility);
@@ -325,7 +337,10 @@ abstract public class Layout {
      * Layout children inside the layout container
      */
     protected void layoutChildren() {
-        Log.d(TAG, "layoutChildren [%d] layout = %s", mMeasuredChildren.size(), this);
+        if (LOGGING_VERBOSE) {
+            Log.d(TAG, "layoutChildren [%d] layout = %s",
+                  mMeasuredChildren.size(), this);
+        }
         Set<Integer> copySet = new HashSet<Integer>(mMeasuredChildren);
         for (int nextMeasured: copySet) {
             layoutChild(nextMeasured);
@@ -337,8 +352,12 @@ abstract public class Layout {
  * ViewPort class basically define the layout container dimensions.
  */
 class Vector3Axis extends Vector3f {
-    Vector3Axis(final float width, final float height, final float depth) {
-        super(width, height, depth);
+    Vector3Axis(final float x, final float y, final float z) {
+        super(x, y, z);
+    }
+
+    Vector3Axis(Vector3f v) {
+        super(v.x, v.y, v.z);
     }
 
     Vector3Axis() {
@@ -380,5 +399,19 @@ class Vector3Axis extends Vector3f {
 
     public boolean isInfinite() {
         return Float.isInfinite(x) && Float.isInfinite(y) && Float.isInfinite(z);
+    }
+
+    public Vector3Axis delta(Vector3f v) {
+        Vector3Axis ret = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
+        if (x != Float.NaN && v.x != Float.NaN && !Utility.equal(x, v.x)) {
+            ret.set(x - v.x, Axis.X);
+        }
+        if (y != Float.NaN && v.y != Float.NaN && !Utility.equal(y, v.y)) {
+            ret.set(y - v.y, Axis.Y);
+        }
+        if (z != Float.NaN && v.z != Float.NaN && !Utility.equal(z, v.z)) {
+            ret.set(z - v.z, Axis.Z);
+        }
+        return ret;
     }
 }

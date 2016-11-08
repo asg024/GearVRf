@@ -372,8 +372,10 @@ public class GridLayout extends Layout {
 
     @Override
     protected void layoutChildren() {
-        mRowLayout.dumpCaches();
-        mColumnLayout.dumpCaches();
+        if (LOGGING_VERBOSE) {
+            mRowLayout.dumpCaches();
+            mColumnLayout.dumpCaches();
+        }
         super.layoutChildren();
     }
 
@@ -583,7 +585,8 @@ public class GridLayout extends Layout {
         switch(orientation) {
             case VERTICAL:
                 if (mColumnCount == 0) {
-                    Log.w(TAG, "Invalid layout: number of columns is not defined for VERTICALY oriented grid!");
+                    Log.w(TAG, "Invalid layout: number of columns is not " +
+                            "defined for VERTICALY oriented grid!");
                 } else {
                     mRowLayout.setChunkBreaker(new ChunkBreakerBy(mColumnCount));
                     mColumnLayout.setChunkBreaker(new ChunkBreakerTo(mColumnCount));
@@ -598,7 +601,8 @@ public class GridLayout extends Layout {
                 break;
             case HORIZONTAL:
                 if (mRowCount == 0) {
-                    Log.w(TAG, "Invalid layout: number of columns is not defined for HORIZONTALLY oriented grid!");
+                    Log.w(TAG, "Invalid layout: number of columns is not " +
+                            "defined for HORIZONTALLY oriented grid!");
                 } else {
                     mRowLayout.setChunkBreaker(new ChunkBreakerTo(mRowCount));
                     mColumnLayout.setChunkBreaker(new ChunkBreakerBy(mRowCount));

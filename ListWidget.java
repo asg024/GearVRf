@@ -117,7 +117,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         if (enabled != mItemFocusEnabled) {
             mItemFocusEnabled = enabled;
             if (!mItemFocusEnabled) {
-                Log.d(TAG, "setItemFocusEnabled(%s): item focus enabled: %b", getName(), enabled);
+                if (Layout.LOGGING_VERBOSE) {
+                    Log.d(TAG, "setItemFocusEnabled(%s): item focus enabled: %b", getName(), enabled);
+                }
                 for (Widget w : getChildren()) {
                     ListItemHostWidget host = (ListItemHostWidget)w;
                     host.getGuest().setFocusEnabled(enabled);
@@ -270,9 +272,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      */
     protected void onChangedImpl(final int preferableCenterPosition) {
         int dataCount = getDataCount();
-        Log.d(TAG, "onChangedImpl(%s): items [%d] views [%d] mLayouts.size() = %d",
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "onChangedImpl(%s): items [%d] views [%d] mLayouts.size() = %d",
               getName(), dataCount, getViewCount(), mLayouts.size());
-
+        }
         List<Integer> centerPositions = new ArrayList<Integer>(mLayouts.size());
         for (int i = 0; i < mLayouts.size(); i++) {
             int pos = preferableCenterPosition;
@@ -344,8 +347,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     ScrollingProcessor mScroller = null;
     protected void onScrollImpl(final int scrollToPosition) {
-        Log.d(TAG, "onScrollImpl(): scrollToPosition = %d animated = %b",
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "onScrollImpl(): scrollToPosition = %d animated = %b",
               scrollToPosition, isTransitionAnimationEnabled());
+        }
         if (isTransitionAnimationEnabled()) {
             if (mScroller != null) {
                 return;
@@ -539,11 +544,15 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             view.addFocusListener(mFocusListener);
             host.setGuest(view, dataIndex);
             if (getChildren().contains(host)) {
-                Log.d(TAG, "setupItem(%s): added item(%s) at dataIndex [%d]",
+                if (Layout.LOGGING_VERBOSE) {
+                    Log.d(TAG, "setupItem(%s): added item(%s) at dataIndex [%d]",
                       getName(), view.getName(), dataIndex);
+                }
             } else {
-                Log.d(TAG, "setupItem(%s): reuse item(%s) at dataIndex [%d]",
+                if (Layout.LOGGING_VERBOSE) {
+                    Log.d(TAG, "setupItem(%s): reuse item(%s) at dataIndex [%d]",
                       getName(), view.getName(), dataIndex);
+                }
             }
         }
         return host;
@@ -589,8 +598,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 recycle((ListItemHostWidget)widget);
             }
         }
-
-        Log.d(TAG, "Trim %d items ", mRecycledViews.size());
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "Trim %d items ", mRecycledViews.size());
+        }
         mRecycledViews.clear();
         mTrimRequest = false;
     }
@@ -615,8 +625,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             host = setupView(dataIndex);
             if (host != null) {
                 boolean added = addChild(host, true);
-                Log.d(TAG, "getRecycleableView: item [%s] is added [%b] to the list",
+                if (Layout.LOGGING_VERBOSE) {
+                    Log.d(TAG, "getRecycleableView: item [%s] is added [%b] to the list",
                       host, added);
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, e, "getRecycleableView(%s): exception at %d: %s",
@@ -866,7 +878,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     @Override
     public boolean scrollToPosition(final int dataIndex) {
-        Log.d(TAG, "scrollToPosition, position = %d", dataIndex);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "scrollToPosition, position = %d", dataIndex);
+        }
         boolean scrolled = false;
         if (dataIndex >= 0 && dataIndex < getDataCount()) {
             onScrollImpl(dataIndex);
@@ -888,16 +902,24 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * @param rotation
      *            New rotation of the item, relative to the {@code ListLayout}
      */
-    public void scrollItemTo(final int dataIndex, final float offset) {
+    public void scrollItemTo(final int dataIndex,
+            final float xOffset, final float yOffset, final float zOffset) {
         if (dataIndex < 0 || dataIndex >= getDataCount()) {
             return;
         }
-        if (Float.isNaN(offset)) {
+        Vector3Axis offset = new Vector3Axis(xOffset, yOffset, zOffset);
+        if (offset.isInfinite() || offset.isNaN()) {
             return;
         }
-        // TODO: add animation
-//        mFirstPosition = dataIndex;
-//        onChangedImpl();
+
+        // -(offset - 180)
+        Vector3Axis requiredOffset = new Vector3Axis(offset.add(-180, -180, -180).mul(-1));
+        Vector3Axis currentOffset = new Vector3Axis(getItemOffsetX(dataIndex),
+                       getItemOffsetY(dataIndex), getItemOffsetZ(dataIndex));
+        Vector3Axis deltaOffset = requiredOffset.delta(currentOffset);
+
+        scrollByOffset(deltaOffset.get(Axis.X),
+                       deltaOffset.get(Axis.Y), deltaOffset.get(Axis.Z));
     }
 
     /**
@@ -910,13 +932,15 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      */
     @Override
     public boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset) {
-        Vector3Axis offset = new Vector3Axis(-xOffset, -yOffset, -zOffset);
+        Vector3Axis offset = new Vector3Axis(xOffset, yOffset, zOffset);
         if (offset.isInfinite() || offset.isNaN()) {
             Log.e(TAG, new IllegalArgumentException(),
                   "Invalid scrolling delta: %s", offset);
             return false;
         }
-        Log.d(TAG, "scrollBy(%s): offset %s", getName(), offset);
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "scrollBy(%s): offset %s", getName(), offset);
+        }
         onScrollImpl(offset);
         return true;
     }
@@ -936,14 +960,42 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Method getItemRotation
+     * Get offset of the item along X
      *
      * @param position:  the position in the dataset.
-     * @return  the rotation ("phi") of the view displaying the data at position;
+     * @return  the x-offset of the view displaying the data at position;
      *          if that data is not being displayed, return Float.NaN.
      */
-    public float getItemRotation(int position) {
-        if (position < 0 || position >= getViewCount()) {
+    public float getItemOffsetX(int position) {
+        if (position < 0 || position >= getDataCount()) {
+            return Float.NaN;
+        }
+        return Float.NaN;
+    }
+
+    /**
+     * Get offset of the item along Y
+     *
+     * @param position:  the position in the dataset.
+     * @return  the y-offset of the view displaying the data at position;
+     *          if that data is not being displayed, return Float.NaN.
+     */
+    public float getItemOffsetY(int position) {
+        if (position < 0 || position >= getDataCount()) {
+            return Float.NaN;
+        }
+        return Float.NaN;
+    }
+
+    /**
+     * Get offset of the item along Z
+     *
+     * @param position:  the position in the dataset.
+     * @return  the z-offset of the view displaying the data at position;
+     *          if that data is not being displayed, return Float.NaN.
+     */
+    public float getItemOffsetZ(int position) {
+        if (position < 0 || position >= getDataCount()) {
             return Float.NaN;
         }
         return Float.NaN;
@@ -970,7 +1022,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             if (!mRecycledViews.isEmpty()) {
                 host = mRecycledViews.get(0);
                 mRecycledViews.remove(0);
-                Log.d(TAG, "reuse recycled view: %s", host);
+                if (Layout.LOGGING_VERBOSE) {
+                    Log.d(TAG, "reuse recycled view: %s", host);
+                }
             } else if (enforceNew) {
                 host = makeHost(getGVRContext());
             }
