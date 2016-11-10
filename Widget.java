@@ -1611,7 +1611,8 @@ public class Widget {
                 switch (visibility) {
                     case VISIBLE:
                         final GVRSceneObject sceneObjectParent = mSceneObject.getParent();
-                        if (sceneObjectParent != parentSceneObject) {
+                        if (sceneObjectParent != parentSceneObject &&
+                            mIsVisibleInViewPort != ViewPortVisibility.INVISIBLE ) {
                             if (null != sceneObjectParent) {
                                 sceneObjectParent.removeChildObject(mSceneObject);
                             }
@@ -2085,7 +2086,8 @@ public class Widget {
             } else {
                 mChildren.add(index, child);
             }
-            if (child.getVisibility() == Visibility.VISIBLE) {
+            if (child.getVisibility() == Visibility.VISIBLE &&
+                child.getViewPortVisibility() != ViewPortVisibility.INVISIBLE) {
                 final GVRSceneObject childRootSceneObjectParent = childRootSceneObject.getParent();
                 if (childRootSceneObjectParent != getSceneObject()) {
                     if (null != childRootSceneObjectParent) {
