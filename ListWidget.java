@@ -37,26 +37,26 @@ import com.samsung.smcl.vr.widgets.LayoutScroller.ScrollableList;
 public class ListWidget extends GroupWidget implements ScrollableList {
 
     /**
-     * Interface definition for a callback to be invoked when an item in this {@link ListLayout}
+     * Interface definition for a callback to be invoked when an item in this {@link ListWidget}
      *  has been focused.
      */
     public interface OnItemFocusListener {
 
         /**
-         * Callback method to be invoked when an item in this {@link ListLayout} has been focused.
-         * @param position item position in the list
+         * Callback method to be invoked when an item in this {@link ListWidget} has been focused.
+         * @param dataIndex item position in the list
          * @param focused true if the item is focused, false - otherwise
          */
-        public void onFocus(int position, boolean focused);
+        public void onFocus(int dataIndex, boolean focused);
 
         /**
-         * Callback method to be invoked when the long focus occurred for the item in this {@link ListLayout} .
-         * @param position item position in the list
+         * Callback method to be invoked when the long focus occurred for the item in this {@link ListWidget} .
+         * @param dataIndex item position in the list
          */
-        public void onLongFocus(int position);
+        public void onLongFocus(int dataIndex);
     }
 
-    private final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<OnItemFocusListener>();
+    protected final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<OnItemFocusListener>();
 
     /**
      * Add a listener for {@linkplain OnItemFocusListener#onFocus(boolean) focus}
@@ -89,7 +89,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     protected boolean mItemFocusEnabled = true;
 
     /**
-     * @return Whether the {@link ListLayout} allows it items to be focused.
+     * @return Whether the {@link ListWidget} allows it items to be focused.
      */
     public boolean getItemFocusEnabled() {
         return mItemFocusEnabled;
@@ -97,7 +97,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     /**
      * Sets {@linkplain Widget#setFocusEnabled(boolean) focus enabled} (or
-     * disabled) for all children of the {@link ListLayout} that were fetched from
+     * disabled) for all children of the {@link ListWidget} that were fetched from
      * the {@link Adapter}. If this is called with {@code false}, any new items
      * gotten from the {@code Adapter} will have {@code setFocusEnabled(false)}
      * called on them. If called with {@code true}, {@code ListLayout} acts as
@@ -134,12 +134,106 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
+     * Interface definition for a callback to be invoked when an item in this {@link ListWidget}
+     *  has been focused.
+     */
+    public interface OnItemTouchListener {
+        /**
+         * Called when a list item is touched (tapped).
+         *
+         * @param dataIndex target by touch event.
+         *
+         * @return {@code True} to indicate that no further processing of the
+         *         touch event should take place; {@code false} to allow further
+         *         processing.
+         */
+        public boolean onTouch(int dataIndex);
+    }
+
+    protected final Set<OnItemTouchListener> mItemTouchListeners = new LinkedHashSet<OnItemTouchListener>();
+
+    /**
+     * Add a listener for {@linkplain OnItemTouchListener#onTouch notification
+     * for this object.
+     *
+     * @param listener
+     *            An implementation of {@link OnItemTouchListener}.
+     * @return {@code true} if the listener was successfully registered,
+     *         {@code false} if the listener is already registered.
+     */
+    public boolean addOnItemTouchListener(final OnItemTouchListener listener) {
+        return mItemTouchListeners.add(listener);
+    }
+
+    /**
+     * Remove a previously added @linkplain #addOnItemTouchListener(OnItemTouchListener)}
+     * registered} touch notification {@linkplain OnItemTouchListener listener}.
+     *
+     * @param listener
+     *            An implementation of {@link OnItemTouchListener}
+     * @return {@code true} if the listener was successfully unregistered,
+     *         {@code false} if the specified listener was not previously
+     *         registered with this object.
+     */
+    public boolean removeOnItemTouchListener(final OnItemTouchListener listener) {
+        return mItemTouchListeners.remove(listener);
+    }
+
+    protected boolean mItemTouchable = true;
+
+    /**
+     * @return Whether the {@link ListWidget} allows it items to be touchable.
+     */
+    public boolean getItemTouchable() {
+        return mItemTouchable;
+    }
+
+    /**
+     * Sets {@linkplain Widget#setTouchable(boolean) touch enabled} (or
+     * disabled) for all children of the {@link ListWidget} that were fetched from
+     * the {@link Adapter}. If this is called with {@code false}, any new items
+     * gotten from the {@code Adapter} will have {@code setTouchable(false)}
+     * called on them. If called with {@code true}, {@code ListLayout} acts as
+     * though it's received an {@link DataSetObserver#onChanged() on changed}
+     * notification and refreshes its items with the {@code Adapter}.
+     * <p>
+     * This is a convenience method only, and the current state of focus
+     * enabling for each displayed item is not tracked in any way.
+     * {@code Adapters} should ensure that they enable or disable touch as
+     * appropriate for their views.
+     *
+     * @param enabled
+     *            {@code True} to enable touch for all items, {@code false} to
+     *            disable.
+     */
+    public void setItemTouchable(boolean enabled) {
+        if (enabled != mItemTouchable) {
+            mItemTouchable = enabled;
+            if (!mItemTouchable) {
+                if (Layout.LOGGING_VERBOSE) {
+                    Log.d(TAG, "mItemTouchable(%s): item touch enabled: %b", getName(), enabled);
+                }
+                for (Widget w : getChildren()) {
+                    ListItemHostWidget host = (ListItemHostWidget)w;
+                    host.getGuest().setTouchable(enabled);
+                }
+            } else {
+                // This will refresh the data for the items, allowing the
+                // Adapter to reset touch enabling
+                Log.d(TAG, "mItemTouchable(%s): item touch enabled: %b", getName(), enabled);
+                onChanged();
+            }
+        }
+    }
+
+
+    /**
      * Construct a new {@code ListWidget} instance with  LinearLayout applied by default
      *
      * @param gvrContext
      *            The active {@link GVRContext}.
      * @param adapter  {@link Adapter} associated with this layout.
-     * @param sceneObject
+     * @param sceneObj
      *
      */
     public ListWidget(final GVRContext gvrContext, final Adapter adapter, GVRSceneObject sceneObj) {
@@ -168,39 +262,64 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         onChanged(adapter);
     }
 
-    /**
-     * Focus Listener implementation
-     */
-    protected OnFocusListener mFocusListener = new OnFocusListener() {
-        @Override
-        public boolean onFocus(final boolean focused, final Widget widget) {
-            Log.d(TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget.getName(), focused);
-            int position = getChildren().indexOf(widget);
-            if (position >= 0) {
-                for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onFocus(position, focused);
+    protected OnFocusListener getOnFocusListener() {
+        return new OnFocusListener() {
+            @Override
+            public boolean onFocus(final boolean focused, final Widget widget) {
+                Log.d(TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget, focused);
+                Widget parent = widget.getParent();
+                if (parent instanceof ListItemHostWidget) {
+                    int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                    for (OnItemFocusListener listener : mItemFocusListeners) {
+                        listener.onFocus(dataIndex, focused);
+                    }
+                } else {
+                    Log.d(TAG, "Focused widget is not a list item!");
                 }
+                return false;
             }
-            return false;
-        }
 
-        @Override
-        public boolean onLongFocus(Widget widget) {
-            Log.d(TAG, "onLongFocus(%s) widget= %s", getName(), widget.getName());
-            int position = getChildren().indexOf(widget);
-            if (position >= 0) {
-                for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onLongFocus(position);
+            @Override
+            public boolean onLongFocus(Widget widget) {
+                Log.d(TAG, "onLongFocus(%s) widget= %s", getName(), widget.getName());
+                Widget parent = widget.getParent();
+                if (parent instanceof ListItemHostWidget) {
+                    int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                    for (OnItemFocusListener listener : mItemFocusListeners) {
+                        listener.onLongFocus(dataIndex);
+                    }
+                } else {
+                    Log.d(TAG, "Long focused widget is not a list item!");
                 }
+                return false;
             }
-            return false;
-        }
-    };
+        };
+    }
+
+    protected OnTouchListener getOnTouchListener() {
+        return new OnTouchListener() {
+            @Override
+            public boolean onTouch(Widget widget) {
+                Log.d(TAG, "onTouch(%s) widget= %s ", getName(), widget);
+                Widget parent = widget.getParent();
+                if (parent instanceof ListItemHostWidget) {
+                    int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                    for (OnItemTouchListener listener : mItemTouchListeners) {
+                        listener.onTouch(dataIndex);
+                    }
+                } else {
+                    Log.d(TAG, "onTouch widget is not a list item!");
+                }
+                return false;
+            }
+        };
+    }
+
 
     /**
      * Set the {@link Adapter} for the {@code ListLayout}. The list will
      * immediately attempt to load data from the adapter.
-     * {@link Adapter#getView(int, GVRSceneObject, GVRSceneObject)} is
+     * {@link Adapter#getView} is
      * guaranteed to be called from the GL thread.
      *
      * @param adapter
@@ -538,10 +657,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         ListItemHostWidget host = getHostView(dataIndex);
         Widget view = getViewFromAdapter(dataIndex, host);
         if (view != null && host.isRecycled()) {
-            if (!mItemFocusEnabled) {
-                view.setFocusEnabled(false);
-            }
-            view.addFocusListener(mFocusListener);
+            view.setFocusEnabled(mItemFocusEnabled);
+            view.setTouchable(mItemTouchable);
+
+            view.addFocusListener(getOnFocusListener());
+            view.addTouchListener(getOnTouchListener());
             host.setGuest(view, dataIndex);
             if (getChildren().contains(host)) {
                 if (Layout.LOGGING_VERBOSE) {
@@ -574,7 +694,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     /**
      * Get the item id associated with the specified position in the {@link Adapter}.
      *
-     * @param position
+     * @param index
      *            The position of the item within the adapter's data set
      * @return The id of the item at the specified position.
      */
@@ -892,15 +1012,16 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Rotate the items in the {@link WidgetList} until the item at {@code pos} is
+     * Rotate the items in the {@link ListWidget} until the item at {@code pos} is
      * rotated to {@code rotation}.
      *
      * Do not call from the GL thread; notice the waitAfterStep.
      *
-     * @param pos
+     * @param dataIndex
      *            Position of the item in the data set
-     * @param rotation
-     *            New rotation of the item, relative to the {@code ListLayout}
+     * @param xOffset
+     * @param yOffset
+     * @param zOffset
      */
     public void scrollItemTo(final int dataIndex,
             final float xOffset, final float yOffset, final float zOffset) {
@@ -923,7 +1044,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Scroll all items in the {@link ListLayout} by {@code rotation} degrees}.
+     * Scroll all items in the {@link ListWidget} by {@code rotation} degrees}.
      *
      * @param xOffset
      * @param yOffset

@@ -8,11 +8,11 @@ import com.samsung.smcl.utility.Log;
 /**
  * A Layout that arranges its children in a single column or a single row. The direction of the row can be
  * set by calling setOrientation(). The default orientation is horizontal. The alignment of all items can
- * be specified by calling {@link LinearLayout#setGravity()} or specify that the children fill up any remaining
+ * be specified by calling {@link LinearLayout#setGravity} or specify that the children fill up any remaining
  * space in the layout by setting gravity to FILL. The default gravity is {@link Gravity#CENTER}.
  *
  * The size of the layout determines the viewport size (virtual area used by the list rendering engine) if the
- * flag {@link LinearLayout#mApplyViewport} is set. Otherwise all items are rendered in the list even if they
+ * flag {@link Layout#mApplyViewPort} is set. Otherwise all items are rendered in the list even if they
  * occupy larger space  than the container size is. The unlimited size can be specified for the layout. For
  * layout with unlimited size only {@link Gravity#CENTER} can be applied.
  */
@@ -193,7 +193,6 @@ public class LinearLayout extends Layout {
 
     /**
      * Calculate the layout offset
-     * @param  axis {@link LayoutStrategy#Axis}
      */
     protected float getLayoutOffset() {
         final int offsetSign = getOffsetSign();

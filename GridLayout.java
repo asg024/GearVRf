@@ -288,9 +288,6 @@ public class GridLayout extends Layout {
      * @param columnCount preferable number of columns in the grid. It is taken into account if the grid orientation
      * is {@link Orientation#VERTICAL}. The number of columns could be less than <columnCount> if viewport is enabled and
      * <columnCount> number of items cannot be fitted into the viewport
-     * @param width
-     * @param height
-     * @param depth
      */
     public GridLayout(final int rowCount, final int columnCount) {
         super();

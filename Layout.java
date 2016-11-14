@@ -9,7 +9,6 @@ import org.joml.Vector3f;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.RuntimeAssertion;
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Widget.ViewPortVisibility;
 
@@ -57,8 +56,8 @@ abstract public class Layout {
     }
 
     /**
-     * The size of the ViewPort is set by {@link Layout#setViewPort} (virtual area used by the list rendering engine)
-     * If {@link Layout#mApplyViewport} is set to true the ViewPort is applied during layout.
+     * The size of the ViewPort (virtual area used by the list rendering engine)
+     * If {@link Layout#mApplyViewPort} is set to true the ViewPort is applied during layout.
      * The unlimited size can be specified for the layout.
      *
      * @param enable true to apply the view port, false - otherwise, all items are rendered in the list even if they
@@ -93,7 +92,7 @@ abstract public class Layout {
 
     /**
      * Check if the item is at least partially visible in view port
-     * @param child data index
+     * @param dataIndex data index
      * @return true is the item is at least partially visible, false - otherwise
      */
     abstract boolean inViewPort(final int dataIndex);
@@ -108,7 +107,7 @@ abstract public class Layout {
 
     /**
      * Invalidate the item in layout
-     * @param child data index
+     * @param dataIndex data index
      */
     void invalidate(final int dataIndex) {
         Log.d(TAG, "invalidate [%d]", dataIndex);
@@ -132,7 +131,7 @@ abstract public class Layout {
 
     /**
      * Calculate the child size along the axis
-     * @param child data index
+     * @param dataIndex data index
      * @param axis {@link Axis}
      * @return child size
      */
@@ -172,7 +171,7 @@ abstract public class Layout {
 
     /**
      * Get the child size with padding
-     * @param child
+     * @param dataIndex
      * @param axis {@link Axis}
      * @return child size with padding
      */
@@ -180,7 +179,7 @@ abstract public class Layout {
 
     /**
      * @param axis {@link Axis}
-     * @return The padding between child objects that is set by {@link Layout#setDividerPadding() }.
+     * @return The padding between child objects that is set by {@link Layout#setDividerPadding }.
      */
     public float getDividerPadding(final Axis axis) {
         return mDividerPadding.get(axis);
@@ -214,7 +213,7 @@ abstract public class Layout {
 
     /**
      * Measure the children in the specified direction along the specified axis
-     * @param return the list of measured children
+     * @param measuredChildren is the list of measured children
      * @param axis
      * @return size occupied by the measured children along the axis
      */
@@ -251,7 +250,7 @@ abstract public class Layout {
 
     /**
      * Measure all children from container if needed
-     * @param return the list of measured children
+     * @param measuredChildren the list of measured children
      * measuredChildren list can be passed as null if it's not needed to
      * create the list of the measured items
      */
@@ -280,7 +279,7 @@ abstract public class Layout {
     /**
      * Measure the children from container until the layout is full (if ViewPort is enabled)
      * @param dataIndex of the item in center
-     * @param return the list of measured children
+     * @param measuredChildren the list of measured children
      * measuredChildren list can be passed as null if it's not needed to
      * create the list of the measured items
      */
@@ -308,7 +307,7 @@ abstract public class Layout {
 
     /**
      * Position the child inside the layout based on the offset and axis-s factors
-     * @param child data index
+     * @param dataIndex data index
      * false - otherwise
      */
     protected void layoutChild(final int dataIndex) {
@@ -329,7 +328,7 @@ abstract public class Layout {
 
     /**
      * Reset child layout
-     * @param child data index
+     * @param dataIndex data index
      */
     protected abstract void resetChildLayout(final int dataIndex);
 
