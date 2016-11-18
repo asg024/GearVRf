@@ -374,7 +374,9 @@ public class Widget {
      *         {@code false} if the listener is already registered.
      */
     public boolean addFocusListener(final OnFocusListener listener) {
-        return mFocusListeners.add(listener);
+        synchronized (mFocusListeners) {
+            return mFocusListeners.add(listener);
+        }
     }
 
     /**
@@ -388,7 +390,9 @@ public class Widget {
      *         registered with this object.
      */
     public boolean removeFocusListener(final OnFocusListener listener) {
-        return mFocusListeners.remove(listener);
+        synchronized (mFocusListeners) {
+            return mFocusListeners.remove(listener);
+        }
     }
 
     /**
@@ -2283,7 +2287,12 @@ public class Widget {
                   mIsFocused, focused);
         }
 
-        for (OnFocusListener listener : mFocusListeners) {
+        final List<OnFocusListener> focusListeners;
+        synchronized (mFocusListeners) {
+            focusListeners = new ArrayList<OnFocusListener>(mFocusListeners);
+        }
+
+        for (OnFocusListener listener : focusListeners) {
             if (listener.onFocus(focused, this)) {
                 return true;
             }
@@ -2319,7 +2328,12 @@ public class Widget {
      * called.
      */
     private void doOnLongFocus() {
-        for (OnFocusListener listener : mFocusListeners) {
+        final List<OnFocusListener> focusListeners;
+        synchronized (mFocusListeners) {
+            focusListeners = new ArrayList<OnFocusListener>(mFocusListeners);
+        }
+
+        for (OnFocusListener listener : focusListeners) {
             if (listener.onLongFocus(this)) {
                 return;
             }
