@@ -371,6 +371,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                         observer.onInvalidated();
                     }
                 }
+
                 onChangedImpl(-1);
             }
         });
@@ -392,19 +393,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     protected void onChangedImpl(final int preferableCenterPosition) {
         int dataCount = getDataCount();
         if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "onChangedImpl(%s): items [%d] views [%d] mLayouts.size() = %d",
-              getName(), dataCount, getViewCount(), mLayouts.size());
-        }
-        List<Integer> centerPositions = new ArrayList<Integer>(mLayouts.size());
-        for (int i = 0; i < mLayouts.size(); i++) {
-            int pos = preferableCenterPosition;
-            if (pos == -1) {
-                pos = mLayouts.get(i).getCenterChild();
-            }
-            if (pos == -1) {
-                pos = 0;
-            }
-            centerPositions.add(pos);
+            Log.d(TAG, "onChangedImpl(%s): items [%d] views [%d] mLayouts.size() = %d " +
+                    "preferableCenterPosition = %d",
+              getName(), dataCount, getViewCount(), mLayouts.size(), preferableCenterPosition);
         }
 
         // TODO: selectively recycle data based on the changes in the data set
@@ -412,13 +403,14 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         List<Widget> measuredChildren = new ArrayList<Widget>();
         for (int i = 0; i < mLayouts.size(); i++) {
-
-            mLayouts.get(i).measureUntilFull(centerPositions.get(i), measuredChildren);
+            mLayouts.get(i).measureUntilFull(preferableCenterPosition, measuredChildren);
         }
 
         for (Widget child: measuredChildren) {
             ((ListItemHostWidget)child).setInLayout();
-            Log.d(TAG, "onChangedImpl: item [%s] is set to the layout", child.getName());
+            if (Layout.LOGGING_VERBOSE) {
+                Log.d(TAG, "onChangedImpl: item [%s] is set to the layout", child.getName());
+            }
         }
 
         for (Widget child: getChildren()) {
@@ -535,6 +527,23 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             }
             if (direction != Direction.NONE) {
                 offset = layout.preMeasureNext(measuredChildren, axis, direction);
+                // reached the end of list, just move to some amount
+                if (Float.isNaN(offset)) {
+                    if (mScrollByOffset.isNaN()) {
+                        // calculate the current distance to scrolled position
+                        offset = layout.getDistanceToChild(mScrollToPosition, axis);
+                    } else {
+                        // the offset should not exceed the distance between the currently centered
+                        // item and the tail/head
+                        if (direction == Direction.FORWARD) {
+                           offset = Math.max(mScrollByOffset.get(axis),
+                                   layout.getDistanceToChild(getDataCount() - 1, axis));
+                        } else if (direction == Direction.BACKWARD) {
+                            offset = Math.min(mScrollByOffset.get(axis),
+                                    layout.getDistanceToChild(0, axis));
+                        }
+                    }
+                }
             }
             Log.d(TAG, "preMeasure direction = %s offset = %f axis = %s", direction, offset, axis);
             return offset;
@@ -583,14 +592,12 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 float yOffset = preMeasure(layout, Axis.Y, measuredChildren);
                 float zOffset = preMeasure(layout, Axis.Z, measuredChildren);
 
-                if (measuredChildren.isEmpty() ||
-                     Float.isNaN(xOffset) && Float.isNaN(yOffset) && Float.isNaN(zOffset)) {
+                if (Float.isNaN(xOffset) && Float.isNaN(yOffset) && Float.isNaN(zOffset)) {
                     continue;
                 }
 
                 for (Widget view: measuredChildren) {
                     ((ListItemHostWidget)view).setInLayout();
-//                    view.setViewPortVisibility(ViewPortVisibility.INVISIBLE);
                     Log.d(TAG, "measured item: %s set in layout xOffset= %f yOffset= %f zOffset= %f",
                           view.getName(), xOffset, yOffset, zOffset);
                 }
@@ -788,9 +795,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
          * @param dataIndex data index in adapter
          */
         public void setGuest(Widget guest, int dataIndex) {
-            Log.d(TAG, "setHostedWidget(%s): hosting [%s], same: %b", getName(),
-                  guest == null ? "<null>" : guest.getName(),
-                  guest == mGuestWidget);
+            if (Layout.LOGGING_VERBOSE) {
+                Log.d(TAG, "setHostedWidget(%s): hosting [%s], same: %b", getName(),
+                        guest == null ? "<null>" : guest.getName(),
+                        guest == mGuestWidget);
+            }
             if (guest != mGuestWidget) {
                 if (mGuestWidget != null && mGuestWidget.getParent() == this) {
                     removeChild(mGuestWidget, mGuestWidget.getSceneObject(), true);
@@ -811,8 +820,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
          * Recycle the host. It can be later reused for another guest widget.
          */
         public void recycle() {
-            Log.d(TAG, "recycle(%s), dataIndex = %d", getName(), mDataIndex);
-
+            if (Layout.LOGGING_VERBOSE) {
+                Log.d(TAG, "recycle(%s), dataIndex = %d", getName(), mDataIndex);
+            }
             setGuest(null, -1);
             setTouchable(false);
             setFocusEnabled(false);
@@ -826,21 +836,24 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         protected void onTransformChanged() {
             super.onTransformChanged();
             if (!isRecycled()) {
-                Log.d(TAG, "onTransformChanged on view [%s]!", getName());
                 boolean inViewport = ListWidget.this.inViewPort(mDataIndex);
-                Log.d(TAG, "inViewPort [%s], visible = %b", getName(), inViewport);
+                if (Layout.LOGGING_VERBOSE) {
+                    Log.d(TAG, "onTransformChanged inViewPort [%s], visible = %b",
+                            getName(), inViewport);
+                }
                 if (inViewport) {
-                    Log.d(TAG, "onTransformChanged: FULLY_VISIBLE [%s] position = [%f, %f, %f]", getName(),
-                          getPositionX(), getPositionY(), getPositionZ());
+                    if (Layout.LOGGING_VERBOSE) {
+                        Log.d(TAG, "onTransformChanged: FULLY_VISIBLE [%s] position = [%f, %f, %f]",
+                                getName(), getPositionX(), getPositionY(), getPositionZ());
+                    }
                     setViewPortVisibility(ViewPortVisibility.FULLY_VISIBLE);
-//                    ListWidget.this.addChild(this, true);
 
                 } else if (getViewPortVisibility() != ViewPortVisibility.INVISIBLE) {
                     Log.d(TAG, "view [%s] is outside the viewport : recycle(it!)", getName());
                     ListWidget.this.recycle(this);
                 }
             } else {
-                Log.d(TAG, "onTransformChanged on recycled view [%s]!", getName());
+                Log.w(TAG, "onTransformChanged on recycled view [%s]!", getName());
             }
         }
 

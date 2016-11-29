@@ -13,7 +13,7 @@ import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Widget.ViewPortVisibility;
 
 abstract public class Layout {
-    static final boolean LOGGING_VERBOSE = false;
+    static final boolean LOGGING_VERBOSE = true;// false;
 
     /**
      * Base Layout strategy class for applying various organization/setup on layout
@@ -302,6 +302,7 @@ abstract public class Layout {
     /**
      * Compute the offset and apply layout parameters to all measured items
      * @return true if all items fit the container, false - otherwise
+     *
      */
     protected abstract boolean postMeasurement();
 

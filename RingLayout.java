@@ -3,7 +3,6 @@ package com.samsung.smcl.vr.widgets;
 import org.joml.Vector3f;
 
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
 
 /**
  * A specialized {@link LinearLayout} that lays its children out in an arc on

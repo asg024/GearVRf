@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import android.R.integer;
 import android.util.SparseArray;
 
 import com.samsung.smcl.utility.Log;
@@ -138,7 +137,7 @@ class LinearCacheDataSet implements CacheDataSet {
                 count(), mTotalSize, mTotalPadding);
 
         for (int pos = 0; pos < count(); ++pos) {
-            Log.d(TAG, "data[%d]: %s" , mIdsSet.get(pos),
+            Log.d(TAG, "data[%d, %d]: %s" , mIdsSet.get(pos), pos,
                   mCacheDataSet.valueAt(pos).toString());
         }
 
@@ -168,7 +167,9 @@ class LinearCacheDataSet implements CacheDataSet {
         } else if (actualPos > count()) {
             actualPos = count();
         }
-
+        if (Layout.LOGGING_VERBOSE) {
+            Log.d(TAG, "addData id = %d pos = %d", id, actualPos);
+        }
         mIdsSet.add(actualPos, id);
 
         // update total padding

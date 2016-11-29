@@ -106,11 +106,15 @@ public class LayoutScroller {
 
     static final float VELOCITY_MAX = 30000;
     static final float MAX_VIEWPORT_LENGTHS = 4;
+    static final float MAX_SCROLLING_DISTANCE = 500;
 
     public boolean fling(float velocityX, float velocityY, float velocityZ) {
         boolean scrolled = true;
-        float maxX = mScrollable.getViewPortSize(Axis.X) * MAX_VIEWPORT_LENGTHS;
-        float maxY = mScrollable.getViewPortSize(Axis.Y) * MAX_VIEWPORT_LENGTHS;
+        float maxX = Math.min(MAX_SCROLLING_DISTANCE,
+                mScrollable.getViewPortSize(Axis.X) * MAX_VIEWPORT_LENGTHS);
+
+        float maxY = Math.min(MAX_SCROLLING_DISTANCE,
+                mScrollable.getViewPortSize(Axis.Y) * MAX_VIEWPORT_LENGTHS);
 
         float xOffset = (maxX * velocityX)/VELOCITY_MAX;
         float yOffset = (maxY * velocityY)/VELOCITY_MAX;

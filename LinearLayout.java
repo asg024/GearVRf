@@ -16,18 +16,7 @@ import com.samsung.smcl.utility.Log;
  * occupy larger space  than the container size is. The unlimited size can be specified for the layout. For
  * layout with unlimited size only {@link Gravity#CENTER} can be applied.
  */
-public class LinearLayout extends Layout {
-
-    /**
-     * Orientation specifies if the items lay out along its local x-axis (
-     * {@link Orientation#HORIZONTAL}) or it's local y-axis (
-     * {@link Orientation#VERTICAL}) or it's local z-axis (
-     * {@link Orientation#STACK}).
-     * The default orientation is horizontal.
-     */
-    public enum Orientation {
-        HORIZONTAL, VERTICAL, STACK
-    }
+public class LinearLayout extends OrientedLayout {
 
     /**
      * Gravity specifies how an layout should position its content along orientation axe, within its own bounds.
@@ -96,31 +85,17 @@ public class LinearLayout extends Layout {
     }
 
     /**
-     * @return {@link Orientation} of the layout.
-     */
-    public Orientation getOrientation() {
-        return mOrientation;
-    }
-
-    /**
      * @return {@link Gravity} of the layout.
      */
     public Gravity getGravity() {
         return mGravity;
     }
 
-    /**
-     * Set the {@link Orientation} of the layout. The new orientation can be rejected if it is in conflict with the
-     * currently applied Gravity
-     *
-     * @param orientation
-     *            One of the {@link Orientation} constants.
-     */
+    @Override
     public void setOrientation(final Orientation orientation) {
-        if (orientation != mOrientation && isValidLayout(mGravity, orientation)) {
-            mOrientation = orientation;
+        if (isValidLayout(mGravity, orientation)) {
+            super.setOrientation(orientation);
         }
-        invalidate();
     }
 
     /**
@@ -214,60 +189,31 @@ public class LinearLayout extends Layout {
         final float axisSize = getAxisSize(getOrientationAxis());
         float startingOffset = 0;
 
-        if (axisSize > totalSize || !mApplyViewPort) {
-            switch (mGravity) {
-                case LEFT:
-                case TOP:
-                case FRONT:
-                case FILL:
-                    startingOffset = -offsetSign * axisSize / 2;
-                    break;
-                case RIGHT:
-                case BOTTOM:
-                case BACK:
-                    startingOffset = offsetSign * (axisSize / 2 - totalSize);
-                    break;
-                case CENTER:
-                    startingOffset = -offsetSign * totalSize / 2;
-                    break;
-                default:
-                    Log.w(TAG, "Cannot calculate starting offset: " +
-                            "gravity %s is not supported!", mGravity);
-                    break;
-            }
-        } else {
-            // if the content occupies more space than the viewport size is, content is aligned to left
-            startingOffset = -offsetSign * axisSize / 2;
+        switch (mGravity) {
+            case LEFT:
+            case TOP:
+            case FRONT:
+            case FILL:
+                startingOffset = -offsetSign * axisSize / 2;
+                break;
+            case RIGHT:
+            case BOTTOM:
+            case BACK:
+                startingOffset = offsetSign * (axisSize / 2 - totalSize);
+                break;
+            case CENTER:
+                startingOffset = -offsetSign * totalSize / 2;
+                break;
+            default:
+                Log.w(TAG, "Cannot calculate starting offset: " +
+                        "gravity %s is not supported!", mGravity);
+                break;
         }
 
         Log.d(TAG, "getStartingOffset(): totalSize: %5.2f, dimension: %5.2f, startingOffset: %5.2f",
               totalSize, axisSize, startingOffset);
 
         return startingOffset;
-    }
-
-    /**
-     * Get the axis along the orientation
-     * @return
-     */
-    protected Axis getOrientationAxis() {
-        final Axis axis;
-        switch(mOrientation) {
-            case HORIZONTAL:
-                axis = Axis.X;
-                break;
-            case VERTICAL:
-                axis = Axis.Y;
-                break;
-            case STACK:
-                axis = Axis.Z;
-                break;
-            default:
-                Log.w(TAG, "Unsupported orientation %s", mOrientation);
-                axis = Axis.X;
-                break;
-        }
-        return axis;
     }
 
     /**
@@ -341,18 +287,6 @@ public class LinearLayout extends Layout {
     }
 
     @Override
-    protected Direction getDirectionToChild(final int dataIndex, final Axis axis) {
-        Direction direction = Direction.NONE;
-        int centerId = getCenterChild();
-        if (axis == getOrientationAxis() && centerId != dataIndex &&
-                dataIndex >= 0 && dataIndex < mContainer.size()) {
-            direction = dataIndex > centerId ? Direction.FORWARD :
-                Direction.BACKWARD;
-        }
-        return direction;
-    }
-
-    @Override
     protected float getDistanceToChild(int dataIndex, Axis axis) {
         return getDistanceToChild(dataIndex, axis, mCache);
     }
@@ -365,9 +299,6 @@ public class LinearLayout extends Layout {
                 case BACKWARD: {
                     dataIndex = getCacheCount() == 0 ? 0 :
                         getFirstDataIndex() - 1;
-                    if (dataIndex >= 0) {
-                        //
-                    }
                     break;
                 }
                 case FORWARD: {
@@ -375,7 +306,6 @@ public class LinearLayout extends Layout {
                         getLastDataIndex() + 1;
                     if (dataIndex >= mContainer.size()) {
                         dataIndex = -1;
-                        //
                     }
                     break;
                 }
@@ -404,10 +334,9 @@ public class LinearLayout extends Layout {
             final Axis axis, final Direction direction) {
         float totalSize = Float.NaN;
         int dataIndex = getNextDataId(axis, direction);
-        Widget widget = null;
 
         if (dataIndex >= 0) {
-            widget = measureChild(dataIndex);
+            Widget widget = measureChild(dataIndex);
             totalSize = (direction == Direction.BACKWARD ? 1 : -1) *
                     getMeasuredChildSizeWithPadding(dataIndex, axis);
             if (widget != null && measuredChildren != null) {
@@ -424,16 +353,130 @@ public class LinearLayout extends Layout {
 
     protected float getDistanceToChild(int dataIndex, Axis axis, CacheDataSet cache) {
         float distance = Float.NaN;
-        int centerIndex = getCenterChild();
-        if (centerIndex > 0 && axis == getOrientationAxis() && cache.contains(dataIndex)) {
-           distance = cache.getDataOffset(centerIndex) -
-                   cache.getDataOffset(dataIndex);
+
+        if (axis == getOrientationAxis() && cache.contains(dataIndex)) {
+            distance = -cache.getDataOffset(dataIndex);
+            float layoutOffset = getLayoutOffset();
+
+            switch (mGravity) {
+                case TOP:
+                case LEFT:
+                case FRONT:
+                case FILL:
+                case BOTTOM:
+                case RIGHT:
+                case BACK:
+                    distance += layoutOffset;
+                    break;
+                case CENTER:
+                default:
+                    break;
+            }
         }
         return distance;
     }
 
+    @Override
+    protected Direction getDirectionToChild(final int dataIndex, final Axis axis) {
+        Direction direction = Direction.NONE;
+        int centerId = getCenterChild();
+        if (axis == getOrientationAxis() && centerId != dataIndex &&
+                dataIndex >= 0 && dataIndex < mContainer.size()) {
+            direction = dataIndex > centerId ? Direction.FORWARD :
+                    Direction.BACKWARD;
+        }
+        return direction;
+    }
+
+    @Override
+    protected void measureUntilFull(int dataIndex, final List<Widget> measuredChildren) {
+        // no preferred position, just feed all data starting from beginning.
+        if (dataIndex == -1) {
+            super.measureUntilFull(0, measuredChildren);
+            return;
+        }
+
+        boolean inBounds = true;
+        boolean leftPart = true;
+
+        switch (mGravity) {
+            case TOP:
+            case LEFT:
+            case FRONT:
+            case FILL:
+                leftPart = false;
+                break;
+            case BOTTOM:
+            case RIGHT:
+            case BACK:
+            case CENTER:
+                leftPart = true;
+                break;
+            default:
+                break;
+        }
+        for (int i = dataIndex; i < mContainer.size() && i >= 0 && inBounds;) {
+            Widget view = measureChild(i);
+
+            inBounds = inViewPort(dataIndex) || !isViewPortEnabled();
+
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "measureUntilFull: measureChild view = %s " +
+                                "isBounds = %b index = %d layout = %s",
+                        view == null ? "null" : view.getName(), inBounds, i, this);
+            }
+            if (measuredChildren != null && view != null) {
+                measuredChildren.add(view);
+            }
+
+            // finished left part, start to feed right part
+            if (mGravity == Gravity.CENTER &&
+                    leftPart &&
+                    (i == 0 || !inBounds)) {
+                i = dataIndex;
+                inBounds = true;
+                leftPart = false;
+            }
+
+            i += leftPart ? -1 : 1;
+        }
+    }
+
     protected int getCenterChild(CacheDataSet cache) {
+        if (cache.count() == 0)
+            return -1;
+
         int id = cache.getId(0);
+        switch (mGravity) {
+            case TOP:
+            case LEFT:
+            case FRONT:
+            case FILL:
+                break;
+            case BOTTOM:
+            case RIGHT:
+            case BACK:
+                id = cache.getId(cache.count() - 1);
+                break;
+            case CENTER:
+                int i = cache.count() / 2;
+                while (i < cache.count() && i >= 0) {
+                    id =  cache.getId(i);
+                    if (cache.getStartDataOffset(id) <= 0) {
+                        if (cache.getEndDataOffset(id) >= 0) {
+                            break;
+                        } else {
+                            i++;
+                        }
+                    } else {
+                        i--;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
         if (LOGGING_VERBOSE) {
             Log.d(TAG, "getCenterChild = %d ", id);
         }
@@ -498,7 +541,6 @@ public class LinearLayout extends Layout {
      * @return true if the item fits the container, false otherwise
      */
     protected boolean computeOffset(final int dataIndex, CacheDataSet cache) {
-        // offset computation: update offset for all items in the cache
         float layoutOffset = getLayoutOffset();
         float sign = getOffsetSign();
 
@@ -521,7 +563,7 @@ public class LinearLayout extends Layout {
                     startDataOffset = cache.setDataOffsetBefore(dataIndex, endDataOffset, sign);
                 }
             } else {
-                startDataOffset = layoutOffset;
+                startDataOffset = getStartingOffset((cache.getTotalSizeWithPadding()));
                 endDataOffset = cache.setDataOffsetAfter(dataIndex, startDataOffset, sign);
             }
         }
@@ -559,7 +601,6 @@ public class LinearLayout extends Layout {
                         Math.abs(endDataOffset) <= Math.abs(layoutOffset) &&
                         Math.abs(startDataOffset) <= Math.abs(layoutOffset);
                 startDataOffset = endDataOffset;
-  //              layoutChild(id);
             }
         }
 
@@ -689,6 +730,5 @@ public class LinearLayout extends Layout {
 
     protected CacheDataSet mCache;
     protected boolean mUniformSize;
-    protected Orientation mOrientation = Orientation.HORIZONTAL;
     protected Gravity mGravity = Gravity.CENTER;
 }

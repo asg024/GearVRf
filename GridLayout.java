@@ -3,11 +3,12 @@ package com.samsung.smcl.vr.widgets;
 import java.util.List;
 
 import android.util.SparseArray;
+import java.util.Set;
+import java.util.HashSet;
 
 import com.samsung.smcl.utility.Log;
 
 import com.samsung.smcl.vr.widgets.LinearLayout.Gravity;
-import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
 
 /**
  * A layout that shows items in the grid.
@@ -25,9 +26,8 @@ import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
  *
  */
 
-public class GridLayout extends Layout {
+public class GridLayout extends OrientedLayout {
     protected int mRowCount, mColumnCount;
-    protected Orientation mOrientation = Orientation.HORIZONTAL;
 
     class ChunkedLinearLayout extends LinearLayout {
         protected ChunkBreaker mChunkBreaker;
@@ -50,8 +50,9 @@ public class GridLayout extends Layout {
         @Override
         protected void invalidateCache(final int dataIndex) {
             int cacheId = getCacheId(dataIndex);
-            Log.d(TAG, "invalidateCache [%d] - cacheId [%d]", dataIndex, cacheId);
-
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "invalidateCache [%d] - cacheId [%d]", dataIndex, cacheId);
+            }
             if (cacheId >= 0) {
                 CacheDataSet cache = mCaches.valueAt(cacheId);
                 cache.removeData(dataIndex);
@@ -71,12 +72,30 @@ public class GridLayout extends Layout {
         @Override
         protected int getCenterChild() {
             int ret = -1;
-            if (mCaches.size() > 0) {
-                CacheDataSet cache = mCaches.valueAt(0);
+            for (int i = mCaches.size(); --i >= 0;) {
+                CacheDataSet cache = mCaches.valueAt(i);
                 if (cache != null) {
                     ret = getCenterChild(cache);
+                    if (ret >= 0) {
+                        break;
+                    }
                 }
             }
+            return ret;
+        }
+
+        protected Set<Integer> getCenterChildren() {
+            Set<Integer> ret = new HashSet<Integer>(mCaches.size());
+            for (int i = mCaches.size(); --i >= 0;) {
+                CacheDataSet cache = mCaches.valueAt(i);
+                if (cache != null) {
+                    int id = getCenterChild(cache);
+                    if (id >= 0) {
+                        ret.add(id);
+                    }
+                }
+            }
+
             return ret;
         }
 
@@ -92,8 +111,14 @@ public class GridLayout extends Layout {
         @Override
         protected int getCacheCount() {
             int count = 0;
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "getCacheCount mCaches.size() = %d", mCaches.size());
+            }
             for (int i = mCaches.size(); --i >=0; ) {
-                count += mCaches.get(i).count();
+                CacheDataSet cache = mCaches.get(i);
+                if (cache != null) {
+                    count += cache.count();
+                }
             }
             return count;
         }
@@ -107,9 +132,10 @@ public class GridLayout extends Layout {
                 cache = new LinearCacheDataSet();
                 mCaches.put(cacheId, cache);
             }
-
-            Log.d(TAG, "measureChild [%d] orientation = %s cacheId = %d cache.count = %d",
-                  dataIndex, mOrientation, cacheId, cache.count());
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "measureChild [%d] orientation = %s cacheId = %d cache.count = %d",
+                        dataIndex, mOrientation, cacheId, cache.count());
+            }
             Widget w = measureChild(dataIndex, cache);
             if (mForcePostMeasurement) {
                 postMeasurement(cache);
@@ -261,7 +287,9 @@ public class GridLayout extends Layout {
 
         @Override
         public void shiftBy(final float offset, final Axis axis) {
-            Log.d(TAG, "shiftBy offset = %f axis = %s layout = %s", offset, axis, this);
+            if (LOGGING_VERBOSE) {
+                Log.d(TAG, "shiftBy offset = %f axis = %s layout = %s", offset, axis, this);
+            }
             if (!Float.isNaN(offset) && axis == getOrientationAxis()) {
                 for (int i = mCaches.size(); --i >=0; ) {
                     mCaches.valueAt(i).shiftBy(offset);
@@ -447,26 +475,11 @@ public class GridLayout extends Layout {
         super.setDividerPadding(padding, axis);
     }
 
-    /**
-     * Set the {@link Orientation} of the layout.
-     *
-     * @param orientation
-     *            One of the {@link Orientation} constants.
-     */
+    @Override
     public void setOrientation(Orientation orientation) {
-        if (init(orientation)) {
-            if (orientation != mOrientation && isValidLayout(orientation)) {
-                mOrientation = orientation;
-                invalidate();
-            }
+        if (init(orientation) && isValidLayout(orientation)) {
+            super.setOrientation(orientation);
         }
-    }
-
-    /**
-     * @return {@link Orientation} of the layout.
-     */
-    public Orientation getOrientation() {
-        return mOrientation;
     }
 
     @Override
@@ -530,18 +543,37 @@ public class GridLayout extends Layout {
     }
 
     @Override
+    protected void measureUntilFull(int dataIndex, final List<Widget> measuredChildren) {
+// TODO: only left & top centralization is supported for now. Need to support center and right as well
+        // no preferred position, just feed all data starting from beginning.
+        super.measureUntilFull(dataIndex == -1 ? 0 : dataIndex, measuredChildren);
+    }
+
+    @Override
     protected float getDistanceToChild(int dataIndex, Axis axis) {
         return getOrientationLayout().getDistanceToChild(dataIndex, axis);
     }
 
     @Override
-    protected Direction getDirectionToChild(final int dataIndex, final Axis axis) {
+    protected Direction getDirectionToChild(int dataIndex, Axis axis) {
         return getOrientationLayout().getDirectionToChild(dataIndex, axis);
     }
 
     @Override
     protected int getCenterChild() {
-        return getOrientationLayout().getCenterChild();
+        int id = -1;
+        Set<Integer> columns = mColumnLayout.getCenterChildren();
+        Set<Integer> rows = mRowLayout.getCenterChildren();
+        for (int c: columns) {
+            if (rows.contains(c)) {
+                id = c;
+                break;
+            }
+        }
+        if (LOGGING_VERBOSE) {
+            Log.d(TAG, "getCenterChild [%d]", id);
+        }
+        return id;
     }
 
     @Override

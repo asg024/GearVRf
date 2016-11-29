@@ -3,7 +3,6 @@ package com.samsung.smcl.vr.widgets;
 import org.joml.Vector3f;
 
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
 
 /**
  * A specialized {@link Layout} that applies the arch curvature to the children on
@@ -12,7 +11,7 @@ import com.samsung.smcl.vr.widgets.LinearLayout.Orientation;
  * can be specified in the class constructor.
  * It is basically designed as the secondary layout in the layout chain.
  */
-public class ArchLayout extends AbsoluteLayout {
+public class ArchLayout extends OrientedLayout {
 
     /**
      * Construct a new {@link ArchLayout} with the radius.
@@ -79,45 +78,6 @@ public class ArchLayout extends AbsoluteLayout {
                                  getSizeAngle(viewPort.z)));
     }
 
-    /**
-     * @return {@link Orientation} of the layout.
-     */
-    public Orientation getOrientation() {
-        return mOrientation;
-    }
-
-    /**
-     * Set the {@link Orientation} of the layout.
-     *
-     * @param orientation
-     *            One of the {@link Orientation} constants.
-     */
-    public void setOrientation(final Orientation orientation) {
-        if (orientation != mOrientation) {
-            mOrientation = orientation;
-        }
-    }
-
-    protected Axis getOrientationAxis() {
-        final Axis axis;
-        switch(mOrientation) {
-            case HORIZONTAL:
-                axis = Axis.X;
-                break;
-            case VERTICAL:
-                axis = Axis.Y;
-                break;
-            case STACK:
-                axis = Axis.Z;
-                break;
-            default:
-                Log.w(TAG, "Unsupported orientation %s", mOrientation);
-                axis = Axis.X;
-                break;
-        }
-        return axis;
-    }
-
 
     protected Vector3f getFactor() {
         Vector3f factor = new Vector3f();
@@ -175,5 +135,4 @@ public class ArchLayout extends AbsoluteLayout {
     }
 
     private float mRadius = 0;
-    protected Orientation mOrientation = Orientation.HORIZONTAL;
 }
