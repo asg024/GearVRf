@@ -173,10 +173,9 @@ public class LinearLayout extends OrientedLayout {
         final int offsetSign = getOffsetSign();
         final float axisSize = getAxisSize(getOrientationAxis());
         float layoutOffset = -offsetSign * axisSize / 2;
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "getLayoutOffset(): dimension: %5.2f, layoutOffset: %5.2f",
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getLayoutOffset(): dimension: %5.2f, layoutOffset: %5.2f",
               axisSize, layoutOffset);
-        }
+
         return layoutOffset;
     }
 
@@ -260,9 +259,8 @@ public class LinearLayout extends OrientedLayout {
 
     @Override
     protected void layoutChildren() {
-        if (LOGGING_VERBOSE) {
-            dumpCaches();
-        }
+        dumpCaches();
+
         super.layoutChildren();
     }
 
@@ -312,10 +310,9 @@ public class LinearLayout extends OrientedLayout {
                 case NONE:
                     break;
             }
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "dataIndex = %d mCache.count() = %d",
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "dataIndex = %d mCache.count() = %d",
                       dataIndex, getCacheCount());
-            }
+
         }
         return dataIndex;
     }
@@ -420,11 +417,10 @@ public class LinearLayout extends OrientedLayout {
 
             inBounds = inViewPort(dataIndex) || !isViewPortEnabled();
 
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "measureUntilFull: measureChild view = %s " +
-                                "isBounds = %b index = %d layout = %s",
-                        view == null ? "null" : view.getName(), inBounds, i, this);
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
+                    "isBounds = %b index = %d layout = %s",
+                    view == null ? "null" : view.getName(), inBounds, i, this);
+
             if (measuredChildren != null && view != null) {
                 measuredChildren.add(view);
             }
@@ -477,9 +473,7 @@ public class LinearLayout extends OrientedLayout {
                 break;
         }
 
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "getCenterChild = %d ", id);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getCenterChild = %d ", id);
         return id;
     }
 
@@ -500,10 +494,9 @@ public class LinearLayout extends OrientedLayout {
             // pos = cache.searchPos(dataIndex);
             }
 
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "measureChild [%d] has been added at pos [%d]! cache.count() = %d",
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild [%d] has been added at pos [%d]! cache.count() = %d",
                   dataIndex, pos, cache.count());
-            }
+
             cache.addData(dataIndex, pos, size, getDivider() / 2, getDivider() / 2);
         }
         computeOffset(dataIndex, cache);
@@ -568,10 +561,9 @@ public class LinearLayout extends OrientedLayout {
             }
         }
 
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "computeOffset [%d, %d]: startDataOffset = %f endDataOffset = %f",
-                  dataIndex, pos, startDataOffset, endDataOffset);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "computeOffset [%d, %d]: startDataOffset = %f endDataOffset = %f",
+                dataIndex, pos, startDataOffset, endDataOffset);
+
         boolean inBounds = !Float.isNaN(cache.getDataOffset(dataIndex)) &&
                 Math.abs(endDataOffset) <= Math.abs(layoutOffset) &&
                 Math.abs(startDataOffset) <= Math.abs(layoutOffset);
@@ -677,10 +669,9 @@ public class LinearLayout extends OrientedLayout {
         if (child != null) {
             final Vector3f factor = getFactor();
             final float childOffset = getDataOffset(dataIndex);
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "positionChild [%d] %s : childOffset = [%f] factor: [%s] layout: %s",
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "positionChild [%d] %s : childOffset = [%f] factor: [%s] layout: %s",
                   dataIndex, child.getName(), childOffset, factor, this);
-            }
+
             updateTransform(child, factor, childOffset);
         } else {
             Log.w(TAG, "positionChild: child with dataIndex [%d] was not found in layout: %s",
@@ -698,10 +689,9 @@ public class LinearLayout extends OrientedLayout {
                 childOffset * factor.y +
                 (childOffset + 0.1f) * factor.z;
 
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "setPosition [%s], position = [%f], factor = [%s]",
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setPosition [%s], position = [%f], factor = [%s]",
                   child.getName(), position, factor);
-        }
+
         if (factor.x != 0) {
             child.setPositionX(position);
         } else if (factor.y != 0) {

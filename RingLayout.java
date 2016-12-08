@@ -105,9 +105,8 @@ public class RingLayout extends LinearLayout {
     @Override
     protected float getChildSize(final int dataIndex, Axis axis) {
         final float segment = super.getChildSize(dataIndex, axis);
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "getChildSize for %d segment = %f", dataIndex, segment);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getChildSize for %d segment = %f", dataIndex, segment);
+
         return getSizeAngle(segment);
     }
 
@@ -143,9 +142,8 @@ public class RingLayout extends LinearLayout {
     protected void resetChildLayout(final int dataIndex) {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "clearChildPosition %s", child);
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "clearChildPosition %s", child);
+
             child.setRotation(1, 0, 0, 0);
             child.setPosition(0, 0, -(float) mRadius);
         }

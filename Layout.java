@@ -13,8 +13,6 @@ import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Widget.ViewPortVisibility;
 
 abstract public class Layout {
-    static final boolean LOGGING_VERBOSE = true;// false;
-
     /**
      * Base Layout strategy class for applying various organization/setup on layout
      *
@@ -163,9 +161,7 @@ abstract public class Layout {
      */
     protected float getAxisSize(final Axis axis) {
         float size =  mViewPort == null ? 0 : mViewPort.get(axis);
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "getAxisSize for %s %f mViewPort = %s", axis, size, mViewPort);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getAxisSize for %s %f mViewPort = %s", axis, size, mViewPort);
         return size;
     }
 
@@ -204,9 +200,8 @@ abstract public class Layout {
      * @return true item fits the container, false - otherwise
      */
     synchronized Widget measureChild(final int dataIndex) {
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "measureChild dataIndex = %d", dataIndex);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild dataIndex = %d", dataIndex);
+
         mMeasuredChildren.add(dataIndex);
         return mContainer.get(dataIndex);
     }
@@ -288,11 +283,11 @@ abstract public class Layout {
         for (; dataIndex < mContainer.size() && inBounds; ++dataIndex) {
             Widget view = measureChild(dataIndex);
             inBounds = postMeasurement() || !isViewPortEnabled();
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "measureUntilFull: measureChild view = %s " +
-                        "isBounds = %b dataIndex = %d layout = %s",
-                  view == null ? "null" : view.getName(), inBounds, dataIndex, this);
-            }
+
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
+                    "isBounds = %b dataIndex = %d layout = %s",
+                    view == null ? "null" : view.getName(), inBounds, dataIndex, this);
+
             if (measuredChildren != null && view != null) {
                 measuredChildren.add(view);
             }
@@ -315,11 +310,9 @@ abstract public class Layout {
         if (!mContainer.isDynamic()) {
             boolean visibleInLayout = !isViewPortEnabled() || inViewPort(dataIndex);
             ViewPortVisibility visibility = visibleInLayout ?
-                  ViewPortVisibility.FULLY_VISIBLE : ViewPortVisibility.INVISIBLE;
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "onLayout: child with dataId [%d] viewportVisibility = %s",
-                      dataIndex, visibility);
-            }
+                    ViewPortVisibility.FULLY_VISIBLE : ViewPortVisibility.INVISIBLE;
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: child with dataId [%d] viewportVisibility = %s",
+                    dataIndex, visibility);
             Widget childWidget = mContainer.get(dataIndex);
             if (childWidget != null) {
                 childWidget.setViewPortVisibility(visibility);
@@ -337,10 +330,10 @@ abstract public class Layout {
      * Layout children inside the layout container
      */
     protected void layoutChildren() {
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "layoutChildren [%d] layout = %s",
-                  mMeasuredChildren.size(), this);
-        }
+
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layoutChildren [%d] layout = %s",
+                mMeasuredChildren.size(), this);
+
         Set<Integer> copySet = new HashSet<Integer>(mMeasuredChildren);
         for (int nextMeasured: copySet) {
             layoutChild(nextMeasured);

@@ -50,9 +50,8 @@ public class GridLayout extends OrientedLayout {
         @Override
         protected void invalidateCache(final int dataIndex) {
             int cacheId = getCacheId(dataIndex);
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "invalidateCache [%d] - cacheId [%d]", dataIndex, cacheId);
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "invalidateCache [%d] - cacheId [%d]", dataIndex, cacheId);
+
             if (cacheId >= 0) {
                 CacheDataSet cache = mCaches.valueAt(cacheId);
                 cache.removeData(dataIndex);
@@ -111,9 +110,8 @@ public class GridLayout extends OrientedLayout {
         @Override
         protected int getCacheCount() {
             int count = 0;
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "getCacheCount mCaches.size() = %d", mCaches.size());
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getCacheCount mCaches.size() = %d", mCaches.size());
+
             for (int i = mCaches.size(); --i >=0; ) {
                 CacheDataSet cache = mCaches.get(i);
                 if (cache != null) {
@@ -132,10 +130,9 @@ public class GridLayout extends OrientedLayout {
                 cache = new LinearCacheDataSet();
                 mCaches.put(cacheId, cache);
             }
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "measureChild [%d] orientation = %s cacheId = %d cache.count = %d",
-                        dataIndex, mOrientation, cacheId, cache.count());
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild [%d] orientation = %s cacheId = %d cache.count = %d",
+                    dataIndex, mOrientation, cacheId, cache.count());
+
             Widget w = measureChild(dataIndex, cache);
             if (mForcePostMeasurement) {
                 postMeasurement(cache);
@@ -287,9 +284,8 @@ public class GridLayout extends OrientedLayout {
 
         @Override
         public void shiftBy(final float offset, final Axis axis) {
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "shiftBy offset = %f axis = %s layout = %s", offset, axis, this);
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "shiftBy offset = %f axis = %s layout = %s", offset, axis, this);
+
             if (!Float.isNaN(offset) && axis == getOrientationAxis()) {
                 for (int i = mCaches.size(); --i >=0; ) {
                     mCaches.valueAt(i).shiftBy(offset);
@@ -397,10 +393,8 @@ public class GridLayout extends OrientedLayout {
 
     @Override
     protected void layoutChildren() {
-        if (LOGGING_VERBOSE) {
-            mRowLayout.dumpCaches();
-            mColumnLayout.dumpCaches();
-        }
+        mRowLayout.dumpCaches();
+        mColumnLayout.dumpCaches();
         super.layoutChildren();
     }
 
@@ -570,9 +564,8 @@ public class GridLayout extends OrientedLayout {
                 break;
             }
         }
-        if (LOGGING_VERBOSE) {
-            Log.d(TAG, "getCenterChild [%d]", id);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getCenterChild [%d]", id);
+
         return id;
     }
 

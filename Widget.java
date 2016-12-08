@@ -1687,17 +1687,13 @@ public class Widget {
     public void requestLayout() {
         mLayoutRequested = true;
 
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG,
-                  "requestLayout(%s): mParent: '%s', mParent.isLayoutRequested: %b",
-                  getName(), mParent == null ? "<NULL>" : mParent.getName(),
-                  mParent != null && mParent.isLayoutRequested());
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG,
+                "requestLayout(%s): mParent: '%s', mParent.isLayoutRequested: %b",
+                getName(), mParent == null ? "<NULL>" : mParent.getName(),
+                mParent != null && mParent.isLayoutRequested());
 
         if (mParent != null && !mParent.isLayoutRequested()) {
-            if (Policy.LOGGING_VERBOSE) {
-                Log.v(TAG, "requestLayout(%s) requesting", getName());
-            }
+            Log.v(Log.SUBSYSTEM.WIDGET, TAG, "requestLayout(%s) requesting", getName());
 
             mParent.requestLayout();
             // new RuntimeException().printStackTrace();
@@ -1836,15 +1832,11 @@ public class Widget {
      */
     @SuppressLint("WrongCall")
     protected void layout() {
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "layout(%s): changed: %b, requested: %b", getName(),
-                  mChanged, mLayoutRequested);
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "layout(%s): changed: %b, requested: %b", getName(),
+                mChanged, mLayoutRequested);
 
         if (mChanged || mLayoutRequested) {
-            if (Policy.LOGGING_VERBOSE) {
-                Log.v(TAG, "layout(%s): calling onLayout", getName());
-            }
+            Log.v(Log.SUBSYSTEM.WIDGET, TAG, "layout(%s): calling onLayout", getName());
             onLayout();
         }
 
@@ -2062,9 +2054,7 @@ public class Widget {
      * bounding box will get out of date.
      */
     protected void onTransformChanged() {
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "onTransformChanged(): %s", getName());
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "onTransformChanged(): %s", getName());
 
         // Even if the calling code that altered the transform doesn't request a
         // layout, we'll do a layout the next time a layout is requested on our
@@ -2098,8 +2088,8 @@ public class Widget {
                         childRootSceneObjectParent.removeChildObject(childRootSceneObject);
                     }
                     getSceneObject().addChildObject(childRootSceneObject);
-                } else if (Policy.LOGGING_VERBOSE) {
-                    Log.v(TAG,
+                } else {
+                    Log.v(Log.SUBSYSTEM.WIDGET, TAG,
                           "addChildInner(): child '%s' already attached to this Group ('%s')",
                           child.getName(), getName());
                 }
@@ -2200,11 +2190,9 @@ public class Widget {
         mContext = context;
         mSceneObject = sceneObject;
 
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG,
-                  "Widget constructor: %s width = %f height = %f depth = %f",
-                  sceneObject.getName(), getWidth(), getHeight(), getDepth());
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG,
+                "Widget constructor: %s width = %f height = %f depth = %f",
+                sceneObject.getName(), getWidth(), getHeight(), getDepth());
 
         mTransformCache = new TransformCache(getTransform());
         requestLayout();
@@ -2282,10 +2270,10 @@ public class Widget {
         }
 
         final boolean oldFocus = mIsFocused;
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "doOnFocus(%s): mIsFocused: %b, focused: %b", getName(),
-                  mIsFocused, focused);
-        }
+
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "doOnFocus(%s): mIsFocused: %b, focused: %b", getName(),
+                mIsFocused, focused);
+
 
         final List<OnFocusListener> focusListeners;
         synchronized (mFocusListeners) {
@@ -2631,10 +2619,8 @@ public class Widget {
 
         JSONObject animationMetadata = json.optJSONObject("animations");
         AnimationFactory.init(animationMetadata);
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): loaded animation metadata: %s",
-                  animationMetadata);
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "init(): loaded animation metadata: %s",
+                animationMetadata);
     }
 
     private static JSONObject loadSceneMetadata(Context context)
@@ -2643,10 +2629,8 @@ public class Widget {
                                                           "objects.json");
         sObjectMetadata = new UnmodifiableJSONObject(
                 json.optJSONObject("objects"));
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): loaded object metadata: %s",
-                  sObjectMetadata.toString());
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "init(): loaded object metadata: %s",
+                sObjectMetadata.toString());
         return json;
     }
 

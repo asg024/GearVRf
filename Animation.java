@@ -289,9 +289,8 @@ public abstract class Animation {
 
     /* package */
     void doAnimate(float ratio) {
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "doAnimate(): animating %s", mTarget.getName());
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "doAnimate(): animating %s", mTarget.getName());
+
         animate(mTarget, ratio);
         if (mRequestLayoutOnTargetChange && mTarget.isChanged()) {
             mTarget.requestLayout();

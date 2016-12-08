@@ -122,7 +122,7 @@ class LinearCacheDataSet implements CacheDataSet {
                           new CacheData(mCacheDataSet.valueAt(pos)));
                 copy.mIdsSet.add(pos, mIdsSet.get(pos));
             }
-            if (Layout.LOGGING_VERBOSE) {
+            if (Log.isEnabled(Log.SUBSYSTEM.LAYOUT)) {
                 to.dump();
             }
 
@@ -132,16 +132,16 @@ class LinearCacheDataSet implements CacheDataSet {
     }
 
     public void dump() {
-        Log.d(TAG, "\n==== DUMP CACHE start ======\nCache size = %d " +
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "\n==== DUMP CACHE start ======\nCache size = %d " +
                 "totalSize = %f totalPadding = %f",
                 count(), mTotalSize, mTotalPadding);
 
         for (int pos = 0; pos < count(); ++pos) {
-            Log.d(TAG, "data[%d, %d]: %s" , mIdsSet.get(pos), pos,
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "data[%d, %d]: %s" , mIdsSet.get(pos), pos,
                   mCacheDataSet.valueAt(pos).toString());
         }
 
-        Log.d(TAG, "\n==== DUMP CACHE end ======\n");
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "\n==== DUMP CACHE end ======\n");
     }
 
     @Override
@@ -167,9 +167,7 @@ class LinearCacheDataSet implements CacheDataSet {
         } else if (actualPos > count()) {
             actualPos = count();
         }
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "addData id = %d pos = %d", id, actualPos);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "addData id = %d pos = %d", id, actualPos);
         mIdsSet.add(actualPos, id);
 
         // update total padding
@@ -410,10 +408,9 @@ class LinearCacheDataSet implements CacheDataSet {
     public void shiftBy(final float amount) {
         for (int pos = mCacheDataSet.size(); --pos >= 0;) {
             CacheData data =  mCacheDataSet.valueAt(pos);
-            if (Layout.LOGGING_VERBOSE) {
-                Log.d(TAG, "shiftBy item[%s] newOffset = %f",
-                      data, (data.getOffset() + amount));
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "shiftBy item[%s] newOffset = %f",
+                    data, (data.getOffset() + amount));
+
             data.setOffset(data.getOffset() + amount);
             mCacheDataSet.setValueAt(pos, data);
         }
@@ -422,17 +419,15 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     public float getTotalSizeWithPadding() {
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "getTotalSizeWithPadding = %f", (mTotalPadding + mTotalSize));
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getTotalSizeWithPadding = %f", (mTotalPadding + mTotalSize));
+
         return mTotalPadding + mTotalSize;
     }
 
     @Override
     public float getTotalSize() {
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "mTotalSize = %f", mTotalSize);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mTotalSize = %f", mTotalSize);
+
         return mTotalSize;
     }
 

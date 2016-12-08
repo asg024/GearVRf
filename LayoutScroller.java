@@ -119,11 +119,9 @@ public class LayoutScroller {
         float xOffset = (maxX * velocityX)/VELOCITY_MAX;
         float yOffset = (maxY * velocityY)/VELOCITY_MAX;
 
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "fling() velocity = [%f, %f, %f] offset = [%f, %f]",
-                  velocityX, velocityY, velocityZ,
-                  xOffset, yOffset);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "fling() velocity = [%f, %f, %f] offset = [%f, %f]",
+                velocityX, velocityY, velocityZ,
+                xOffset, yOffset);
 
         if (Utility.equal(xOffset, 0)) {
             xOffset = Float.NaN;
@@ -141,10 +139,8 @@ public class LayoutScroller {
 
     public boolean flingToPosition(int vilocity) {
         boolean scrolled = true;
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "flingToPosition() startIndex =%d vilocity = %d",
-                  mCurrentItemIndex, vilocity);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "flingToPosition() startIndex =%d vilocity = %d",
+                mCurrentItemIndex, vilocity);
 
         vilocity /= -mScrollable.getCount();
 
@@ -160,10 +156,9 @@ public class LayoutScroller {
     }
 
     public int scrollToNextPage() {
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "scrollToNextPage getCurrentPage() = %d currentIndex = %d",
-	          getCurrentPage(), mCurrentItemIndex);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToNextPage getCurrentPage() = %d currentIndex = %d",
+                getCurrentPage(), mCurrentItemIndex);
+
         if (mSupportScrollByPage) {
             scrollToPage(getCurrentPage() + 1);
         } else {
@@ -174,10 +169,9 @@ public class LayoutScroller {
 	}
 
 	public int scrollToPrevPage() {
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "scrollToPrevPage getCurrentPage() = %d currentIndex = %d",
-              getCurrentPage(), mCurrentItemIndex);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPrevPage getCurrentPage() = %d currentIndex = %d",
+                getCurrentPage(), mCurrentItemIndex);
+
         if (mSupportScrollByPage) {
             scrollToPage(getCurrentPage() - 1);
         } else {
@@ -187,10 +181,9 @@ public class LayoutScroller {
 	}
 
 	public int scrollToPage(int pageNumber) {
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "scrollToPage pageNumber = %d mPageCount = %d",
-                  pageNumber, mPageCount);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPage pageNumber = %d mPageCount = %d",
+                pageNumber, mPageCount);
+
         if (mSupportScrollByPage) {
             scrollToItem(getFirstItemIndexOnPage(pageNumber));
         } else {
@@ -216,9 +209,7 @@ public class LayoutScroller {
     }
 
     public int scrollToItem(int position) {
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "scrollToItem position = %d", position);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToItem position = %d", position);
         scrollToPosition(position);
         return mCurrentItemIndex;
     }
@@ -237,9 +228,7 @@ public class LayoutScroller {
         int index = 0;
         if (mSupportScrollByPage) {
             index = ((pageNumber - 1) * mPageSize);
-            if (Layout.LOGGING_VERBOSE) {
-                Log.d(TAG, "getFirstItemIndexOnPage = %d", index);
-            }
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getFirstItemIndexOnPage = %d", index);
         }
         return index;
     }
@@ -269,10 +258,8 @@ public class LayoutScroller {
 
     private boolean scrollToPosition(int newPosition) {
         boolean scrolled = false;
-        if (Layout.LOGGING_VERBOSE) {
-            Log.d(TAG, "scrollToPosition() mCurrentItemIndex=%d newPosition = %d",
-                  mCurrentItemIndex, newPosition);
-        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPosition() mCurrentItemIndex=%d newPosition = %d",
+                mCurrentItemIndex, newPosition);
 
         if (newPosition != mCurrentItemIndex) {
             for (OnScrollListener listener: listeners) {

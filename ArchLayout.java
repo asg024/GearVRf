@@ -101,10 +101,8 @@ public class ArchLayout extends OrientedLayout {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
             Vector3f factor = getFactor();
-            if (LOGGING_VERBOSE) {
-                Log.d(TAG, "positionChild %s with radius = %f factor = %s",
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "positionChild %s with radius = %f factor = %s",
                   child.getName(), mRadius, factor);
-            }
             child.setPositionZ(-(float) mRadius);
 
             if (factor.x != 0) {

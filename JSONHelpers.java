@@ -416,9 +416,7 @@ abstract public class JSONHelpers {
     public static JSONObject loadJSONAsset(Context context, final String asset)
             throws JSONException {
         String rawJson = Utility.readTextFile(context, asset);
-        if (Policy.LOGGING_VERBOSE) {
-            Log.v(TAG, "init(): raw JSON: %s", rawJson);
-        }
+        Log.v(Log.SUBSYSTEM.WIDGET, "init(): raw JSON: %s", rawJson);
         if (rawJson == null) {
             rawJson = "";
         }
