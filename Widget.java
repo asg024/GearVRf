@@ -1607,8 +1607,8 @@ public class Widget {
     }
 
     private void updateVisibility(final Visibility visibility) {
-        Log.d(TAG, "change visibility for widget<%s> to visibility = %s", // mParent = %s mSceneObject.getParent() = %s parentSceneObject = %s",
-              getName(), visibility, mParent, mSceneObject.getParent(), mParent != null ? mParent.getSceneObject() : "null");
+        Log.d(TAG, "change visibility for widget<%s> to visibility = %s",
+                getName(), visibility);
             if (mParent != null) {
                 final GVRSceneObject parentSceneObject = mParent
                         .getSceneObject();
