@@ -182,6 +182,21 @@ public class Button extends Widget implements TextContainer {
         }
     }
 
+    @Override
+    protected void onCreate() {
+        mGraphic = findChildByName(".graphic");
+        if (mGraphic == null) {
+            // Delegate the non-text bits to a child object so we can layout the
+            // text relative to the "graphic".
+            mGraphic = createGraphicWidget();
+            if (mGraphic != null) {
+                mGraphic.setName(".graphic");
+                addChildInner(mGraphic, mGraphic.getSceneObject(), -1);
+                requestLayout();
+            }
+        }
+    }
+
     private void createTextWidget() {
         runOnGlThread(new Runnable() {
             @Override
@@ -211,18 +226,6 @@ public class Button extends Widget implements TextContainer {
         setChildrenFollowFocus(true);
         setChildrenFollowInput(true);
         setChildrenFollowState(true);
-
-        mGraphic = findChildByName(".graphic");
-        if (mGraphic == null) {
-            // Delegate the non-text bits to a child object so we can layout the
-            // text relative to the "graphic".
-            mGraphic = createGraphicWidget();
-            if (mGraphic != null) {
-                mGraphic.setName(".graphic");
-                addChildInner(mGraphic, mGraphic.getSceneObject(), -1);
-                requestLayout();
-            }
-        }
     }
 
     private static class Graphic extends Widget {
