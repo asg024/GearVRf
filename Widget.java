@@ -2278,8 +2278,7 @@ public class Widget  implements Layout.WidgetContainer {
         return mOnHierarchyChangedListeners.remove(listener);
     }
 
-    /* package */
-    Widget findChildByName(final String name) {
+    public Widget findChildByName(final String name) {
         final List<Widget> groups = new ArrayList<Widget>();
         groups.add(this);
 
@@ -2768,7 +2767,7 @@ public class Widget  implements Layout.WidgetContainer {
             final Widget groupWidget, ArrayList<Widget> groupChildren) {
         Collection<Widget> children = groupWidget.mChildren;
         for (Widget child : children) {
-            if (child.getName().equals(name)) {
+            if (child.getName() != null && child.getName().equals(name)) {
                 return child;
             }
             if (child instanceof GroupWidget) {

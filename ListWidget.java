@@ -956,7 +956,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     public boolean setItemSelected(int dataIndex, boolean select) {
         boolean done = false;
 
-        ListItemHostWidget hostWidget = (ListItemHostWidget)getHostView(dataIndex, false);
+        ListItemHostWidget hostWidget = getHostView(dataIndex, false);
         if (hostWidget != null && hostWidget.isSelected() != select) {
             if (select && !mMultiSelectionSupported) {
                 clearSelection();
@@ -976,7 +976,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * @return {@code true} if the item is selected, {@code false} otherwise.
      */
     public boolean isSelected(int dataIndex) {
-        ListItemHostWidget hostWidget = (ListItemHostWidget)getHostView(dataIndex, false);
+        ListItemHostWidget hostWidget = getHostView(dataIndex, false);
         return  (hostWidget != null) && hostWidget.isSelected();
     }
 
