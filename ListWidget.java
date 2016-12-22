@@ -1068,15 +1068,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return getDataCount();
     }
 
-    @Override
-    public float getViewPortSize(final Axis axis) {
-        float ret = 0;
-        for (Layout layout: mLayouts) {
-            ret = Math.max(ret, layout.getAxisSize(axis));
-        }
-        return ret;
-    }
-
     /**
      * Get offset of the item along X
      *

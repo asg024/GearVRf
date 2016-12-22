@@ -11,6 +11,8 @@ import android.view.Gravity;
 
 import com.samsung.smcl.utility.Log;
 
+import java.util.List;
+
 /**
  * A basic Button widget.
  * <p>
@@ -173,13 +175,28 @@ public class Button extends Widget implements TextContainer {
 
     @Override
     protected void onLayout() {
-        // TODO: When Layout work is done, use a layout here
-        // TODO: Add setLayout() method
-        if (mTextContainer instanceof Widget) {
-            final Widget w = (Widget) mTextContainer;
-            w.reset();
-            w.setPositionZ(0.025f);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout() called (%s)", getName());
+        List<Widget> children = getChildren();
+        if (children.isEmpty()) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout: no items to layout! %s", getName());
+            return;
         }
+
+        for (Widget child : children) {
+            child.layout();
+        }
+
+        super.onLayout();
+    }
+
+    @Override
+    public Widget get(final int dataIndex) {
+        return getChildren().get(dataIndex);
+    }
+
+    @Override
+    public int size() {
+        return getChildren().size();
     }
 
     @Override
@@ -191,7 +208,10 @@ public class Button extends Widget implements TextContainer {
             mGraphic = createGraphicWidget();
             if (mGraphic != null) {
                 mGraphic.setName(".graphic");
-                addChildInner(mGraphic, mGraphic.getSceneObject(), -1);
+                addChildInner(mGraphic, mGraphic.getSceneObject(), 0);
+                for (Layout layout: mLayouts) {
+                    layout.invalidate();
+                }
                 requestLayout();
             }
         }
@@ -215,10 +235,15 @@ public class Button extends Widget implements TextContainer {
                 mTextContainer = textWidget;
                 addChildInner(textWidget, textWidget.getSceneObject(), -1);
                 Log.d(TAG, "createTextWidget(%s): requesting layout", getName());
+
+                for (Layout layout: mLayouts) {
+                    layout.invalidate();
+                }
                 requestLayout();
             }
         });
     }
+
 
     private void init() {
         setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
@@ -226,6 +251,15 @@ public class Button extends Widget implements TextContainer {
         setChildrenFollowFocus(true);
         setChildrenFollowInput(true);
         setChildrenFollowState(true);
+
+        // setup default layout
+        sDefaultLayout.setOrientation(OrientedLayout.Orientation.STACK);
+        sDefaultLayout.setDividerPadding(0.025f, Layout.Axis.Z);
+        applyLayout(sDefaultLayout);
+    }
+
+    public Layout getDefaultLayout() {
+        return sDefaultLayout;
     }
 
     private static class Graphic extends Widget {
@@ -236,6 +270,8 @@ public class Button extends Widget implements TextContainer {
 
     private TextContainer mTextContainer = new TextWidget.TextParams();
     private Widget mGraphic;
+
+    private final OrientedLayout sDefaultLayout = new LinearLayout();
 
     private static final String TAG = Button.class.getSimpleName();
 }

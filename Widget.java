@@ -36,11 +36,10 @@ import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.UnmodifiableJSONObject;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
-import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
 
-public class Widget {
+public class Widget  implements Layout.WidgetContainer {
 
     private static final String MATERIAL_DIFFUSE_TEXTURE = "diffuseTexture";
 
@@ -193,7 +192,7 @@ public class Widget {
     }
 
     /**
-     * A constructor for wrapping existing {@link GVRSceneLayout} instances.
+     * A constructor for wrapping existing {@link GVRSceneObject} instances.
      * Deriving classes should override and do whatever processing is
      * appropriate.
      *
@@ -346,7 +345,7 @@ public class Widget {
     /**
      * @return The timeout, in milliseconds, before a continuous focus state
      *         triggers an {@link #onLongFocus()} event. By default this is
-     *         {@link FocusManger#LONG_FOCUS_TIMEOUT}.
+     *         {@link FocusManager#LONG_FOCUS_TIMEOUT}.
      */
     public long getLongFocusTimeout() {
         return mLongFocusTimeout;
@@ -526,7 +525,7 @@ public class Widget {
      * When any of them would normally get a touch event, they all get a touch
      * event.
      * <p>
-     * The touch hook method -- {@link #onTouch(boolean)} -- is invoked as
+     * The touch hook method -- {@link Widget#onTouch()}  -- is invoked as
      * usual, but en masse for the parent and its children. There is one caveat:
      * only the parent's {@code onTouch()} method determines whether the touch
      * event is accepted or rejected. If the parent rejects the event, it is
@@ -591,7 +590,7 @@ public class Widget {
          * Hook method for handling long focus events. Called when the object
          * has held focus for longer than a certain period of time. This is
          * similar to
-         * {@link android.View.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
+         * {@link android.view.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
          * OnGestureListener.onLongPress()}.
          */
         @Override
@@ -1700,13 +1699,13 @@ public class Widget {
     public void requestLayout() {
         mLayoutRequested = true;
 
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG,
+        Log.v(Log.SUBSYSTEM.LAYOUT, TAG,
                 "requestLayout(%s): mParent: '%s', mParent.isLayoutRequested: %b",
                 getName(), mParent == null ? "<NULL>" : mParent.getName(),
                 mParent != null && mParent.isLayoutRequested());
 
         if (mParent != null && !mParent.isLayoutRequested()) {
-            Log.v(Log.SUBSYSTEM.WIDGET, TAG, "requestLayout(%s) requesting", getName());
+            Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "requestLayout(%s) requesting", getName());
 
             mParent.requestLayout();
             // new RuntimeException().printStackTrace();
@@ -1845,13 +1844,13 @@ public class Widget {
      */
     @SuppressLint("WrongCall")
     protected void layout() {
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "layout(%s): changed: %b, requested: %b", getName(),
+        Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): changed: %b, requested: %b", getName(),
                 mChanged, mLayoutRequested);
 
         if (mChanged || mLayoutRequested) {
-            Log.v(Log.SUBSYSTEM.WIDGET, TAG, "layout(%s): calling onLayout", getName());
+            Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): calling onLayout", getName());
             onLayout();
-        }
+       }
 
         mLayoutRequested = false;
         mChanged = false;
@@ -1988,7 +1987,7 @@ public class Widget {
 
     /**
      * A hook method called after the {@code Widget} instance has been
-     * {@linkplain WidgetGroup#removeChild(Widget) removed} from another
+     * {@linkplain GroupWidget#removeChild(Widget) removed} from another
      * {@link GroupWidget} as a child. At this point, the instance has no
      * {@linkplain #getParent() parent}.
      * <p>
@@ -2016,7 +2015,7 @@ public class Widget {
     /**
      * Hook method for handling long focus events. Called when the object has
      * held focus for longer than a certain period of time. This is similar to
-     * {@link android.View.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
+     * {@link android.view.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
      * OnGestureListener.onLongPress()}.
      */
     protected void onLongFocus() {
@@ -2031,7 +2030,38 @@ public class Widget {
      * children.
      */
     protected void onLayout() {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout() called (%s)", getName());
+        List<Widget> children = getChildren();
+        if (children.isEmpty()) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout: no items to layout! %s", getName());
+            return;
+        }
 
+        for (Widget child : children) {
+            child.layout();
+        }
+
+        if (null == mLayouts) {
+            //see RootWidget's hierarchy and ctor; onLayout gets called before the GroupWidget is
+            //fully constructed; this is not the correct fix; should be refactored so this never
+            //can happen
+            return;
+        }
+        if (mLayouts.isEmpty()) {
+            Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "No any layout has been applied! %s", getName());
+            return;
+        }
+
+        for (Layout layout: mLayouts) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] apply layout = %s", this, layout);
+            if (!isDynamic()) {
+                layout.measureAll(null);
+            } else {
+                // don't need to measure the items for Dynamic data set. The items are measured
+                // before onLayout call
+            }
+            layout.layoutChildren();
+        }
     }
 
     /**
@@ -2216,6 +2246,7 @@ public class Widget {
                 throw new RuntimeException(e.getLocalizedMessage());
             }
         }
+        mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
     }
 
     /**
@@ -2786,6 +2817,83 @@ public class Widget {
             return Widget.this;
         }
     }
+
+
+    /**
+     * Apply {@link Layout}
+     * @param layout {@link Layout}
+     * @return true if layout has been applied successfully , false - otherwise
+     */
+    public boolean applyLayout(final Layout layout) {
+        boolean applied = false;
+        if (!mLayouts.contains(layout) && isValidLayout(layout)) {
+            layout.onLayoutApplied(this, mViewPort);
+            mLayouts.add(layout);
+            requestLayout();
+            applied = true;
+        }
+        return applied;
+    }
+
+    /**
+     * Remove the layout {@link Layout} from the chain
+     * @param layout {@link Layout}
+     * @return true if layout has been removed successfully , false - otherwise
+     */
+    public boolean removeLayout(final Layout layout) {
+        boolean removed = mLayouts.remove(layout);
+        requestLayout();
+        return removed;
+    }
+
+    private Vector3Axis mViewPort;
+    public void setViewPort(final float viewportWidth,
+                            final float viewportHeight,
+                            final float viewportDepth) {
+        mViewPort = new Vector3Axis(viewportWidth, viewportHeight, viewportDepth);
+        for (Layout layout: mLayouts) {
+            layout.onLayoutApplied(this, mViewPort);
+        }
+        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
+    }
+
+    public float getViewPort(final Layout.Axis axis) {
+        return mViewPort == null ? Float.NaN : mViewPort.get(axis);
+    }
+
+    /*
+     * Any layout is valid by default. Subclass can override the method to add new check
+     */
+    protected boolean isValidLayout(Layout layout) {
+        return true;
+    }
+
+    protected final List<Layout> mLayouts = new ArrayList<Layout>();
+
+    /**
+     * WidgetContainer default implementation
+     */
+    @Override
+    public Widget get(final int dataIndex) {
+        return null;
+    }
+
+    @Override
+    public int size() {
+        return 0;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+    @Override
+    public boolean isDynamic() {
+        return false;
+    }
+
+
 
     private final GVRSceneObject mSceneObject;
 

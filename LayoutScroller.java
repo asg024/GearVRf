@@ -36,7 +36,7 @@ public class LayoutScroller {
 
 	interface ScrollableList {
 	    int getCount();
-	    float getViewPortSize(final Axis axis);
+	    float getViewPort(final Axis axis);
 	    boolean scrollToPosition(final int pos);
 	    boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset);
 	    void registerDataSetObserver(final DataSetObserver observer);
@@ -110,11 +110,19 @@ public class LayoutScroller {
 
     public boolean fling(float velocityX, float velocityY, float velocityZ) {
         boolean scrolled = true;
+        float viewportX  = mScrollable.getViewPort(Axis.X);
+        if (Float.isNaN(viewportX)) {
+            viewportX = 0;
+        }
         float maxX = Math.min(MAX_SCROLLING_DISTANCE,
-                mScrollable.getViewPortSize(Axis.X) * MAX_VIEWPORT_LENGTHS);
+                viewportX * MAX_VIEWPORT_LENGTHS);
 
+        float viewportY  = mScrollable.getViewPort(Axis.Y);
+        if (Float.isNaN(viewportY)) {
+            viewportY = 0;
+        }
         float maxY = Math.min(MAX_SCROLLING_DISTANCE,
-                mScrollable.getViewPortSize(Axis.Y) * MAX_VIEWPORT_LENGTHS);
+                viewportY * MAX_VIEWPORT_LENGTHS);
 
         float xOffset = (maxX * velocityX)/VELOCITY_MAX;
         float yOffset = (maxY * velocityY)/VELOCITY_MAX;
