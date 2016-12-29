@@ -2350,7 +2350,10 @@ public class Widget {
     }
 
     private boolean doOnTouch() {
-        for (OnTouchListener listener : mTouchListeners) {
+        OnTouchListener[] listenersCopy = new OnTouchListener[mTouchListeners.size()];
+        mTouchListeners.toArray(listenersCopy);
+
+        for (OnTouchListener listener : listenersCopy) {
             if (listener.onTouch(this)) {
                 return true;
             }
