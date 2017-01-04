@@ -248,7 +248,7 @@ public class BoundingBox {
     private BoundingBox transform(BoundingBox boundingBox, Matrix4f matrix) {
         boundingBox.clear();
         for (Vector3f v : boundingBox.mVertices) {
-            v.mulPoint(matrix);
+            v.mulPosition(matrix);
             boundingBox.expand(v);
         }
         return boundingBox;
