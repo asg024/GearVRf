@@ -14,6 +14,7 @@ import org.gearvrf.animation.GVROnFinish;
 import android.database.DataSetObserver;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Layout.Direction;
@@ -636,9 +637,12 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                     if (mScrollByOffset.isNaN()) {
                         force = pos == mScrollToPosition;
                     } else {
-                        force = (mScrollByOffset.get(Axis.X) == 0 || Float.isNaN(mScrollByOffset.get(Axis.X))) &&
-                                (mScrollByOffset.get(Axis.Y) == 0 || Float.isNaN(mScrollByOffset.get(Axis.Y))) &&
-                                (mScrollByOffset.get(Axis.Z) == 0 || Float.isNaN(mScrollByOffset.get(Axis.Z)));
+                        force = (Utility.equal(mScrollByOffset.get(Axis.X), 0) ||
+                                    Float.isNaN(mScrollByOffset.get(Axis.X))) &&
+                                (Utility.equal(mScrollByOffset.get(Axis.Y), 0) ||
+                                    Float.isNaN(mScrollByOffset.get(Axis.Y))) &&
+                                (Utility.equal(mScrollByOffset.get(Axis.Z), 0) ||
+                                    Float.isNaN(mScrollByOffset.get(Axis.Z)));
                     }
                     if (!force) {
                         Log.d(TAG, "finish scrolling pos = %d", pos);
