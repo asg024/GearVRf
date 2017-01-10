@@ -260,58 +260,67 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     protected OnFocusListener getOnFocusListener() {
-        return new OnFocusListener() {
-            @Override
-            public boolean onFocus(final boolean focused, final Widget widget) {
-                Log.d(TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget, focused);
-                Widget parent = widget.getParent();
-                if (parent instanceof ListItemHostWidget) {
-                    int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
-                    for (OnItemFocusListener listener : mItemFocusListeners) {
-                        listener.onFocus(dataIndex, focused);
-                    }
-                } else {
-                    Log.d(TAG, "Focused widget is not a list item!");
-                }
-                return false;
-            }
-
-            @Override
-            public boolean onLongFocus(Widget widget) {
-                Log.d(TAG, "onLongFocus(%s) widget= %s", getName(), widget.getName());
-                Widget parent = widget.getParent();
-                if (parent instanceof ListItemHostWidget) {
-                    int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
-                    for (OnItemFocusListener listener : mItemFocusListeners) {
-                        listener.onLongFocus(dataIndex);
-                    }
-                } else {
-                    Log.d(TAG, "Long focused widget is not a list item!");
-                }
-                return false;
-            }
-        };
+        return mOnFocusListener;
     }
 
     protected OnTouchListener getOnTouchListener() {
-        return new OnTouchListener() {
-            @Override
-            public boolean onTouch(Widget widget) {
-                Log.d(TAG, "onTouch(%s) widget= %s ", getName(), widget);
-                Widget parent = widget.getParent();
-                if (parent instanceof ListItemHostWidget) {
-                    int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
-                    for (OnItemTouchListener listener : mItemTouchListeners) {
-                        listener.onTouch(dataIndex);
-                    }
-                } else {
-                    Log.d(TAG, "onTouch widget is not a list item!");
-                }
-                return false;
-            }
-        };
+        return mOnTouchListener;
     }
 
+
+    private OnFocusListener mOnFocusListener = new OnFocusListener() {
+        @Override
+        public boolean onFocus(final boolean focused, final Widget widget) {
+            Log.d(TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget, focused);
+            Widget parent = widget.getParent();
+            boolean ret = false;
+            if (parent instanceof ListItemHostWidget) {
+                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                for (OnItemFocusListener listener : mItemFocusListeners) {
+                    listener.onFocus(dataIndex, focused);
+                }
+                ret = true;
+            } else {
+                Log.d(TAG, "Focused widget is not a list item!");
+            }
+            return ret;
+        }
+
+        @Override
+        public boolean onLongFocus(Widget widget) {
+            Log.d(TAG, "onLongFocus(%s) widget= %s", getName(), widget.getName());
+            Widget parent = widget.getParent();
+            boolean ret = false;
+            if (parent instanceof ListItemHostWidget) {
+                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                for (OnItemFocusListener listener : mItemFocusListeners) {
+                    listener.onLongFocus(dataIndex);
+                }
+                ret = true;
+            } else {
+                Log.d(TAG, "Long focused widget is not a list item!");
+            }
+            return ret;
+        }
+    };
+
+
+    private OnTouchListener mOnTouchListener = new OnTouchListener() {
+        @Override
+        public boolean onTouch(Widget widget) {
+            Log.d(TAG, "onTouch(%s) widget= %s ", getName(), widget);
+            Widget parent = widget.getParent();
+            if (parent instanceof ListItemHostWidget) {
+                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                for (OnItemTouchListener listener : mItemTouchListeners) {
+                    listener.onTouch(dataIndex);
+                }
+            } else {
+                Log.d(TAG, "onTouch widget is not a list item!");
+            }
+            return false;
+        }
+    };
 
     /**
      * Set the {@link Adapter} for the {@code ListLayout}. The list will
