@@ -954,16 +954,68 @@ public class Widget  implements Layout.WidgetContainer {
         setTexture(mContext.loadFutureTexture(resource));
     }
 
+    /**
+     * This group of methods get the mesh size of the widget
+     */
     public float getWidth() {
         return getBoundingBoxInternal().getWidth();
     }
-
     public float getHeight() {
         return getBoundingBoxInternal().getHeight();
     }
-
     public float getDepth() {
         return getBoundingBoxInternal().getDepth();
+    }
+
+    public float getLayoutWidth() { return getBoundsWidth(); }
+    public float getLayoutHeight() {
+        return getBoundsHeight();
+    }
+    public float getLayoutDepth() {
+        return getBoundsDepth();
+    }
+
+    public float getBoundsWidth() {
+        return getBoundingBox(true).getWidth();
+    }
+    public float getBoundsHeight() {
+        return getBoundingBox(true).getHeight();
+    }
+    public float getBoundsDepth() {
+        return getBoundingBox(true).getDepth();
+    }
+
+    /**
+     * This group of methods set/get the viewport size of the widget
+     */
+    private Vector3Axis mViewPort;
+
+    public float getViewPortWidth() {return mViewPort.get(Layout.Axis.X);}
+    public float getViewPortHeight() {return mViewPort.get(Layout.Axis.Y);}
+    public float getViewPortDepth() {return mViewPort.get(Layout.Axis.Z);}
+
+    public void setViewPortWidth(float viewPortWidth) {
+        mViewPort.set(viewPortWidth, Layout.Axis.X);
+        for (Layout layout: mLayouts) {
+            layout.onLayoutApplied(this, mViewPort);
+        }
+        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
+    }
+
+    public void setViewPortHeight(float viewPortHeight) {
+        mViewPort.set(viewPortHeight, Layout.Axis.Y);
+        for (Layout layout: mLayouts) {
+            layout.onLayoutApplied(this, mViewPort);
+        }
+        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
+    }
+
+    public void setViewPortDepth(float viewPortDepth) {
+        mViewPort.set(viewPortDepth, Layout.Axis.Z);
+        for (Layout layout: mLayouts) {
+            layout.onLayoutApplied(this, mViewPort);
+        }
+        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
     }
 
     /**
@@ -2681,7 +2733,7 @@ public class Widget  implements Layout.WidgetContainer {
         return json;
     }
 
-    private void setupMetadata() throws JSONException, NoSuchMethodException {
+    protected void setupMetadata() throws JSONException, NoSuchMethodException {
         JSONObject metaData = getObjectMetadata();
         if (metaData != null) {
             Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
@@ -2844,21 +2896,6 @@ public class Widget  implements Layout.WidgetContainer {
         boolean removed = mLayouts.remove(layout);
         requestLayout();
         return removed;
-    }
-
-    private Vector3Axis mViewPort;
-    public void setViewPort(final float viewportWidth,
-                            final float viewportHeight,
-                            final float viewportDepth) {
-        mViewPort = new Vector3Axis(viewportWidth, viewportHeight, viewportDepth);
-        for (Layout layout: mLayouts) {
-            layout.onLayoutApplied(this, mViewPort);
-        }
-        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
-    }
-
-    public float getViewPort(final Layout.Axis axis) {
-        return mViewPort == null ? Float.NaN : mViewPort.get(axis);
     }
 
     /*

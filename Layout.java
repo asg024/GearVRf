@@ -139,13 +139,13 @@ abstract public class Layout {
         if (child != null) {
             switch (axis) {
                 case X:
-                    size = child.getWidth();
+                    size = child.getLayoutWidth();
                     break;
                 case Y:
-                    size = child.getHeight();
+                    size = child.getLayoutHeight();
                     break;
                 case Z:
-                    size = child.getDepth();
+                    size = child.getLayoutDepth();
                     break;
                 default:
                     throw new RuntimeAssertion("Bad axis specified: %s", axis);

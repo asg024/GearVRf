@@ -1,17 +1,29 @@
 package com.samsung.smcl.vr.widgets;
 
+import org.gearvrf.GVRBitmapTexture;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
+import org.gearvrf.GVRTexture;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 
 import com.samsung.smcl.utility.Log;
 
 import java.util.List;
+
+import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getInt;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.has;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optBoolean;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
 
 /**
  * A basic Button widget.
@@ -24,6 +36,15 @@ import java.util.List;
  */
 public class Button extends Widget implements TextContainer {
 
+    public Button(GVRContext context, float width, float height,
+                  float textWidgetWidth, float textWidgetHeight) {
+        super(context, width, height);
+        init();
+
+        mTextWidgetWidth = textWidgetWidth;
+        mTextWidgetHeight = textWidgetHeight;
+    }
+
     public Button(GVRContext context, float width, float height) {
         super(context, width, height);
         init();
@@ -33,6 +54,20 @@ public class Button extends Widget implements TextContainer {
             NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
         init();
+    }
+
+    private enum ButtonProperties {
+        textWidgetWidth, textWidgetHeight;
+    }
+
+    @Override
+    protected void setupMetadata() throws JSONException, NoSuchMethodException {
+        super.setupMetadata();
+        JSONObject metaData = getObjectMetadata();
+        if (metaData != null) {
+            mTextWidgetWidth = getInt(metaData, ButtonProperties.textWidgetWidth);
+            mTextWidgetHeight = getInt(metaData, ButtonProperties.textWidgetHeight);
+        }
     }
 
     public Button(GVRContext context, GVRSceneObject sceneObject) {
@@ -208,7 +243,7 @@ public class Button extends Widget implements TextContainer {
             mGraphic = createGraphicWidget();
             if (mGraphic != null) {
                 mGraphic.setName(".graphic");
-                addChildInner(mGraphic, mGraphic.getSceneObject(), 0);
+                addChildInner(mGraphic, mGraphic.getSceneObject(), -1);
                 for (Layout layout: mLayouts) {
                     layout.invalidate();
                 }
@@ -217,13 +252,21 @@ public class Button extends Widget implements TextContainer {
         }
     }
 
+    protected float getTextWidgetWidth() {
+        return mTextWidgetWidth;
+    }
+
+    protected float getTextWidgetHeight() {
+        return mTextWidgetHeight;
+    }
+
     private void createTextWidget() {
         runOnGlThread(new Runnable() {
             @Override
             public void run() {
                 Log.d(TAG, "createTextWidget(%s)", getName());
                 final TextWidget textWidget = new TextWidget(getGVRContext(),
-                        getWidth(), getHeight());
+                        getTextWidgetWidth(), getTextWidgetHeight());
                 Log.d(TAG, "createTextWidget(%s): setting rendering order",
                       getName());
                 textWidget.setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
@@ -232,8 +275,9 @@ public class Button extends Widget implements TextContainer {
                 textWidget.setName(".text");
                 Log.d(TAG, "createTextWidget(%s): setting params", getName());
                 textWidget.setTextParams(mTextContainer);
+
                 mTextContainer = textWidget;
-                addChildInner(textWidget, textWidget.getSceneObject(), -1);
+                addChildInner(textWidget, textWidget.getSceneObject(), 0);
                 Log.d(TAG, "createTextWidget(%s): requesting layout", getName());
 
                 for (Layout layout: mLayouts) {
@@ -246,6 +290,9 @@ public class Button extends Widget implements TextContainer {
 
 
     private void init() {
+        mTextWidgetWidth = getWidth();
+        mTextWidgetHeight = getHeight();
+
         setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
 
         setChildrenFollowFocus(true);
@@ -271,7 +318,13 @@ public class Button extends Widget implements TextContainer {
     private TextContainer mTextContainer = new TextWidget.TextParams();
     private Widget mGraphic;
 
-    private final OrientedLayout sDefaultLayout = new LinearLayout();
+    private final OrientedLayout sDefaultLayout = new LinearLayout() {
+        @Override
+        protected int getOffsetSign() {
+            return -1;
+        }
+    };
 
     private static final String TAG = Button.class.getSimpleName();
+    private float mTextWidgetWidth, mTextWidgetHeight;
 }

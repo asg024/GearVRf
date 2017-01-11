@@ -277,7 +277,7 @@ public class GridLayout extends OrientedLayout {
         protected boolean postMeasurement() {
             boolean ret = true;
             for (int i = mCaches.size(); --i >=0; ) {
-                ret = ret && postMeasurement(mCaches.valueAt(i));
+                ret = postMeasurement(mCaches.valueAt(i)) && ret;
             }
             return ret;
         }
