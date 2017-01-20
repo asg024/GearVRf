@@ -5,6 +5,8 @@ import java.util.List;
 import org.joml.Vector3f;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.Utility;
+
 /**
  * A Layout that arranges its children in a single column or a single row. The direction of the row can be
  * set by calling setOrientation(). The default orientation is horizontal. The alignment of all items can
@@ -692,11 +694,11 @@ public class LinearLayout extends OrientedLayout {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setPosition [%s], position = [%f], factor = [%s]",
                   child.getName(), position, factor);
 
-        if (factor.x != 0) {
+        if (!Utility.equal(factor.x, 0)) {
             child.setPositionX(position);
-        } else if (factor.y != 0) {
+        } else if (!Utility.equal(factor.y, 0)) {
             child.setPositionY(position);
-        } else if (factor.z != 0) {
+        } else if (!Utility.equal(factor.z, 0)) {
             child.setPositionZ(position);
         }
 

@@ -1,10 +1,14 @@
 package com.samsung.smcl.vr.widgets;
 
+import android.support.annotation.NonNull;
+
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRTransform;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+
+import java.util.Arrays;
 
 /**
  * The geometry represented by {@code BoundingBox} is axis-aligned, i.e., the
@@ -92,33 +96,48 @@ public class BoundingBox {
     }
 
     /**
-     * Expands the bounding box as necessary to encompass the minimum and
-     * maximum corners of {@code rhs}.
-     * 
-     * @param rhs
-     *            The bounding box to encompass.
+     * Adds the vertices of {@code rhs} and expands the bounding box as necessary to encompass the
+     * minimum and maximum corners of {@code rhs}.
+     *
+     * @param rhs The bounding box to encompass.
      */
     public void expand(final BoundingBox rhs) {
         if (rhs != this) {
-            expand(rhs.mMinCorner);
-            expand(rhs.mMaxCorner);
+            expand(rhs.mVertices);
         }
     }
 
     /**
-     * Expands the bounding box as necessary to encompass {@code vertex}.
+     * Expands the bounding box as necessary to encompass {@code vertices}.
      * 
-     * @param vertex
-     *            The vertex to encompass.
+     * @param vertices
+     *            The vertices to encompass.
      */
-    public void expand(Vector3f vertex) {
-        mMinCorner.min(vertex);
-        mMaxCorner.max(vertex);
+    public void expand(final Vector3f... vertices) {
+        mVertices = appendArrays(mVertices, vertices);
 
-        Vector3f temp = new Vector3f(mMinCorner);
-        mCenter = temp.add(mMaxCorner).mul(.5f);
-        temp.set(mMaxCorner);
-        mRadius = temp.sub(mMinCorner).length() * .5f;
+        for (Vector3f vertex : vertices) {
+            mMinCorner.min(vertex);
+            mMaxCorner.max(vertex);
+
+            Vector3f temp = new Vector3f(mMinCorner);
+            mCenter = new Vector3f(mMinCorner.x + (mMaxCorner.x - mMinCorner.x) * .5f,
+                    mMinCorner.y + (mMaxCorner.y - mMinCorner.y) * .5f,
+                    mMinCorner.z + (mMaxCorner.z - mMinCorner.z) * .5f);
+            temp.set(mMaxCorner);
+            mRadius = temp.sub(mMinCorner).length() * .5f;
+        }
+    }
+
+    @NonNull
+    private Vector3f[] appendArrays(Vector3f[] lhs, Vector3f... rhs) {
+        int startLen = lhs.length;
+        int newLen = startLen + rhs.length;
+        final Vector3f[] newVertices = Arrays.copyOf(lhs, newLen);
+        for (int i = startLen, j = 0; i < newLen && j < rhs.length; ++i, ++j) {
+            newVertices[i] = rhs[j];
+        }
+        return newVertices;
     }
 
     /**

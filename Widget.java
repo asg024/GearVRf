@@ -960,17 +960,23 @@ public class Widget  implements Layout.WidgetContainer {
     public float getWidth() {
         return getBoundingBoxInternal().getWidth();
     }
+
     public float getHeight() {
         return getBoundingBoxInternal().getHeight();
     }
+
     public float getDepth() {
         return getBoundingBoxInternal().getDepth();
     }
 
-    public float getLayoutWidth() { return getBoundsWidth(); }
+    public float getLayoutWidth() {
+        return getBoundsWidth();
+    }
+
     public float getLayoutHeight() {
         return getBoundsHeight();
     }
+
     public float getLayoutDepth() {
         return getBoundsDepth();
     }
@@ -978,9 +984,11 @@ public class Widget  implements Layout.WidgetContainer {
     public float getBoundsWidth() {
         return getBoundingBox(true).getWidth();
     }
+
     public float getBoundsHeight() {
         return getBoundingBox(true).getHeight();
     }
+
     public float getBoundsDepth() {
         return getBoundingBox(true).getDepth();
     }
@@ -990,9 +998,17 @@ public class Widget  implements Layout.WidgetContainer {
      */
     private Vector3Axis mViewPort;
 
-    public float getViewPortWidth() {return mViewPort.get(Layout.Axis.X);}
-    public float getViewPortHeight() {return mViewPort.get(Layout.Axis.Y);}
-    public float getViewPortDepth() {return mViewPort.get(Layout.Axis.Z);}
+    public float getViewPortWidth() {
+        return mViewPort.get(Layout.Axis.X);
+    }
+
+    public float getViewPortHeight() {
+        return mViewPort.get(Layout.Axis.Y);
+    }
+
+    public float getViewPortDepth() {
+        return mViewPort.get(Layout.Axis.Z);
+    }
 
     public void setViewPortWidth(float viewPortWidth) {
         mViewPort.set(viewPortWidth, Layout.Axis.X);
@@ -1031,7 +1047,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return A {@link BoundingBox} that contains the {@code Widget}.
      */
     public BoundingBox getBoundingBox() {
-        return getBoundingBox(false);
+        return new BoundingBox(getBoundingBoxInternal());
     }
 
     /**
@@ -1050,9 +1066,9 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public BoundingBox getBoundingBox(boolean includeChildren) {
         if (includeChildren) {
-            return expandBoundingBox(new BoundingBox(this));
+            return expandBoundingBox(getBoundingBox());
         }
-        return new BoundingBox(getBoundingBoxInternal());
+        return getBoundingBox();
     }
 
     /**
@@ -2164,6 +2180,10 @@ public class Widget  implements Layout.WidgetContainer {
     /* package */
     boolean addChildInner(final Widget child,
             final GVRSceneObject childRootSceneObject, int index) {
+        if (child == this || child.getSceneObject() == getSceneObject()) {
+            Log.e(TAG, "Attempted to add widget '%s' to itself!", getName());
+            throw RuntimeAssertion("Attempted to add widget '%s' to itself!", getName());
+        }
         final boolean added = mChildren.indexOf(child) == -1;
         if (added) {
             Widget parent = child.getParent();
@@ -2527,9 +2547,13 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private BoundingBox expandBoundingBox(final BoundingBox boundingBox) {
-        boundingBox.expand(getBoundingBoxInternal());
         for (Widget child : mChildren) {
-            child.expandBoundingBox(boundingBox);
+            BoundingBox bbc = child.getBoundingBox(true);
+            // Transform actually places child in the coordinate space of this Widget's parent,
+            // which is where this Widget is placed
+            bbc = bbc.transform(this);
+            // Now that child is in same coordinate space, expand
+            boundingBox.expand(bbc);
         }
         return boundingBox;
     }
