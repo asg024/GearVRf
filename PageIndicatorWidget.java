@@ -1,129 +1,141 @@
 package com.samsung.smcl.vr.widgets;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
-import org.gearvrf.GVRAndroidResource;
-import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
-import org.gearvrf.GVRTexture;
-
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.vr.widgets.Layout.Axis;
 
-public class PageIndicatorWidget extends GroupWidget {
-    private static final int DEFAULT_STATE = 0;
-    private int mCheckedChildIndex = -1;
+import org.gearvrf.GVRContext;
 
-    public PageIndicatorWidget(GVRContext context, GVRSceneObject sceneObject,
-            int[] resIds, float padding, int numIndicators, int defaultPageNumber, int textureId,
-            OnTouchListener listener, float indicatorWidth,
-            float indicatorHeight) {
-        super(context, sceneObject);
-        LinearLayout layout = new LinearLayout();
-        layout.setDividerPadding(padding, Axis.X);
-        applyLayout(layout);
-        addIndicatorChildren(context, resIds, numIndicators, listener,
-                indicatorWidth, indicatorHeight);
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-        // TODO: this is needed otherwise the children won't get onTouch
-        // Yes, we need to fix this.
-        setTouchable(false);
+public class PageIndicatorWidget extends CheckableGroup {
+    private Set<OnPageScrollListener> mListeners = new LinkedHashSet<OnPageScrollListener>();
 
-        setCheckedId(defaultPageNumber, textureId);
+    private float mPageIndicatorButtonWidth,  mPageIndicatorButtonHeight;
+    private int mCurrentPage;
+    private static final String TAG = PageIndicatorWidget.class.getSimpleName();
+    private final int mDefaultPage;
+
+    public interface OnPageScrollListener {
+        void onScrollTo(final int pageId);
     }
 
-    public void setCheckedId(int index, int textureId) {
-        if (mCheckedChildIndex != index - 1) {
-            clearCheck();
-            mCheckedChildIndex = index - 1;
-            ButtonWidget child = (ButtonWidget) this.getChildren().get(
-                    mCheckedChildIndex);
-            if (child != null) {
-                child.setState(textureId);
+    public PageIndicatorWidget(GVRContext context, int numIndicators, int defaultPageId,
+                               float indicatorWidth, float indicatorHeight) {
+        super(context, 0, 0);
+
+        Log.d(TAG, "PageIndicatorWidget numIndicators = %d defaultPageId = %d", numIndicators, defaultPageId);
+        mPageIndicatorButtonWidth = indicatorWidth;
+        mPageIndicatorButtonHeight = indicatorHeight;
+        getDefaultLayout().setDividerPadding(mPageIndicatorButtonHeight / 2, Layout.Axis.Y);
+
+        addIndicatorChildren(numIndicators);
+
+        mDefaultPage = defaultPageId;
+    }
+
+    @Override
+    protected void onCreate() {
+        super.onCreate();
+        check(mDefaultPage);
+    }
+
+    private void addIndicatorChildren(int numIndicators) {
+        while (numIndicators-- > 0) {
+            PageIndicatorButton buttonWidget = new PageIndicatorButton(getGVRContext(),
+                    mPageIndicatorButtonWidth, mPageIndicatorButtonHeight);
+            addChild(buttonWidget, true);
+        }
+        requestLayout();
+    }
+
+    private void removeIndicatorChildren(int numIndicators) {
+        List<PageIndicatorButton> children = getCheckableChildren();
+        int id = children.size();
+        while (numIndicators-- > 0 && id-- > 0) {
+            removeChild(children.get(id), true);
+        }
+        requestLayout();
+    }
+
+    @Override
+    protected <T extends Widget & Checkable> void notifyOnCheckChanged(final T checkableWidget) {
+        super.notifyOnCheckChanged(checkableWidget);
+        if (checkableWidget.isChecked()) {
+            mCurrentPage = getCheckableChildren().indexOf(checkableWidget);
+            Log.d(TAG, "onCheckChanged mCurrentPage = %d", mCurrentPage);
+
+            final Object[] listeners;
+            synchronized (mListeners) {
+                listeners = mListeners.toArray();
+            }
+            for (Object listener : listeners) {
+                ((OnPageScrollListener) listener).onScrollTo(mCurrentPage);
             }
         }
     }
 
-    private void clearCheck() {
-        if (mCheckedChildIndex < 0) {
-            return;
+    public <T extends Widget & Checkable> boolean addOnPageScrollListener(OnPageScrollListener listener) {
+        final boolean added;
+        synchronized (mListeners) {
+            added = mListeners.add(listener);
         }
+        if (added) {
+            listener.onScrollTo(mCurrentPage);
+        }
+        return added;
+    }
 
-        ButtonWidget child = (ButtonWidget) this.getChildren().get(
-                mCheckedChildIndex);
-        if (child != null) {
-            child.setState(DEFAULT_STATE);
+    public boolean removeOnPageScrollListener(OnPageScrollListener listener) {
+        synchronized (mListeners) {
+            return mListeners.remove(listener);
         }
     }
 
-    private void addIndicatorChildren(GVRContext context, int[] resIds,
-            int numIndicators, OnTouchListener listener, float indicatorWidth,
-            float indicatorHeight) {
-        for (int i = 0; i < numIndicators; i++) {
-            ButtonWidget buttonWidget = new ButtonWidget(context,
-                    indicatorWidth, indicatorHeight, resIds);
-            buttonWidget.setName(Integer.toString(i));
-            buttonWidget.setTouchable(true);
-            buttonWidget.addTouchListener(listener);
-            this.addChild(buttonWidget, true);
-        }
-        if (numIndicators > 0) {
-            requestLayout();
-        }
+    public int getPageCount() {
+        return getCheckableCount();
     }
 
-    private class ButtonWidget extends Widget {
-        private int state = DEFAULT_STATE;
-        private GVRContext mContext;
-        private final String buttonWidgetTag = ButtonWidget.class
-                .getSimpleName();
-
-        private ButtonWidget(GVRContext context, final float width,
-                final float height, int[] resourceIds) {
-            super(context, width, height);
-            this.mContext = context;
-            setAllTextures(resourceIds);
+    public int setPageCount(final int num) {
+        int diff = num - getCheckableCount();
+        if (diff > 0) {
+            addIndicatorChildren(diff);
+        } else if (diff < 0) {
+            removeIndicatorChildren(diff);
         }
 
-        private void setState(int state) {
-            if (state != this.state) {
-                this.state = state;
-                final GVRTexture texture = getStateTexture();
-                if (texture != null) {
-                    getMaterial().setMainTexture(texture);
-                } else {
-                    Log.d(buttonWidgetTag,
-                            "setState(%d): something is wrong with textures",
-                            state);
-                }
+        return diff;
+    }
+
+    public int getCurrentPage() {
+        return mCurrentPage;
+    }
+
+    public boolean setCurrentPage(final int page) {
+        Log.d(TAG, "setPageId pageId = %d", page);
+        return check(page);
+    }
+
+    private class PageIndicatorButton extends CheckableButton {
+        private final String TAG = PageIndicatorButton.class.getSimpleName();
+        float iWidth, iHeight;
+
+        private PageIndicatorButton(GVRContext context, final float width,
+                                    final float height) {
+            super(context, 0, 0);
+            iWidth = width;
+            iHeight = height;
+        }
+
+        @Override
+        protected Widget createGraphicWidget() {
+            return new PageIndicatorButton.Graphic(getGVRContext(), iWidth, iHeight);
+        }
+
+        private class Graphic extends Widget {
+            Graphic(GVRContext context, float width, float height) {
+                super(context, width, height);
             }
-        }
-
-        private void setAllTextures(final int[] resourceIds) {
-            for (int i = 0; i < resourceIds.length; ++i) {
-                Future<GVRTexture> futureTexture = mContext
-                        .loadFutureTexture(new GVRAndroidResource(mContext,
-                                resourceIds[i]));
-                GVRTexture texture = null;
-                try {
-                    texture = futureTexture.get();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                }
-
-                setTexture(Integer.toString(i), texture);
-
-                if (i == DEFAULT_STATE) {
-                    setTexture(texture);
-                }
-            }
-        }
-
-        private GVRTexture getStateTexture() {
-            return getMaterial().getTexture(Integer.toString(state));
         }
     }
 }

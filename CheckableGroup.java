@@ -223,7 +223,7 @@ public class CheckableGroup extends GroupWidget {
         notifyOnCheckChanged((T) checkable);
     }
 
-    private <T extends Widget & Checkable> void notifyOnCheckChanged(final T checkableWidget) {
+    protected <T extends Widget & Checkable> void notifyOnCheckChanged(final T checkableWidget) {
         final Object[] listeners;
         synchronized (mListeners) {
             listeners = mListeners.toArray();

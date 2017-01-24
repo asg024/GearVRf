@@ -694,10 +694,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * @return view displays the data at the specified position
      */
     protected Widget getViewFromAdapter(final int index, ListItemHostWidget host) {
-        Widget widget;
-
-        widget = mAdapter.getView(index, host.getGuest(), host);
-        return widget;
+        return mAdapter == null ? null : mAdapter.getView(index, host.getGuest(), host);
     }
 
     /**
@@ -709,7 +706,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      */
     protected long getItemId(final int index) {
         long id = -1;
-        if (index < getDataCount() && index >= 0) {
+        if (index < getDataCount() && index >= 0 && mAdapter != null) {
             id =  mAdapter.getItemId(index);
         }
         return id;
@@ -1151,7 +1148,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
 
     protected int getDataCount() {
-        return mAdapter.getCount();
+        return mAdapter == null ? 0 : mAdapter.getCount();
     }
 
     protected Adapter mAdapter;
