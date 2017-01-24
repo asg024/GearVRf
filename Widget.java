@@ -572,6 +572,11 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    protected interface OnHierarchyChangedListener {
+        void onChildWidgetAdded(Widget parent, Widget child);
+        void onChildWidgetRemoved(Widget parent, Widget child);
+    }
+
     private final class FocusableImpl implements FocusManager.Focusable,
             FocusManager.LongFocusTimeout {
         /**
@@ -1918,7 +1923,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (mChanged || mLayoutRequested) {
             Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): calling onLayout", getName());
             onLayout();
-       }
+        }
 
         mLayoutRequested = false;
         mChanged = false;
@@ -2214,6 +2219,14 @@ public class Widget  implements Layout.WidgetContainer {
                       child.getName(), child.getVisibility(), child.getViewPortVisibility());
             }
             child.doOnAttached(this);
+
+            final List<OnHierarchyChangedListener> listeners;
+            synchronized (mOnHierarchyChangedListeners) {
+                listeners = new ArrayList<>(mOnHierarchyChangedListeners);
+            }
+            for (OnHierarchyChangedListener listener : listeners) {
+                listener.onChildWidgetAdded(this, child);
+            }
         }
         return added;
     }
@@ -2247,6 +2260,14 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    protected boolean addOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
+        return mOnHierarchyChangedListeners.add(listener);
+    }
+
+    protected boolean removeOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
+        return mOnHierarchyChangedListeners.remove(listener);
+    }
+
     /* package */
     Widget findChildByName(final String name) {
         final List<Widget> groups = new ArrayList<Widget>();
@@ -2261,7 +2282,233 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /* package */
-    boolean removeChild(final Widget child,
+    boolean hasChild(final Widget child) {
+        return mChildren.contains(child);
+    }
+
+    /* package */
+    int indexOfChild(final Widget child) {
+        return mChildren.indexOf(child);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, int, boolean) addChild(child, -1, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child) {
+        return addChild(child, -1, false);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, int, boolean) addChild(child, index, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child, int index) {
+        return addChild(child, index, false);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, int, boolean) addChild(child, -1, preventLayout)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(Widget child, boolean preventLayout) {
+        return addChild(child, -1, preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Overload to intercept all child adds.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(Widget child, int index, boolean preventLayout) {
+        return addChild(child, child.getSceneObject(), index, preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
+     * -1, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+                               final GVRSceneObject childRootSceneObject) {
+        return addChild(child, childRootSceneObject, -1, false);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
+     * index, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+            final GVRSceneObject childRootSceneObject, final int index) {
+        return addChild(child, childRootSceneObject, index, false);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
+     * -1, preventLayout)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
+        return addChild(child, childRootSceneObject, -1, preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one.
+     * <p>
+     * A {@link GVRSceneObject} other than the one directly managed by the child
+     * {@code Widget} can be specified as the child's root. This is useful in
+     * cases where the parent object needs to insert additional scene objects
+     * between the child and its parent.
+     * <p>
+     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
+     * relationship between the child {@code Widget} and the alternative root
+     * scene object.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+                               final GVRSceneObject childRootSceneObject, final int index,
+                               boolean preventLayout) {
+        final boolean added = addChildInner(child, childRootSceneObject, index);
+        if (added && !preventLayout) {
+            requestLayout();
+        }
+        return added;
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance. Convenience method for
+     * {@link #removeChild(Widget, boolean) removeChild(child, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(final Widget child) {
+        return removeChild(child, false);
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance. Overload to intercept all child removes.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param preventLayout
+     *            Tell the {@code Widget} whether to layout after removal.
+     * @return {@code True} if (@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(Widget child, boolean preventLayout) {
+        return removeChild(child, child.getSceneObject(), preventLayout);
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance.
+     * <p>
+     * <b>NOTE:</b> if an alternative root scene object was used to
+     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
+     * {@code Widget}, the caller must pass the alternative root to this method.
+     * Otherwise there may be dangling scene objects. It is the responsibility
+     * of the caller to keep track of the relationship between the child
+     * {@code Widget} and the alternative root scene object.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param childRootSceneObject
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(final Widget child,
+                                  final GVRSceneObject childRootSceneObject) {
+        return removeChild(child, childRootSceneObject, false);
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance.
+     * <p>
+     * <b>NOTE:</b> if an alternative root scene object was used to
+     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
+     * {@code Widget}, the caller must pass the alternative root to this method.
+     * Otherwise there may be dangling scene objects. It is the responsibility
+     * of the caller to keep track of the relationship between the child
+     * {@code Widget} and the alternative root scene object.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param childRootSceneObject
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(final Widget child,
             final GVRSceneObject childRootSceneObject, boolean preventLayout) {
         final boolean removed = mChildren.remove(child);
         if (removed) {
@@ -2273,6 +2520,15 @@ public class Widget  implements Layout.WidgetContainer {
             }
             getSceneObject().removeChildObject(childRootSceneObject);
             child.doOnDetached();
+
+            final List<OnHierarchyChangedListener> listeners;
+            synchronized (mOnHierarchyChangedListeners) {
+                listeners = new ArrayList<>(mOnHierarchyChangedListeners);
+            }
+            for (OnHierarchyChangedListener listener : listeners) {
+                listener.onChildWidgetRemoved(this, child);
+            }
+
             if (!preventLayout) {
                 requestLayout();
             }
@@ -3046,14 +3302,14 @@ public class Widget  implements Layout.WidgetContainer {
 
     private final List<Widget> mChildren = new ArrayList<Widget>();
 
-    private final Set<OnBackKeyListener> mBackKeyListeners = new LinkedHashSet<OnBackKeyListener>();
-    private final Set<OnFocusListener> mFocusListeners = new LinkedHashSet<OnFocusListener>();
-    private final Set<OnTouchListener> mTouchListeners = new LinkedHashSet<OnTouchListener>();
+    private final Set<OnBackKeyListener> mBackKeyListeners = new LinkedHashSet<>();
+    private final Set<OnFocusListener> mFocusListeners = new LinkedHashSet<>();
+    private final Set<OnTouchListener> mTouchListeners = new LinkedHashSet<>();
+    private final Set<OnHierarchyChangedListener> mOnHierarchyChangedListeners = new LinkedHashSet<>();
 
     private OnTouchImpl mTouchHandler = new OnTouchImpl();
 
-    private static WeakReference<Thread> sGLThread = new WeakReference<Thread>(
-            null);
+    private static WeakReference<Thread> sGLThread = new WeakReference<>(null);
     private static GVRTexture sDefaultTexture;
 
     private static JSONObject sDefaultMetadata;

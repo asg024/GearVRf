@@ -12,10 +12,6 @@ import com.samsung.smcl.utility.Log;
 
 public abstract class CheckableButton extends Button implements Checkable {
 
-    public interface OnCheckChangedListener {
-        public void onCheckChanged(CheckableButton button, boolean checked);
-    }
-
     public CheckableButton(GVRContext context, float width, float height) {
         super(context, width, height);
     }
@@ -34,10 +30,12 @@ public abstract class CheckableButton extends Button implements Checkable {
         super(context, sceneObject);
     }
 
+    @Override
     public boolean addOnCheckChangedListener(OnCheckChangedListener listener) {
         return mCheckChangedListeners.add(listener);
     }
 
+    @Override
     public boolean removeOnCheckChangedListener(OnCheckChangedListener listener) {
         return mCheckChangedListeners.remove(listener);
     }

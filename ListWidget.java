@@ -798,7 +798,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                         guest == mGuestWidget);
             if (guest != mGuestWidget) {
                 if (mGuestWidget != null && mGuestWidget.getParent() == this) {
-                    removeChild(mGuestWidget, mGuestWidget.getSceneObject(), true);
+                    removeChild(mGuestWidget, true);
                 }
                 mGuestWidget = guest;
                 if (mGuestWidget != null) {

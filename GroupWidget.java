@@ -9,6 +9,10 @@ import com.samsung.smcl.utility.Log;
 
 public class GroupWidget extends Widget {
 
+    public interface OnHierarchyChangedListener extends Widget.OnHierarchyChangedListener {
+
+    }
+
     /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
      *
@@ -39,6 +43,14 @@ public class GroupWidget extends Widget {
         super(context, width, height);
     }
 
+    public boolean addOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
+        return super.addOnHierarchyChangedListener(listener);
+    }
+
+    public boolean removeOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
+        return super.removeOnHierarchyChangedListener(listener);
+    }
+
     /**
      * Add another {@link Widget} as a child of this one.
      *
@@ -47,8 +59,9 @@ public class GroupWidget extends Widget {
      * @return {@code True} if {@code child} was added; {@code false} if
      *         {@code child} was previously added to this instance.
      */
+    @Override
     public boolean addChild(final Widget child) {
-        return addChild(child, child.getSceneObject());
+        return super.addChild(child);
     }
 
     /**
@@ -61,8 +74,9 @@ public class GroupWidget extends Widget {
      * @return {@code True} if {@code child} was added; {@code false} if
      *         {@code child} was previously added to this instance.
      */
+    @Override
     public boolean addChild(final Widget child, int index) {
-        return addChild(child, child.getSceneObject(), index);
+        return super.addChild(child, index);
     }
 
     /**
@@ -75,8 +89,9 @@ public class GroupWidget extends Widget {
      * @return {@code True} if {@code child} was added; {@code false} if
      *         {@code child} was previously added to this instance.
      */
+    @Override
     public boolean addChild(Widget child, boolean preventLayout) {
-        return addChild(child, child.getSceneObject(), preventLayout);
+        return super.addChild(child, preventLayout);
     }
 
     /**
@@ -91,8 +106,19 @@ public class GroupWidget extends Widget {
      * @return {@code True} if {@code child} was added; {@code false} if
      *         {@code child} was previously added to this instance.
      */
+    @Override
     public boolean addChild(Widget child, int index, boolean preventLayout) {
-        return addChild(child, child.getSceneObject(), index, preventLayout);
+        return super.addChild(child, index, preventLayout);
+    }
+
+    @Override
+    public boolean hasChild(final Widget child) {
+        return super.hasChild(child);
+    }
+
+    @Override
+    public int indexOfChild(final Widget child) {
+        return super.indexOfChild(child);
     }
 
     /**
@@ -104,8 +130,9 @@ public class GroupWidget extends Widget {
      *         was successfully removed; {@code false} if {@code child} is not a
      *         child of this instance.
      */
+    @Override
     public boolean removeChild(final Widget child) {
-        return removeChild(child, child.getSceneObject());
+        return super.removeChild(child);
     }
 
     /**
@@ -119,8 +146,9 @@ public class GroupWidget extends Widget {
      *         was successfully removed; {@code false} if {@code child} is not a
      *         child of this instance.
      */
+    @Override
     public boolean removeChild(Widget child, boolean preventLayout) {
-        return removeChild(child, child.getSceneObject(), preventLayout);
+        return super.removeChild(child, preventLayout);
     }
 
     /**
@@ -146,161 +174,6 @@ public class GroupWidget extends Widget {
 
     public Widget getChild(int index) {
         return getChildren().get(index);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one.
-     * <p>
-     * A {@link GVRSceneObject} other than the one directly managed by the child
-     * {@code Widget} can be specified as the child's root. This is useful in
-     * cases where the parent object needs to insert additional scene objects
-     * between the child and its parent.
-     * <p>
-     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
-     * relationship between the child {@code Widget} and the alternative root
-     * scene object.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(final Widget child,
-            final GVRSceneObject childRootSceneObject) {
-        return addChild(child, childRootSceneObject, -1);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one.
-     * <p>
-     * A {@link GVRSceneObject} other than the one directly managed by the child
-     * {@code Widget} can be specified as the child's root. This is useful in
-     * cases where the parent object needs to insert additional scene objects
-     * between the child and its parent.
-     * <p>
-     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
-     * relationship between the child {@code Widget} and the alternative root
-     * scene object.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @param index
-     *            Position at which to add the child.
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(final Widget child,
-            final GVRSceneObject childRootSceneObject, final int index) {
-        return addChild(child, childRootSceneObject, index, false);
-    }
-
-    /**
-     * Remove a {@link Widget} as a child of this instance.
-     * <p>
-     * <b>NOTE:</b> if an alternative root scene object was used to
-     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
-     * {@code Widget}, the caller must pass the alternative root to this method.
-     * Otherwise there may be dangling scene objects. It is the responsibility
-     * of the caller to keep track of the relationship between the child
-     * {@code Widget} and the alternative root scene object.
-     *
-     * @param child
-     *            The {@code Widget} to remove.
-     * @param childRootSceneObject
-     * @return {@code True} if {@code child} was a child of this instance and
-     *         was successfully removed; {@code false} if {@code child} is not a
-     *         child of this instance.
-     */
-    protected boolean removeChild(final Widget child,
-            final GVRSceneObject childRootSceneObject) {
-        return removeChild(child, childRootSceneObject, false);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one.
-     * <p>
-     * A {@link GVRSceneObject} other than the one directly managed by the child
-     * {@code Widget} can be specified as the child's root. This is useful in
-     * cases where the parent object needs to insert additional scene objects
-     * between the child and its parent.
-     * <p>
-     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
-     * relationship between the child {@code Widget} and the alternative root
-     * scene object.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(final Widget child,
-            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
-        return addChild(child, childRootSceneObject, -1, preventLayout);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one.
-     * <p>
-     * A {@link GVRSceneObject} other than the one directly managed by the child
-     * {@code Widget} can be specified as the child's root. This is useful in
-     * cases where the parent object needs to insert additional scene objects
-     * between the child and its parent.
-     * <p>
-     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
-     * relationship between the child {@code Widget} and the alternative root
-     * scene object.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @param index
-     *            Position at which to add the child.
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(final Widget child,
-            final GVRSceneObject childRootSceneObject, final int index,
-            boolean preventLayout) {
-        final boolean added = addChildInner(child, childRootSceneObject, index);
-        if (added && !preventLayout) {
-            requestLayout();
-        }
-        return added;
-    }
-
-    /**
-     * Remove a {@link Widget} as a child of this instance.
-     * <p>
-     * <b>NOTE:</b> if an alternative root scene object was used to
-     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
-     * {@code Widget}, the caller must pass the alternative root to this method.
-     * Otherwise there may be dangling scene objects. It is the responsibility
-     * of the caller to keep track of the relationship between the child
-     * {@code Widget} and the alternative root scene object.
-     *
-     * @param child
-     *            The {@code Widget} to remove.
-     * @param childRootSceneObject
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was a child of this instance and
-     *         was successfully removed; {@code false} if {@code child} is not a
-     *         child of this instance.
-     */
-    protected boolean removeChild(final Widget child,
-            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
-        return super.removeChild(child, childRootSceneObject, preventLayout);
     }
 
     public void clear() {
@@ -332,11 +205,13 @@ public class GroupWidget extends Widget {
      * @return
      * @throws InstantiationException
      */
+    @Override
     protected Widget createChild(final GVRContext context,
             GVRSceneObject sceneObjectChild) throws InstantiationException {
         return super.createChild(context, sceneObjectChild);
     }
 
+    @Override
     protected void createChildren(final GVRContext context,
             final GVRSceneObject sceneObject) throws InstantiationException {
         super.createChildren(context, sceneObject);
