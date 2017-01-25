@@ -197,8 +197,14 @@ public class CheckableGroup extends GroupWidget {
         }
 
         mProtectFromCheckChanged = true;
-        if (!mAllowMultiCheck) {
-            clearChecks();
+        if (!mAllowMultiCheck && checkable.isChecked()) {
+            List<T> children = getCheckableChildren();
+            for (Widget w : children) {
+                Checkable c = (Checkable) w;
+                if (c != checkable) {
+                    c.setChecked(false);
+                }
+            }
         }
         mProtectFromCheckChanged = false;
 
@@ -206,13 +212,13 @@ public class CheckableGroup extends GroupWidget {
     }
 
     private <T extends Widget & Checkable> void notifyOnCheckChanged(final T checkableWidget) {
-        final OnCheckChangedListener[] listeners;
+        final Object[] listeners;
         synchronized (mListeners) {
-            listeners = (OnCheckChangedListener[]) mListeners.toArray();
+            listeners = mListeners.toArray();
         }
         List<T> checkableChildren = getCheckableChildren();
-        for (OnCheckChangedListener listener : listeners) {
-            listener.onCheckChanged(this, checkableWidget,
+        for (Object listener : listeners) {
+            ((OnCheckChangedListener) listener).onCheckChanged(this, checkableWidget,
                     checkableChildren.indexOf(checkableWidget));
         }
     }
