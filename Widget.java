@@ -1,16 +1,16 @@
 package com.samsung.smcl.vr.widgets;
 
-import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
-import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Color;
+import android.view.MotionEvent;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.Future;
+import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.UnmodifiableJSONObject;
+import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
+import com.samsung.smcl.vr.gvrf_launcher.MainScene;
+import com.samsung.smcl.vr.gvrf_launcher.R;
+import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRBitmapTexture;
@@ -27,17 +27,22 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.graphics.Color;
-import android.view.MotionEvent;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.Future;
 
-import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.utility.UnmodifiableJSONObject;
-import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
-import com.samsung.smcl.vr.gvrf_launcher.MainScene;
-import com.samsung.smcl.vr.gvrf_launcher.R;
-import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
+import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getInt;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.has;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optBoolean;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONArray;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONObject;
 
 public class Widget  implements Layout.WidgetContainer {
 
@@ -1875,15 +1880,20 @@ public class Widget  implements Layout.WidgetContainer {
      */
     // TODO: Should this be public?
     protected final void create() {
-        runOnGlThread(new Runnable() {
-            @Override
-            public void run() {
-                if (!mIsCreated) {
-                    doOnCreate();
-                    mIsCreated = true;
-                }
+        if (!mIsCreated) {
+            // Set the default layout if necessary
+            if (mLayouts.isEmpty()) {
+                applyLayout(getDefaultLayout(), true);
             }
-        });
+
+            runOnGlThread(new Runnable() {
+                @Override
+                public void run() {
+                    doOnCreate();
+                }
+            });
+            mIsCreated = true;
+        }
     }
 
     /**
@@ -3150,6 +3160,28 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    /**
+     * Override to provide a default layout for deriving {@link Widget Widgets}.  If no layout has
+     * been {@linkplain #applyLayout(Layout) applied} by the time {@link #create()} is called, this
+     * method will be called to provide a default layout.
+     * <p>
+     *     <strong>NOTE:</strong> this means that if <em>any</em> layout has been applied prior to
+     *     {@code create()} being called, this method will <em>not be called</em>. Therefore, if
+     *     you want to apply an layout <em>in addition</em> to the default layout, you must do so
+     *     after {@code create()} has been called ({@link #onAttached()} is a good place) <em>or</em>
+     *     you must add the default layout explicitly.
+     * </p>
+     * <p>
+     *     The default layout is handled this way because in the most common case a user applying a
+     *     custom layout wants to use it <em>instead</em> of the default and will set the layout
+     *     at construction or at least prior to attaching to a parent; we don't want the user
+     *     to have to explicitly remove the default layout in this case.
+     * </p>
+     * @return An instance derived from {@link Layout} or {@code null}.
+     */
+    public Layout getDefaultLayout() {
+        return null;
+    }
 
     /**
      * Apply {@link Layout}
@@ -3157,11 +3189,27 @@ public class Widget  implements Layout.WidgetContainer {
      * @return true if layout has been applied successfully , false - otherwise
      */
     public boolean applyLayout(final Layout layout) {
+        return applyLayout(layout, false);
+    }
+
+    /**
+     * Apply the specified {@link Layout}. Optionally, a call to {@link #requestLayout()} can be
+     * prevented.
+     *
+     * @param layout
+     *          The {@code Layout} to apply
+     * @param preventLayout
+     *          {@code True} to prevent {@link #requestLayout()} from being called automatically.
+     * @return {@code True} if the layout has been applied successfully, {@code false} otherwise.
+     */
+    public boolean applyLayout(Layout layout, boolean preventLayout) {
         boolean applied = false;
-        if (!mLayouts.contains(layout) && isValidLayout(layout)) {
+        if (layout != null && !mLayouts.contains(layout) && isValidLayout(layout)) {
             layout.onLayoutApplied(this, mViewPort);
             mLayouts.add(layout);
-            requestLayout();
+            if (!preventLayout) {
+                requestLayout();
+            }
             applied = true;
         }
         return applied;
@@ -3185,7 +3233,7 @@ public class Widget  implements Layout.WidgetContainer {
         return true;
     }
 
-    protected final List<Layout> mLayouts = new ArrayList<Layout>();
+    protected final List<Layout> mLayouts = new ArrayList<>();
 
     /**
      * WidgetContainer default implementation

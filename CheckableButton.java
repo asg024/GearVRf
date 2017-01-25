@@ -14,20 +14,23 @@ public abstract class CheckableButton extends Button implements Checkable {
 
     public CheckableButton(GVRContext context, float width, float height) {
         super(context, width, height);
+        init();
     }
 
     public CheckableButton(GVRContext context, GVRSceneObject sceneObject,
-            NodeEntry attributes) throws InstantiationException {
+                           NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
         String attr = attributes.getProperty("checked");
         setChecked(attr != null && attr.compareToIgnoreCase("false") == 0);
 
         final JSONObject metaData = getObjectMetadata();
         setChecked(metaData.optBoolean("checked"));
+        init();
     }
 
     public CheckableButton(GVRContext context, GVRSceneObject sceneObject) {
         super(context, sceneObject);
+        init();
     }
 
     @Override
@@ -72,29 +75,14 @@ public abstract class CheckableButton extends Button implements Checkable {
         setChecked(!mIsChecked);
     }
 
-    protected CheckableButton(GVRContext context, GVRMesh mesh) {
-        super(context, mesh);
+    @Override
+    public Layout getDefaultLayout() {
+        return mDefaultLayout;
     }
 
-    @Override
-    protected void onLayout() {
-        final float left = -(getWidth() / 2);
-        final float graphicOffset;
-        final Widget graphic = findChildByName(".graphic");
-        if (graphic != null) {
-            graphicOffset = graphic.getWidth();
-            graphic.setPositionX(left + (graphicOffset / 2));
-            graphic.setPositionZ(.001f);
-        } else {
-            Log.w(TAG, "onLayout(%s): graphic element is null!", getName());
-            graphicOffset = 0;
-        }
-
-        final Widget text = findChildByName(".text");
-        if (text != null) {
-            text.setPositionX((left + graphicOffset) + (text.getWidth() / 2));
-            text.setPositionZ(.002f);
-        }
+    protected CheckableButton(GVRContext context, GVRMesh mesh) {
+        super(context, mesh);
+        init();
     }
 
     @Override
@@ -113,10 +101,16 @@ public abstract class CheckableButton extends Button implements Checkable {
         return super.getState();
     }
 
+    private void init() {
+        mDefaultLayout.setGravity(LinearLayout.Gravity.LEFT);
+    }
+
     private boolean mIsChecked;
     private boolean mIsBroadcasting;
 
     private final Set<OnCheckChangedListener> mCheckChangedListeners = new LinkedHashSet<OnCheckChangedListener>();
+
+    private final LinearLayout mDefaultLayout = new LinearLayout();
 
     private static final String TAG = CheckableButton.class.getSimpleName();
 }

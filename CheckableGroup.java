@@ -22,6 +22,7 @@ public class CheckableGroup extends GroupWidget {
 
     public CheckableGroup(GVRContext context, GVRSceneObject sceneObject) {
         super(context, sceneObject);
+        init();
     }
 
     public CheckableGroup(GVRContext context, GVRSceneObject sceneObject, NodeEntry attributes)
@@ -32,10 +33,12 @@ public class CheckableGroup extends GroupWidget {
             int checkedIndex = Integer.parseInt(attr);
             check(checkedIndex);
         }
+        init();
     }
 
     public CheckableGroup(GVRContext context, float width, float height) {
         super(context, width, height);
+        init();
     }
 
     @Override
@@ -45,6 +48,11 @@ public class CheckableGroup extends GroupWidget {
             ((Checkable) child).addOnCheckChangedListener(mCheckChangedListener);
         }
         return added;
+    }
+
+    @Override
+    public Layout getDefaultLayout() {
+        return mDefaultLayout;
     }
 
     @Override
@@ -191,6 +199,10 @@ public class CheckableGroup extends GroupWidget {
         return false;
     }
 
+    private void init() {
+        mDefaultLayout.setOrientation(OrientedLayout.Orientation.VERTICAL);
+    }
+
     private <T extends Widget & Checkable> void onCheckChanged(Checkable checkable) {
         if (mProtectFromCheckChanged) {
             return;
@@ -231,6 +243,7 @@ public class CheckableGroup extends GroupWidget {
     private Set<OnCheckChangedListener> mListeners = new LinkedHashSet<>();
     private LinkedHashSet<Checkable> mCheckableChildren = new LinkedHashSet<>();
     private boolean mProtectFromCheckChanged;
+    private LinearLayout mDefaultLayout = new LinearLayout();
 
     private Checkable.OnCheckChangedListener mCheckChangedListener = new Checkable.OnCheckChangedListener() {
         @Override

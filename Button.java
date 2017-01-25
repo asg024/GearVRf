@@ -1,17 +1,13 @@
 package com.samsung.smcl.vr.widgets;
 
-import org.gearvrf.GVRBitmapTexture;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
-import org.gearvrf.GVRTexture;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 
@@ -21,7 +17,6 @@ import java.util.List;
 
 import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.getInt;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.has;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optBoolean;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
 
@@ -54,6 +49,24 @@ public class Button extends Widget implements TextContainer {
             NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
         init();
+
+        int width = getDimensionAttribute(attributes, ButtonProperties.textWidgetWidth);
+        if (width >= 0) {
+            mTextWidgetWidth = width;
+        }
+        int height = getDimensionAttribute(attributes, ButtonProperties.textWidgetHeight);
+        if (height >= 0) {
+            mTextWidgetHeight = height;
+        }
+    }
+
+    private int getDimensionAttribute(NodeEntry attributes, ButtonProperties property) {
+        int dimension = -1;
+        final String attr = attributes.getProperty(property);
+        if (attr != null) {
+            dimension = Integer.parseInt(attr);
+        }
+        return dimension;
     }
 
     private enum ButtonProperties {
@@ -300,13 +313,13 @@ public class Button extends Widget implements TextContainer {
         setChildrenFollowState(true);
 
         // setup default layout
-        sDefaultLayout.setOrientation(OrientedLayout.Orientation.STACK);
-        sDefaultLayout.setDividerPadding(0.025f, Layout.Axis.Z);
-        applyLayout(sDefaultLayout);
+        mDefaultLayout.setOrientation(OrientedLayout.Orientation.STACK);
+        mDefaultLayout.setDividerPadding(0.025f, Layout.Axis.Z);
     }
 
+    @Override
     public Layout getDefaultLayout() {
-        return sDefaultLayout;
+        return mDefaultLayout;
     }
 
     private static class Graphic extends Widget {
@@ -318,7 +331,7 @@ public class Button extends Widget implements TextContainer {
     private TextContainer mTextContainer = new TextWidget.TextParams();
     private Widget mGraphic;
 
-    private final OrientedLayout sDefaultLayout = new LinearLayout() {
+    private final OrientedLayout mDefaultLayout = new LinearLayout() {
         @Override
         protected int getOffsetSign() {
             return -1;
