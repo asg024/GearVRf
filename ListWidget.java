@@ -332,7 +332,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * @param adapter
      *            An adapter or {@code null} to clear the list.
      */
-    protected void setAdapter(final Adapter adapter) {
+    public void setAdapter(final Adapter adapter) {
         onChanged(adapter);
     }
 

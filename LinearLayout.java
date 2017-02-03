@@ -123,6 +123,12 @@ public class LinearLayout extends OrientedLayout {
         }
     }
 
+    protected LinearLayout(final LinearLayout rhs) {
+        super(rhs);
+        mGravity = rhs.mGravity;
+        mUniformSize = rhs.mUniformSize;
+    }
+
     /**
      * Check if the layout is unlimited along the orientation axe
      */
@@ -689,7 +695,7 @@ public class LinearLayout extends OrientedLayout {
 
         float position = childOffset * factor.x +
                 childOffset * factor.y +
-                (childOffset + 0.1f) * factor.z;
+                (childOffset + getOffsetSign() * 0.025f) * factor.z;
 
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setPosition [%s], position = [%f], factor = [%s]",
                   child.getName(), position, factor);
@@ -711,6 +717,32 @@ public class LinearLayout extends OrientedLayout {
         if (child != null) {
             child.setPosition(0, 0, 0);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof LinearLayout)) return false;
+        if (!super.equals(o)) return false;
+
+        LinearLayout that = (LinearLayout) o;
+
+        if (mUniformSize != that.mUniformSize) return false;
+        return mGravity == that.mGravity;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (mUniformSize ? 1 : 0);
+        result = 31 * result + mGravity.hashCode();
+        return result;
+    }
+
+    @Override
+    protected Layout clone() {
+        return new LinearLayout(this);
     }
 
     /**

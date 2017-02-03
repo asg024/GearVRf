@@ -45,6 +45,35 @@ public class ArchLayout extends OrientedLayout {
         return super.toString() + String.format(pattern, mOrientation, mViewPort);
     }
 
+    protected ArchLayout(final ArchLayout rhs) {
+        super(rhs);
+        mRadius = rhs.mRadius;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ArchLayout)) return false;
+        if (!super.equals(o)) return false;
+
+        ArchLayout that = (ArchLayout) o;
+
+        return Float.compare(that.mRadius, mRadius) == 0;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (mRadius != +0.0f ? Float.floatToIntBits(mRadius) : 0);
+        return result;
+    }
+
+    @Override
+    protected Layout clone() {
+        return new ArchLayout(this);
+    }
+
     /**
      * Calculate the angle by arc length
      * @param arcLength

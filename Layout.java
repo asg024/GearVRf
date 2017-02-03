@@ -27,6 +27,24 @@ abstract public class Layout {
         NONE
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Layout)) return false;
+
+        Layout layout = (Layout) o;
+
+        if (mApplyViewPort != layout.mApplyViewPort) return false;
+        return mDividerPadding.equals(layout.mDividerPadding);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (mApplyViewPort ? 1 : 0);
+        result = 31 * result + mDividerPadding.hashCode();
+        return result;
+    }
+
     interface WidgetContainer {
         Widget get(final int dataIndex);
         int size();
@@ -47,11 +65,18 @@ abstract public class Layout {
     protected WidgetContainer mContainer;
     protected Set<Integer> mMeasuredChildren = new HashSet<Integer>();
 
-    protected String TAG = "Layout";
+    protected static final String TAG = Layout.class.getSimpleName();
 
     Layout() {
-        TAG = getClass().getSimpleName();
     }
+
+    protected Layout(final Layout rhs) {
+        this();
+        mApplyViewPort = rhs.mApplyViewPort;
+        mDividerPadding = rhs.mDividerPadding;
+    }
+
+    abstract protected Layout clone();
 
     /**
      * The size of the ViewPort (virtual area used by the list rendering engine)
@@ -98,7 +123,7 @@ abstract public class Layout {
     /**
      * Invalidate layout setup.
      */
-    void invalidate() {
+    public void invalidate() {
         Log.d(TAG, "invalidate all [%d]", mMeasuredChildren.size());
         mMeasuredChildren.clear();
     }

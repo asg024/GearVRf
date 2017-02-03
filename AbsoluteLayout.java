@@ -6,6 +6,10 @@ import java.util.List;
  * A layout class that leaves widgets exactly where they are placed.
  */
 public class AbsoluteLayout extends Layout {
+    public AbsoluteLayout() {
+        super();
+    }
+
     @Override
     protected float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis) {
         return getChildSize(dataIndex, axis) + getDividerPadding(axis);
@@ -46,7 +50,16 @@ public class AbsoluteLayout extends Layout {
 
     @Override
     protected float preMeasureNext(final List<Widget> measuredChildren,
-            final Axis axis, final Direction direction) {
+                                   final Axis axis, final Direction direction) {
         return 0;
+    }
+
+    protected AbsoluteLayout(final AbsoluteLayout rhs) {
+        super(rhs);
+    }
+
+    @Override
+    protected Layout clone() {
+        return new AbsoluteLayout(this);
     }
 }

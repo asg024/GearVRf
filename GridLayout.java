@@ -597,6 +597,32 @@ public class GridLayout extends OrientedLayout {
         getOrientationLayout().shiftBy(offset, axis);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GridLayout)) return false;
+        if (!super.equals(o)) return false;
+
+        GridLayout that = (GridLayout) o;
+
+        if (mRowCount != that.mRowCount) return false;
+        return mColumnCount == that.mColumnCount;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + mRowCount;
+        result = 31 * result + mColumnCount;
+        return result;
+    }
+
+    @Override
+    protected Layout clone() {
+        return new GridLayout(mRowCount, mColumnCount);
+    }
+
     private ChunkedLinearLayout getOrientationLayout() {
         return mOrientation == Orientation.VERTICAL ?
                 mColumnLayout : mRowLayout;

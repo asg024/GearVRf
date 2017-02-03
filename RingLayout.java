@@ -67,6 +67,35 @@ public class RingLayout extends LinearLayout {
         return super.toString() + String.format(pattern, mRadius);
     }
 
+    protected RingLayout(final RingLayout rhs) {
+        super(rhs);
+        mRadius = rhs.mRadius;
+    }
+
+    @Override
+    protected Layout clone() {
+        return new RingLayout(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RingLayout)) return false;
+        if (!super.equals(o)) return false;
+
+        RingLayout that = (RingLayout) o;
+
+        return Float.compare(that.mRadius, mRadius) == 0;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (mRadius != +0.0f ? Float.floatToIntBits(mRadius) : 0);
+        return result;
+    }
+
     /**
      * Calculate the angle by arc length
      *

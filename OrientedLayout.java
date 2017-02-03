@@ -1,11 +1,5 @@
 package com.samsung.smcl.vr.widgets;
 
-import android.text.style.AbsoluteSizeSpan;
-
-import java.util.List;
-
-import org.joml.Vector3f;
-
 import com.samsung.smcl.utility.Log;
 /**
  * A Layout that arranges its children oriented along x, y or z axis. The orientation can be
@@ -22,6 +16,10 @@ public abstract class OrientedLayout extends AbsoluteLayout {
      */
     public enum Orientation {
         HORIZONTAL, VERTICAL, STACK
+    }
+
+    public OrientedLayout() {
+        super();
     }
 
     /**
@@ -49,7 +47,7 @@ public abstract class OrientedLayout extends AbsoluteLayout {
      * Get the axis along the orientation
      * @return
      */
-    protected Axis getOrientationAxis() {
+    public Axis getOrientationAxis() {
         final Axis axis;
         switch(mOrientation) {
             case HORIZONTAL:
@@ -67,6 +65,30 @@ public abstract class OrientedLayout extends AbsoluteLayout {
                 break;
         }
         return axis;
+    }
+
+    protected OrientedLayout(final OrientedLayout rhs) {
+        super(rhs);
+        mOrientation = rhs.mOrientation;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof OrientedLayout)) return false;
+        if (!super.equals(o)) return false;
+
+        OrientedLayout that = (OrientedLayout) o;
+
+        return mOrientation == that.mOrientation;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + mOrientation.hashCode();
+        return result;
     }
 
     protected Orientation mOrientation = Orientation.HORIZONTAL;
