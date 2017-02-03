@@ -32,11 +32,6 @@ public class PageIndicatorWidget extends CheckableGroup {
         addIndicatorChildren(numIndicators);
 
         mDefaultPage = defaultPageId;
-    }
-
-    @Override
-    protected void onCreate() {
-        super.onCreate();
         check(mDefaultPage);
     }
 

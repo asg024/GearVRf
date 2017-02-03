@@ -2601,8 +2601,8 @@ public class Widget  implements Layout.WidgetContainer {
      */
     private synchronized final void doOnAttached(final Widget parent) {
         if (parent != mParent) {
-            create();
             mParent = parent;
+            create();
             registerPickable();
             onAttached();
         }
