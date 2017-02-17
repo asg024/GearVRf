@@ -2556,7 +2556,7 @@ public class Widget  implements Layout.WidgetContainer {
     /* package */
     // NOTE: If you find yourself wanting to make this public, don't! You're
     // either working *against* Widget or Widget needs some extending.
-    GVRSceneObject getSceneObject() {
+    public GVRSceneObject getSceneObject() {
         return mSceneObject;
     }
 
