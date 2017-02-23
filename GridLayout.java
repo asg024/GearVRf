@@ -1,5 +1,6 @@
 package com.samsung.smcl.vr.widgets;
 
+import java.util.Collection;
 import java.util.List;
 
 import android.util.SparseArray;
@@ -34,6 +35,18 @@ public class GridLayout extends OrientedLayout {
         protected SparseArray<CacheDataSet> mCaches = new SparseArray<CacheDataSet>();
         protected float mSize;
         protected boolean mForcePostMeasurement;
+
+
+        ChunkedLinearLayout() {
+            super();
+        }
+
+        ChunkedLinearLayout(ChunkedLinearLayout rhs) {
+            super(rhs);
+            mSize = rhs.mSize;
+            mForcePostMeasurement = rhs.mForcePostMeasurement;
+            mChunkBreaker = rhs.mChunkBreaker;
+        }
 
         @Override
         protected void initCache() {
@@ -327,6 +340,14 @@ public class GridLayout extends OrientedLayout {
         layoutSetup();
     }
 
+    public GridLayout(GridLayout rhs) {
+        super(rhs);
+        mRowCount = rhs.mRowCount;
+        mColumnCount = rhs.mColumnCount;
+        mRowLayout = new ChunkedLinearLayout(rhs.mRowLayout);
+        mColumnLayout = new ChunkedLinearLayout(rhs.mColumnLayout);
+    }
+
     private static final String pattern = "\nGL attributes====== orientation = %s divider_padding = %s size [%s]";
 
     /**
@@ -537,7 +558,7 @@ public class GridLayout extends OrientedLayout {
     }
 
     @Override
-    protected void measureUntilFull(int dataIndex, final List<Widget> measuredChildren) {
+    protected void measureUntilFull(int dataIndex, final Collection<Widget> measuredChildren) {
 // TODO: only left & top centralization is supported for now. Need to support center and right as well
         // no preferred position, just feed all data starting from beginning.
         super.measureUntilFull(dataIndex == -1 ? 0 : dataIndex, measuredChildren);
@@ -620,7 +641,7 @@ public class GridLayout extends OrientedLayout {
 
     @Override
     protected Layout clone() {
-        return new GridLayout(mRowCount, mColumnCount);
+        return new GridLayout(this);
     }
 
     private ChunkedLinearLayout getOrientationLayout() {

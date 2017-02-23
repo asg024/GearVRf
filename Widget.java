@@ -31,6 +31,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -2122,7 +2123,7 @@ public class Widget  implements Layout.WidgetContainer {
             return;
         }
 
-        for (Widget child : children) {
+        for (Widget child: children) {
             child.layout();
         }
 
@@ -3216,15 +3217,24 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public boolean applyLayout(Layout layout, boolean preventLayout) {
         boolean applied = false;
-        if (layout != null && !mLayouts.contains(layout) && isValidLayout(layout)) {
+        if (layout != null && isValidLayout(layout) && mLayouts.add(layout)) {
             layout.onLayoutApplied(this, mViewPort);
-            mLayouts.add(layout);
             if (!preventLayout) {
                 requestLayout();
             }
             applied = true;
         }
         return applied;
+    }
+
+    /**
+     * Check if specified {@link Layout} has been applied.
+     * @param layout
+     *          The {@code Layout} to apply
+     * @return {@code True} if the layout has been applied, {@code false} otherwise.
+     */
+    public boolean hasLayout(Layout layout) {
+        return layout != null && mLayouts.contains(layout);
     }
 
     /**
@@ -3245,7 +3255,7 @@ public class Widget  implements Layout.WidgetContainer {
         return true;
     }
 
-    protected final List<Layout> mLayouts = new ArrayList<>();
+    protected final Set<Layout> mLayouts = new HashSet<>();
 
     /**
      * WidgetContainer default implementation
@@ -3270,7 +3280,20 @@ public class Widget  implements Layout.WidgetContainer {
         return false;
     }
 
+    @Override
+    public float getWidthGuess(final int dataIndex) {
+        return Float.NaN;
+    }
 
+    @Override
+    public float getHeightGuess(final int dataIndex) {
+        return Float.NaN;
+    }
+
+    @Override
+    public float getDepthGuess(final int dataIndex) {
+        return Float.NaN;
+    }
 
     private final GVRSceneObject mSceneObject;
 

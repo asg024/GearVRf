@@ -6,34 +6,34 @@ import android.graphics.drawable.Drawable;
 
 public interface TextContainer {
 
-    public abstract Drawable getBackGround();
+    Drawable getBackGround();
 
-    public abstract int getBackgroundColor();
+    int getBackgroundColor();
 
-    public abstract int getGravity();
+    int getGravity();
 
-    public abstract IntervalFrequency getRefreshFrequency();
+    IntervalFrequency getRefreshFrequency();
 
-    public abstract CharSequence getText();
+    CharSequence getText();
 
-    public abstract int getTextColor();
+    int getTextColor();
 
-    public abstract float getTextSize();
+    float getTextSize();
 
-    public abstract String getTextString();
+    String getTextString();
 
-    public abstract void setBackGround(Drawable drawable);
+    void setBackGround(Drawable drawable);
 
-    public abstract void setBackgroundColor(int color);
+    void setBackgroundColor(int color);
 
-    public abstract void setGravity(int gravity);
+    void setGravity(int gravity);
 
-    public abstract void setRefreshFrequency(IntervalFrequency frequency);
+    void setRefreshFrequency(IntervalFrequency frequency);
 
-    public abstract void setText(CharSequence text);
+    void setText(CharSequence text);
 
-    public abstract void setTextColor(int color);
+    void setTextColor(int color);
 
-    public abstract void setTextSize(float size);
+    void setTextSize(float size);
 
 }

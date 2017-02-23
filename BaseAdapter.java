@@ -37,6 +37,24 @@ public abstract class BaseAdapter implements Adapter {
     }
 
     @Override
+    public boolean hasUniformViewSize() { return false; }
+
+    @Override
+    public float getViewWidthGuess(final int itemId) {
+        return Float.NaN;
+    }
+
+    @Override
+    public float getViewHeightGuess(final int itemId) {
+        return Float.NaN;
+    }
+
+    @Override
+    public float getViewDepthGuess(final int itemId) {
+        return Float.NaN;
+    }
+
+    @Override
     public boolean isEmpty() {
         return getCount() == 0;
     }

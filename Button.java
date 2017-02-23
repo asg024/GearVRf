@@ -277,7 +277,7 @@ public class Button extends Widget implements TextContainer {
         runOnGlThread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "createTextWidget(%s)", getName());
+                Log.d(TAG, "createTextWidget(%s) [%f, %f]", getName(), getTextWidgetWidth(), getTextWidgetHeight());
                 final TextWidget textWidget = new TextWidget(getGVRContext(),
                         getTextWidgetWidth(), getTextWidgetHeight());
                 Log.d(TAG, "createTextWidget(%s): setting rendering order",

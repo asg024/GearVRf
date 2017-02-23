@@ -62,4 +62,14 @@ public class AbsoluteLayout extends Layout {
     protected Layout clone() {
         return new AbsoluteLayout(this);
     }
+
+    @Override
+    protected float calculateWidth(int[] children) { return 0; }
+
+    @Override
+    protected float calculateHeight(int[] children) { return 0; }
+
+    @Override
+    protected float calculateDepth(int[] children) { return 0; }
+
 }

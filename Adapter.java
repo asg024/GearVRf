@@ -8,7 +8,7 @@ import android.database.DataSetObserver;
  * An version of {@link android.widget.Adapter} adapted for use with
  * {@link GVRSceneObject} as the "view".
  * <p>
- * While {@link #getView(int, GVRSceneObject, GVRSceneObject) getView()} should
+ * While {@link #getView(int, Widget, GroupWidget) getView()} should
  * only be called from the GL thread, the remaining methods should be prepared
  * to be called from any context.
  */
@@ -42,7 +42,7 @@ public interface Adapter {
 
     /**
      * Get the type of view that will be created by
-     * {@link #getView(int, GVRSceneObject, GVRSceneObject)} for the specified
+     * {@link #getView(int, Widget, GroupWidget)} for the specified
      * item.
      *
      * @param position
@@ -50,7 +50,7 @@ public interface Adapter {
      *            view type we want.
      * @return An integer representing the type of view. Two views should share
      *         the same type if one can be converted to the other in
-     *         {@link #getView(int, GVRSceneObject, GVRSceneObject)}. Note:
+     *         {@link #getView(int, Widget, GroupWidget)}. Note:
      *         Integers must be in the range 0 to getViewTypeCount() - 1.
      *         {@link android.widget.Adapter#IGNORE_ITEM_VIEW_TYPE} can also be
      *         returned.
@@ -81,9 +81,9 @@ public interface Adapter {
 
     /**
      * Returns the number of types of views that will be created by
-     * {@link #getView(int, GVRSceneObject, GVRSceneObject)}. Each type
+     * {@link #getView(int, Widget, GroupWidget)}. Each type
      * represents a set of views that can be converted in
-     * {@link #getView(int, GVRSceneObject, GVRSceneObject)}. If the adapter
+     * {@link #getView(int, Widget, GroupWidget)}. If the adapter
      * always returns the same type of View for all items, this method should
      * return 1.
      *
@@ -99,6 +99,40 @@ public interface Adapter {
      * @return True if the same id always refers to the same object.
      */
     boolean hasStableIds();
+
+    /**
+     * Indicates whether all views have an uniform size
+     *
+     * @return True if view has an uniform size
+     */
+    boolean hasUniformViewSize();
+
+    /**
+     * Get the view width. In case of uniform size, it might be not necessary to create view to get
+     * the width. Float.NAN can be returned if the width is unknown at that point.
+     *
+     * @param itemId
+     * @return view width
+     */
+    float getViewWidthGuess(final int itemId);
+
+    /**
+     * Get the view height. In case of uniform size, it might be not necessary to create view to get
+     * the height. Float.NAN can be returned if the height is unknown at that point.
+     *
+     * @param itemId
+     * @return view height
+     */
+    float getViewHeightGuess(final int itemId);
+
+    /**
+     * Get the view depth. In case of uniform size, it might be not necessary to create view to get
+     * the depth. Float.NAN can be returned if the depth is unknown at that point.
+     * @param itemId
+     *
+     * @return view depth
+     */
+    float getViewDepthGuess(final int itemId);
 
     /**
      * @return True if this adapter doesn't contain any data.

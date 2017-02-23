@@ -1,6 +1,8 @@
 package com.samsung.smcl.vr.widgets;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -48,6 +50,9 @@ abstract public class Layout {
     interface WidgetContainer {
         Widget get(final int dataIndex);
         int size();
+        float getWidthGuess(final int dataIndex);
+        float getHeightGuess(final int dataIndex);
+        float getDepthGuess(final int dataIndex);
         boolean isEmpty();
 
         /**
@@ -63,7 +68,7 @@ abstract public class Layout {
     protected boolean mApplyViewPort;
     protected Vector3Axis mDividerPadding = new Vector3Axis();
     protected WidgetContainer mContainer;
-    protected Set<Integer> mMeasuredChildren = new HashSet<Integer>();
+    protected Set<Integer> mMeasuredChildren = new LinkedHashSet<>();
 
     protected static final String TAG = Layout.class.getSimpleName();
 
@@ -77,6 +82,9 @@ abstract public class Layout {
     }
 
     abstract protected Layout clone();
+    abstract protected float calculateWidth(int[] children);
+    abstract protected float calculateHeight(int[] children);
+    abstract protected float calculateDepth(int[] children);
 
     /**
      * The size of the ViewPort (virtual area used by the list rendering engine)
@@ -89,6 +97,7 @@ abstract public class Layout {
     public void enableViewPort(boolean enable) {
         if (mApplyViewPort != enable) {
             mApplyViewPort = enable;
+            invalidate();
         }
     }
 
@@ -159,22 +168,37 @@ abstract public class Layout {
      * @return child size
      */
     protected float getChildSize(final int dataIndex, final Axis axis) {
-        Widget child = mContainer.get(dataIndex);
         float size = 0;
-        if (child != null) {
-            switch (axis) {
-                case X:
-                    size = child.getLayoutWidth();
-                    break;
-                case Y:
-                    size = child.getLayoutHeight();
-                    break;
-                case Z:
-                    size = child.getLayoutDepth();
-                    break;
-                default:
-                    throw new RuntimeAssertion("Bad axis specified: %s", axis);
-            }
+        switch (axis) {
+            case X:
+                size = mContainer.getWidthGuess(dataIndex);
+                if (Float.isNaN(size)) {
+                    Widget child = mContainer.get(dataIndex);
+                    if (child != null) {
+                        size = child.getLayoutWidth();
+                    }
+                }
+                break;
+            case Y:
+                size = mContainer.getHeightGuess(dataIndex);
+                if (Float.isNaN(size)) {
+                    Widget child = mContainer.get(dataIndex);
+                    if (child != null) {
+                        size = child.getLayoutHeight();
+                    }
+                }
+                break;
+            case Z:
+                size = mContainer.getDepthGuess(dataIndex);
+                if (Float.isNaN(size)) {
+                    Widget child = mContainer.get(dataIndex);
+                    if (child != null) {
+                        size = child.getLayoutDepth();
+                    }
+                }
+                break;
+            default:
+                throw new RuntimeAssertion("Bad axis specified: %s", axis);
         }
         return size;
     }
@@ -227,8 +251,11 @@ abstract public class Layout {
     synchronized Widget measureChild(final int dataIndex) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild dataIndex = %d", dataIndex);
 
-        mMeasuredChildren.add(dataIndex);
-        return mContainer.get(dataIndex);
+        Widget widget = mContainer.get(dataIndex);
+        if (widget != null) {
+            mMeasuredChildren.add(dataIndex);
+        }
+        return widget;
     }
 
     /**
@@ -303,17 +330,18 @@ abstract public class Layout {
      * measuredChildren list can be passed as null if it's not needed to
      * create the list of the measured items
      */
-    protected void measureUntilFull(int dataIndex, final List<Widget> measuredChildren) {
+    protected void measureUntilFull(int dataIndex, final Collection<Widget> measuredChildren) {
         boolean inBounds = true;
         for (; dataIndex < mContainer.size() && inBounds; ++dataIndex) {
             Widget view = measureChild(dataIndex);
             inBounds = postMeasurement() || !isViewPortEnabled();
 
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
-                    "isBounds = %b dataIndex = %d layout = %s",
-                    view == null ? "null" : view.getName(), inBounds, dataIndex, this);
+                            "isBounds = %b isViewPortEnabled=%b dataIndex = %d layout = %s",
+                    view == null ? "<null>" : view.getName(), inBounds, isViewPortEnabled(),
+                    dataIndex, this);
 
-            if (measuredChildren != null && view != null) {
+            if (measuredChildren != null && view != null && inBounds) {
                 measuredChildren.add(view);
             }
         }
@@ -359,7 +387,7 @@ abstract public class Layout {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layoutChildren [%d] layout = %s",
                 mMeasuredChildren.size(), this);
 
-        Set<Integer> copySet = new HashSet<Integer>(mMeasuredChildren);
+        Set<Integer> copySet = new HashSet<>(mMeasuredChildren);
         for (int nextMeasured: copySet) {
             layoutChild(nextMeasured);
         }

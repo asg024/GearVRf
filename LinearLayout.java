@@ -1,5 +1,6 @@
 package com.samsung.smcl.vr.widgets;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.joml.Vector3f;
@@ -60,13 +61,15 @@ public class LinearLayout extends OrientedLayout {
         FILL
     }
 
-    private static final String pattern = "\nLL attributes====== orientation = %s gravity = %s divider_padding = %s uniformSize = %b size [%s]";
+    private static final String pattern = "\nLL attributes====== orientation = %s gravity = %s " +
+            "divider_padding = %s uniformSize = %b size [%s] viewPortEnabled [%b]";
 
     /**
      * Return the string representation of the LinearLayout
      */
     public String toString() {
-        return super.toString() + String.format(pattern, mOrientation, mGravity, mDividerPadding, mUniformSize, mViewPort);
+        return super.toString() + String.format(pattern, mOrientation, mGravity, mDividerPadding,
+                mUniformSize, mViewPort, mApplyViewPort);
     }
 
     public LinearLayout() {
@@ -394,7 +397,7 @@ public class LinearLayout extends OrientedLayout {
     }
 
     @Override
-    protected void measureUntilFull(int dataIndex, final List<Widget> measuredChildren) {
+    protected void measureUntilFull(int dataIndex, final Collection<Widget> measuredChildren) {
         // no preferred position, just feed all data starting from beginning.
         if (dataIndex == -1) {
             super.measureUntilFull(0, measuredChildren);

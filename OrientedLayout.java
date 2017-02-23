@@ -91,5 +91,49 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         return result;
     }
 
+    private float getSize(int[] children, Axis axis) {
+        boolean calculateMaxSize = getOrientationAxis() != axis;
+        float size = 0;
+        for (int i = 0; i < children.length ; ++i) {
+            int child = children[i];
+            float sizeWithPadding = getMeasuredChildSizeWithPadding(child, axis);
+            if (Float.isNaN(sizeWithPadding)) {
+                // child is not measured yet
+                sizeWithPadding = getChildSize(child, axis);
+                if (i > 0) {
+                    sizeWithPadding += getDividerPadding(axis) / 2;
+                }
+                if (i < children.length - 1) {
+                    sizeWithPadding += getDividerPadding(axis) / 2;
+                }
+            }
+            if (Float.isNaN(sizeWithPadding)) {
+                return Float.NaN;
+            }
+
+            if (calculateMaxSize) {
+                size = Math.max(size, sizeWithPadding);
+            } else {
+                size += sizeWithPadding;
+            }
+        }
+        return size;
+    }
+
+    @Override
+    protected float calculateWidth(int[] children) {
+        return getSize(children, Axis.X);
+    }
+
+    @Override
+    protected float calculateHeight(int[] children) {
+        return getSize(children, Axis.Y);
+    }
+
+    @Override
+    protected float calculateDepth(int[] children) {
+        return getSize(children, Axis.Z);
+    }
+
     protected Orientation mOrientation = Orientation.HORIZONTAL;
 }

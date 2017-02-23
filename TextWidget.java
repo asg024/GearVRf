@@ -87,7 +87,7 @@ public class TextWidget extends Widget implements TextContainer {
 
         @Override
         public String getTextString() {
-            return mText.toString();
+            return mText != null ? mText.toString() : null;
         }
 
         private Drawable mBackground;
@@ -97,24 +97,38 @@ public class TextWidget extends Widget implements TextContainer {
         private CharSequence mText;
         private int mTextColor = Color.BLACK;
         private float mTextSize = 15; // Android's default text size
+
+        private static final String STRING_FORMAT = "background [%s], backgroundColor [%d], " +
+                "gravity [%d], textColor [%d], textSize [%f], text [%s]";
+
+        @Override
+        public String toString() {
+            return String.format(STRING_FORMAT, mBackground, mBackgroundColor, mGravity, mTextColor,
+                    mTextSize, mText);
+        }
+
+        public static TextContainer copy(TextContainer src, TextContainer dest) {
+            dest.setBackGround(src.getBackGround());
+
+            dest.setBackgroundColor(src.getBackgroundColor());
+
+            dest.setGravity(src.getGravity());
+
+            dest.setRefreshFrequency(src.getRefreshFrequency());
+
+            dest.setText(src.getText());
+
+            dest.setTextSize(src.getTextSize());
+
+            dest.setTextColor(src.getTextColor());
+
+            return dest;
+        }
+
     }
 
     public static TextContainer copy(TextContainer src, TextContainer dest) {
-        dest.setBackGround(src.getBackGround());
-
-        dest.setBackgroundColor(src.getBackgroundColor());
-
-        dest.setGravity(src.getGravity());
-
-        dest.setRefreshFrequency(src.getRefreshFrequency());
-
-        dest.setText(src.getText());
-
-        dest.setTextSize(src.getTextSize());
-
-        dest.setTextColor(src.getTextColor());
-
-        return dest;
+        return TextParams.copy(src, dest);
     }
 
     /**
@@ -131,7 +145,7 @@ public class TextWidget extends Widget implements TextContainer {
     }
 
     /**
-     * A constructor for wrapping existing {@link GVRSceneLayout} instances.
+     * A constructor for wrapping existing {@link GVRSceneObject} instances.
      * Deriving classes should override and do whatever processing is
      * appropriate.
      *
@@ -191,7 +205,7 @@ public class TextWidget extends Widget implements TextContainer {
      * Shows a {@link TextView} on a {@linkplain Widget widget} with view's
      * default height and width.
      *
-     * @param gvrContext
+     * @param context
      *            current {@link GVRContext}
      * @param width
      *            Widget height, in GVRF scene graph units.
@@ -212,7 +226,7 @@ public class TextWidget extends Widget implements TextContainer {
      * Shows a {@link TextView} on a {@linkplain Widget widget} with view's
      * default height and width.
      *
-     * @param gvrContext
+     * @param context
      *            current {@link GVRContext}
      * @param width
      *            Widget height, in GVRF scene graph units.
