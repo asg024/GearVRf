@@ -30,9 +30,11 @@ import org.json.JSONObject;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -110,7 +112,7 @@ public class Widget  implements Layout.WidgetContainer {
          *         focus change should take place; {@code false} to allow
          *         further processing.
          */
-        public boolean onFocus(boolean focused, Widget widget);
+        boolean onFocus(boolean focused, Widget widget);
 
         /**
          * Called when a widget has had focus for more than
@@ -120,7 +122,7 @@ public class Widget  implements Layout.WidgetContainer {
          *         event should take place; {@code false} to allow further
          *         processing.
          */
-        public boolean onLongFocus(Widget widget);
+        boolean onLongFocus(Widget widget);
     }
 
     /**
@@ -137,7 +139,7 @@ public class Widget  implements Layout.WidgetContainer {
          *         touch event should take place; {@code false} to allow further
          *         processing.
          */
-        public boolean onBackKey(Widget widget);
+        boolean onBackKey(Widget widget);
     }
 
     /**
@@ -155,7 +157,7 @@ public class Widget  implements Layout.WidgetContainer {
          *         touch event should take place; {@code false} to allow further
          *         processing.
          */
-        public boolean onTouch(Widget widget);
+        boolean onTouch(Widget widget);
     }
 
     /**
@@ -252,7 +254,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     // private static final String pattern = Widget.class.getSimpleName()
     // + "name : %s size = (%f, %f, %f) \n"
-    // + "touchable = %b focus_enabled = %b Visibile = %s selected = %b";
+    // + "touchable = %b focus_enabled = %b Visible = %s selected = %b";
     //
     // public String toString() {
     // return String.format(pattern, getName(), getWidth(), getHeight(),
@@ -2830,10 +2832,12 @@ public class Widget  implements Layout.WidgetContainer {
         return mBoundingBox;
     }
 
+    private static final Map<Class<?>, String> sCanonicalNames = new HashMap<>();
+
     /* package */
     @SuppressWarnings("unchecked")
     private JSONObject getDefaultMetadata(Class<? extends Widget> clazz, String name) {
-        final String canonicalName = clazz.getCanonicalName();
+        final String canonicalName = getCanonicalName(clazz);
         final JSONObject defaultMetadata = sDefaultMetadata
                 .optJSONObject(canonicalName);
         Log.d(TAG,
@@ -2847,6 +2851,15 @@ public class Widget  implements Layout.WidgetContainer {
             }
         }
         return defaultMetadata;
+    }
+
+    private String getCanonicalName(Class<? extends Widget> clazz) {
+        String canonicalName = sCanonicalNames.get(clazz);
+        if (canonicalName == null) {
+            canonicalName = clazz.getCanonicalName();
+            sCanonicalNames.put(clazz, canonicalName);
+        }
+        return canonicalName;
     }
 
     private interface HandlesEvent {
