@@ -1,12 +1,12 @@
 package com.samsung.smcl.vr.widgets;
 
-import java.util.Collection;
-import java.util.List;
+import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.Utility;
 
 import org.joml.Vector3f;
 
-import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.utility.Utility;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * A Layout that arranges its children in a single column or a single row. The direction of the row can be
@@ -702,6 +702,11 @@ public class LinearLayout extends OrientedLayout {
 
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setPosition [%s], position = [%f], factor = [%s]",
                   child.getName(), position, factor);
+
+        if (Float.isNaN(position)) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Error: position is NaN for factor " + factor);
+            position = 0f;
+        }
 
         if (!Utility.equal(factor.x, 0)) {
             child.setPositionX(position);

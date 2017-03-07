@@ -31,7 +31,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -995,15 +994,33 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     public float getBoundsWidth() {
-        return getBoundingBox(true).getWidth();
+        if (mSceneObject != null) {
+            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
+            if (v != null) {
+                return v.maxCorner.x - v.minCorner.x;
+            }
+        }
+        return 0f;
     }
 
-    public float getBoundsHeight() {
-        return getBoundingBox(true).getHeight();
+    public float getBoundsHeight(){
+        if (mSceneObject != null) {
+            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
+            if (v != null) {
+                return v.maxCorner.y - v.minCorner.y;
+            }
+        }
+        return 0f;
     }
 
     public float getBoundsDepth() {
-        return getBoundingBox(true).getDepth();
+        if (mSceneObject != null) {
+            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
+            if (v != null) {
+                return v.maxCorner.z - v.minCorner.z;
+            }
+        }
+        return 0f;
     }
 
     /**
@@ -1055,33 +1072,12 @@ public class Widget  implements Layout.WidgetContainer {
      * Note: The {@code Widget}'s children are <em>not</em> explicitly included,
      * so the bounding box may or may not be big enough to include them. If you
      * want to make sure that the bounding box fully encompasses the
-     * {@code Widget}'s children, use {@link #getBoundingBox(boolean)}.
+     * {@code Widget}'s children, call GVRSceneObject.getBoundingVolume}.
      *
      * @return A {@link BoundingBox} that contains the {@code Widget}.
      */
     public BoundingBox getBoundingBox() {
         return new BoundingBox(getBoundingBoxInternal());
-    }
-
-    /**
-     * Get a {@link BoundingBox} that is axis-aligned with this {@link Widget}'s
-     * parent and sized to contain the {@code Widget} with its local transform
-     * applied. Optionally, the bounding box can be
-     * {@linkplain BoundingBox#expand(BoundingBox) expanded} to contain the
-     * bounding boxes of the {@code Widget}'s children that would otherwise lie
-     * outside it.
-     *
-     * @param includeChildren
-     *            {@code True} to explicitly include the {@code Widget}'s
-     *            children, {@code false} to ignore them.
-     * @return A {@code BoundingBox} that contains the {@code Widget} and,
-     *         optionally, its children.
-     */
-    public BoundingBox getBoundingBox(boolean includeChildren) {
-        if (includeChildren) {
-            return expandBoundingBox(getBoundingBox());
-        }
-        return getBoundingBox();
     }
 
     /**
@@ -2559,7 +2555,7 @@ public class Widget  implements Layout.WidgetContainer {
     /* package */
     // NOTE: If you find yourself wanting to make this public, don't! You're
     // either working *against* Widget or Widget needs some extending.
-    public GVRSceneObject getSceneObject() {
+    GVRSceneObject getSceneObject() {
         return mSceneObject;
     }
 
@@ -2812,18 +2808,6 @@ public class Widget  implements Layout.WidgetContainer {
 
         // No match; Search the children that are GroupWidgets.
         return findChildByNameInAllGroups(name, groupChildren);
-    }
-
-    private BoundingBox expandBoundingBox(final BoundingBox boundingBox) {
-        for (Widget child : mChildren) {
-            BoundingBox bbc = child.getBoundingBox(true);
-            // Transform actually places child in the coordinate space of this Widget's parent,
-            // which is where this Widget is placed
-            bbc = bbc.transform(this);
-            // Now that child is in same coordinate space, expand
-            boundingBox.expand(bbc);
-        }
-        return boundingBox;
     }
 
     private BoundingBox getBoundingBoxInternal() {
