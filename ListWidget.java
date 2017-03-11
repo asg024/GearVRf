@@ -46,19 +46,21 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         /**
          * Callback method to be invoked when an item in this {@link ListWidget} has been focused.
-         * @param dataIndex item position in the list
+         * @param item item whose focus state is changing
          * @param focused true if the item is focused, false - otherwise
+         * @param dataIndex item position in the list
          */
-        public void onFocus(int dataIndex, boolean focused);
+        void onFocus(Widget item, boolean focused, int dataIndex);
 
         /**
          * Callback method to be invoked when the long focus occurred for the item in this {@link ListWidget} .
+         * @param item item with long focus
          * @param dataIndex item position in the list
          */
-        public void onLongFocus(int dataIndex);
+        void onLongFocus(Widget item, int dataIndex);
     }
 
-    protected final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<OnItemFocusListener>();
+    private final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<>();
 
     /**
      * Add a listener for {@linkplain OnItemFocusListener#onFocus(boolean) focus}
@@ -88,7 +90,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return mItemFocusListeners.remove(listener);
     }
 
-    protected boolean mItemFocusEnabled = true;
+    private boolean mItemFocusEnabled = true;
 
     /**
      * @return Whether the {@link ListWidget} allows it items to be focused.
@@ -143,7 +145,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         public boolean onTouch(int dataIndex);
     }
 
-    protected final Set<OnItemTouchListener> mItemTouchListeners = new LinkedHashSet<OnItemTouchListener>();
+    private final Set<OnItemTouchListener> mItemTouchListeners = new LinkedHashSet<>();
 
     /**
      * Add a listener for {@linkplain OnItemTouchListener#onTouch notification
@@ -172,7 +174,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return mItemTouchListeners.remove(listener);
     }
 
-    protected boolean mItemTouchable = true;
+    private boolean mItemTouchable = true;
 
     /**
      * @return Whether the {@link ListWidget} allows it items to be touchable.
@@ -211,15 +213,15 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
 
     /**
-     * Construct a new {@code ListWidget} instance with  LinearLayout applied by default
-     *
-     * @param gvrContext
+     * Construct a new {@code ListWidget} instance wrapping an existing {@link GVRSceneObject} with
+     * LinearLayout applied by default
+     *  @param gvrContext
      *            The active {@link GVRContext}.
+     * @param sceneObj The {@code GVRSceneObject} to wrap
      * @param adapter  {@link Adapter} associated with this layout.
-     * @param sceneObj
      *
      */
-    public ListWidget(final GVRContext gvrContext, final Adapter adapter, GVRSceneObject sceneObj) {
+    public ListWidget(final GVRContext gvrContext, GVRSceneObject sceneObj, final Adapter adapter) {
         super(gvrContext, sceneObj);
         onChanged(adapter);
     }
@@ -238,32 +240,23 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         onChanged(adapter);
     }
 
-    public ListWidget(final GVRContext context, final Adapter adapter,
-            final GVRSceneObject sceneObject, NodeEntry attributes)
+    public ListWidget(final GVRContext context, final GVRSceneObject sceneObject,
+                      NodeEntry attributes, final Adapter adapter)
             throws InstantiationException {
         super(context, sceneObject, attributes);
         onChanged(adapter);
     }
 
-    protected OnFocusListener getOnFocusListener() {
-        return mOnFocusListener;
-    }
-
-    protected OnTouchListener getOnTouchListener() {
-        return mOnTouchListener;
-    }
-
-
     private OnFocusListener mOnFocusListener = new OnFocusListener() {
         @Override
-        public boolean onFocus(final boolean focused, final Widget widget) {
+        public boolean onFocus(final Widget widget, final boolean focused) {
             Log.d(TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget, focused);
             Widget parent = widget.getParent();
             boolean ret = false;
             if (parent instanceof ListItemHostWidget) {
                 int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
                 for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onFocus(dataIndex, focused);
+                    listener.onFocus(widget, focused, dataIndex);
                 }
                 ret = true;
             } else {
@@ -280,7 +273,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             if (parent instanceof ListItemHostWidget) {
                 int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
                 for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onLongFocus(dataIndex);
+                    listener.onLongFocus(widget, dataIndex);
                 }
                 ret = true;
             } else {
@@ -474,8 +467,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         for (Widget child: this.getChildren()) {
             if (child instanceof ListItemHostWidget) {
                 Widget view  = ((ListItemHostWidget)child).getGuest();
-                view.removeFocusListener(getOnFocusListener());
-                view.removeTouchListener(getOnTouchListener());
+                view.removeFocusListener(mOnFocusListener);
+                view.removeTouchListener(mOnTouchListener);
             }
         }
         super.clear();
@@ -496,8 +489,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     private void recycle(ListItemHostWidget host) {
         Widget  view = host.getGuest();
         if (view != null) {
-            view.removeFocusListener(getOnFocusListener());
-            view.removeTouchListener(getOnTouchListener());
+            view.removeFocusListener(mOnFocusListener);
+            view.removeTouchListener(mOnTouchListener);
         }
         onRecycle(view, host.getDataIndex());
 
@@ -724,8 +717,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         view.setFocusEnabled(mItemFocusEnabled);
         view.setTouchable(mItemTouchable);
 
-        view.addFocusListener(getOnFocusListener());
-        view.addTouchListener(getOnTouchListener());
+        view.addFocusListener(mOnFocusListener);
+        view.addTouchListener(mOnTouchListener);
     }
 
     /**

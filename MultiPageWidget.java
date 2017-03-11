@@ -69,7 +69,7 @@ public class MultiPageWidget extends ListWidget {
      * @param sceneObject
      */
     public MultiPageWidget(GVRContext context, final Adapter pageAdapter, GVRSceneObject sceneObject) {
-        super(context, pageAdapter, sceneObject);
+        super(context, sceneObject, pageAdapter);
         registerListDataSetObserver(mListDateSetObserver);
     }
 
@@ -97,7 +97,7 @@ public class MultiPageWidget extends ListWidget {
     public MultiPageWidget(final GVRContext context, final Adapter pageAdapter,
                         final GVRSceneObject sceneObject, NodeEntry attributes)
             throws InstantiationException {
-        super(context, pageAdapter, sceneObject, attributes);
+        super(context, sceneObject, attributes, pageAdapter);
         registerListDataSetObserver(mListDateSetObserver);
     }
 

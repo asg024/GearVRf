@@ -113,7 +113,7 @@ public class Widget  implements Layout.WidgetContainer {
          *         focus change should take place; {@code false} to allow
          *         further processing.
          */
-        boolean onFocus(boolean focused, Widget widget);
+        boolean onFocus(Widget widget, boolean focused);
 
         /**
          * Called when a widget has had focus for more than
@@ -2665,7 +2665,7 @@ public class Widget  implements Layout.WidgetContainer {
         }
 
         for (OnFocusListener listener : focusListeners) {
-            if (listener.onFocus(focused, this)) {
+            if (listener.onFocus(this, focused)) {
                 return true;
             }
         }
