@@ -1,8 +1,6 @@
 package com.samsung.smcl.vr.widgets;
 
 import android.database.DataSetObserver;
-import android.util.SparseArray;
-import android.util.SparseIntArray;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
@@ -154,18 +152,20 @@ public class MultiPageWidget extends ListWidget {
     }
 
     @Override
-    protected void recycle(int dataIndex) {
-        final ListWidget page = (ListWidget)getItem(dataIndex);
-        setAdapter(page, null);
+    protected void onRecycle(Widget view, int dataIndex) {
+        if (view != null) {
+            final ListWidget page = (ListWidget) view;
+            setAdapter(page, null);
 
-        page.recycleChildren();
-        ListOnChangedListener listener = mPagesListOnChangedListeners.get(dataIndex);
-        if (listener != null) {
-            page.removeListOnChangedListener(listener);
-            mPagesListOnChangedListeners.remove(dataIndex);
+            page.recycleChildren();
+            ListOnChangedListener listener = mPagesListOnChangedListeners.get(dataIndex);
+            if (listener != null) {
+                page.removeListOnChangedListener(listener);
+                mPagesListOnChangedListeners.remove(dataIndex);
+            }
         }
 
-        super.recycle(dataIndex);
+        super.onRecycle(view, dataIndex);
     }
 
     protected static class SelectingAdapter implements Adapter {
@@ -186,11 +186,11 @@ public class MultiPageWidget extends ListWidget {
             mEnd = Math.min(adapter.getCount() - 1, end);
         }
 
-        void setBounds(int start, int end) {
+        void setBounds(int start, int length) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setBounds  old [%d, %d] new [%d, %d]",
-                    mStart, mEnd, start, end);
+                    mStart, mEnd - mStart, start, length);
             mStart = start;
-            mEnd = mStart + end;
+            mEnd = mStart + length;
         }
 
         void setStart(int start) {
@@ -199,10 +199,10 @@ public class MultiPageWidget extends ListWidget {
             mStart = start;
         }
 
-        void setEnd(int end) {
+        void setLength(int length) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setEnd  old [%d, %d] new [%d, %d]",
-                    mStart, mEnd, mStart, end);
-            mEnd = mStart + end;
+                    mStart, mEnd - mStart, mStart, length);
+            mEnd = mStart + length;
         }
 
         private int getRealPosition(int position) {
@@ -516,7 +516,7 @@ public class MultiPageWidget extends ListWidget {
 
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedFinished list = %s , index = %d end = %d",
                         list, mPageIndex, (numOfMeasuredViews - 1));
-                adapter.setEnd(numOfMeasuredViews - 1);
+                adapter.setLength(numOfMeasuredViews - 1);
             } else {
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedStart list = %s , index = %d adapter is null ",
                         list, mPageIndex);

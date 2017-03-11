@@ -3255,7 +3255,7 @@ public class Widget  implements Layout.WidgetContainer {
         return true;
     }
 
-    protected final Set<Layout> mLayouts = new HashSet<>();
+    protected final Set<Layout> mLayouts = new LinkedHashSet<>();
 
     /**
      * WidgetContainer default implementation

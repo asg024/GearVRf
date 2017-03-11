@@ -466,7 +466,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
 
-    List<ListItemHostWidget> mRecycledViews = new ArrayList<ListItemHostWidget>();
+    private List<ListItemHostWidget> mRecycledViews = new ArrayList<>();
     private boolean mTrimRequest;
 
 
@@ -478,6 +478,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 view.removeTouchListener(getOnTouchListener());
             }
         }
+        super.clear();
     }
 
     protected void recycleChildren() {
@@ -488,8 +489,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
     }
 
-    protected void recycle(int dataIndex) {
-        recycle(get(dataIndex));
+    protected void onRecycle(Widget view, int dataIndex) {
+
     }
 
     private void recycle(ListItemHostWidget host) {
@@ -498,6 +499,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             view.removeFocusListener(getOnFocusListener());
             view.removeTouchListener(getOnTouchListener());
         }
+        onRecycle(view, host.getDataIndex());
 
         removeChild(host, true);
         for (Layout layout: mLayouts) {
@@ -780,7 +782,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     /**
      * Trim unused views in the list
      */
-    protected void trim() {
+    private void trim() {
         // TODO: check why some items stay INVISIBLE after the scrolling is completed.
         // Basically the layout has to be shifted by amount big enough to make the new
         // added items visible
