@@ -265,6 +265,12 @@ public class Button extends Widget implements TextContainer {
         }
     }
 
+    @Override
+    protected boolean onTouch() {
+        super.onTouch();
+        return true;
+    }
+
     protected float getTextWidgetWidth() {
         return mTextWidgetWidth;
     }
