@@ -3032,7 +3032,7 @@ public class Widget  implements Layout.WidgetContainer {
         sObjectMetadata = new UnmodifiableJSONObject(
                 json.optJSONObject("objects"));
         Log.v(Log.SUBSYSTEM.WIDGET, TAG, "init(): loaded object metadata: %s",
-                sObjectMetadata.toString());
+                sObjectMetadata);
         return json;
     }
 

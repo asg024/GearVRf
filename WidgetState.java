@@ -30,7 +30,7 @@ class WidgetState {
             // Either something is missing, or we've got a mix of fields
             throw RuntimeAssertion("Bad format in state spec for '%s': %s",
                                       parent.getName(),
-                                      stateSpec.toString());
+                                      stateSpec);
         }
     }
 

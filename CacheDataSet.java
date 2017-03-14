@@ -138,7 +138,7 @@ class LinearCacheDataSet implements CacheDataSet {
 
         for (int pos = 0; pos < count(); ++pos) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "data[%d, %d]: %s" , mIdsSet.get(pos), pos,
-                  mCacheDataSet.valueAt(pos).toString());
+                  mCacheDataSet.valueAt(pos));
         }
 
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "\n==== DUMP CACHE end ======\n");
