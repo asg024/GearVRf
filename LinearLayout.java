@@ -181,9 +181,9 @@ public class LinearLayout extends OrientedLayout {
      * Calculate the layout offset
      */
     protected float getLayoutOffset() {
-        final int offsetSign = getOffsetSign();
+        //final int offsetSign = getOffsetSign();
         final float axisSize = getAxisSize(getOrientationAxis());
-        float layoutOffset = -offsetSign * axisSize / 2;
+        float layoutOffset = - axisSize / 2;
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getLayoutOffset(): dimension: %5.2f, layoutOffset: %5.2f",
               axisSize, layoutOffset);
 
@@ -195,29 +195,29 @@ public class LinearLayout extends OrientedLayout {
      * @param totalSize total size occupied by the content
      */
     protected float getStartingOffset(final float totalSize) {
-        final int offsetSign = getOffsetSign();
         final float axisSize = getAxisSize(getOrientationAxis());
         float startingOffset = 0;
 
         switch (mGravity) {
             case LEFT:
+            case FILL:
             case TOP:
             case FRONT:
-            case FILL:
-                startingOffset = -offsetSign * axisSize / 2;
+                startingOffset = -axisSize / 2;
                 break;
             case RIGHT:
             case BOTTOM:
             case BACK:
-                startingOffset = offsetSign * (axisSize / 2 - totalSize);
+                startingOffset = (axisSize / 2 - totalSize);
                 break;
             case CENTER:
-                startingOffset = -offsetSign * totalSize / 2;
+                startingOffset = -totalSize / 2;
                 break;
             default:
                 Log.w(TAG, "Cannot calculate starting offset: " +
                         "gravity %s is not supported!", mGravity);
                 break;
+
         }
 
         Log.d(TAG, "getStartingOffset(): totalSize: %5.2f, dimension: %5.2f, startingOffset: %5.2f",
@@ -256,7 +256,7 @@ public class LinearLayout extends OrientedLayout {
                 factor.y = -1;
                 break;
             case Z:
-                factor.z = 1;
+                factor.z = -1;
                 break;
         }
         return factor;
@@ -286,8 +286,8 @@ public class LinearLayout extends OrientedLayout {
     }
 
     @Override
-    protected Widget measureChild(final int dataIndex) {
-        return measureChild(dataIndex, mCache);
+    Widget measureChild(final int dataIndex, boolean calculateOffset) {
+        return measureChild(dataIndex, calculateOffset, mCache);
     }
 
     @Override
@@ -488,7 +488,7 @@ public class LinearLayout extends OrientedLayout {
         return id;
     }
 
-    protected Widget measureChild(final int dataIndex, CacheDataSet cache) {
+    protected Widget measureChild(final int dataIndex, boolean calculateOffset, CacheDataSet cache) {
         // measure and setup size for new item
         if (isChildMeasured(dataIndex)) {
             Log.w(TAG, "Item [%d] has been already measured!", dataIndex);
@@ -498,20 +498,22 @@ public class LinearLayout extends OrientedLayout {
             // add at the end by default
             int pos = cache.count();
             int firstIndex = getFirstDataIndex();
-            if (firstIndex >= 0 && dataIndex < firstIndex) {
-                pos = 0;
+            if (firstIndex >= 0) {
+                pos  =  (dataIndex < firstIndex ^ getOffsetSign() == 1 ) ? cache.count() : 0;
             } else {
-            // pos in the middle  TODO: figure out why it does not work
-            // pos = cache.searchPos(dataIndex);
+                // pos in the middle  TODO: figure out why it does not work
+                // pos = cache.searchPos(dataIndex);
             }
 
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild [%d] has been added at pos [%d]! cache.count() = %d",
-                  dataIndex, pos, cache.count());
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild [%d] has been added at pos [%d]! cache.count() = %d size = %f",
+                    dataIndex, pos, cache.count(), size);
 
             cache.addData(dataIndex, pos, size, getDivider() / 2, getDivider() / 2);
         }
-        computeOffset(dataIndex, cache);
-        return super.measureChild(dataIndex);
+        if (calculateOffset) {
+            computeOffset(dataIndex, cache);
+        }
+        return super.measureChild(dataIndex, calculateOffset);
     }
 
     protected boolean postMeasurement(CacheDataSet cache) {
@@ -546,8 +548,6 @@ public class LinearLayout extends OrientedLayout {
      */
     protected boolean computeOffset(final int dataIndex, CacheDataSet cache) {
         float layoutOffset = getLayoutOffset();
-        float sign = getOffsetSign();
-
         int pos = cache.getPos(dataIndex);
         float startDataOffset = Float.NaN;
         float endDataOffset = Float.NaN;
@@ -556,7 +556,7 @@ public class LinearLayout extends OrientedLayout {
             if (id != -1) {
                 startDataOffset = cache.getEndDataOffset(id);
                 if (!Float.isNaN(startDataOffset)) {
-                    endDataOffset = cache.setDataOffsetAfter(dataIndex, startDataOffset, sign);
+                    endDataOffset = cache.setDataOffsetAfter(dataIndex, startDataOffset);
                 }
             }
         } else if (pos == 0) {
@@ -564,11 +564,11 @@ public class LinearLayout extends OrientedLayout {
             if (id != -1) {
                 endDataOffset = cache.getStartDataOffset(id);
                 if (!Float.isNaN(endDataOffset)) {
-                    startDataOffset = cache.setDataOffsetBefore(dataIndex, endDataOffset, sign);
+                    startDataOffset = cache.setDataOffsetBefore(dataIndex, endDataOffset);
                 }
             } else {
                 startDataOffset = getStartingOffset((cache.getTotalSizeWithPadding()));
-                endDataOffset = cache.setDataOffsetAfter(dataIndex, startDataOffset, sign);
+                endDataOffset = cache.setDataOffsetAfter(dataIndex, startDataOffset);
             }
         }
 
@@ -592,14 +592,13 @@ public class LinearLayout extends OrientedLayout {
         // offset computation: update offset for all items in the cache
         float startDataOffset = getStartingOffset((cache.getTotalSizeWithPadding()));
         float layoutOffset = getLayoutOffset();
-        float sign = getOffsetSign();
 
         boolean inBounds = Math.abs(startDataOffset) <= Math.abs(layoutOffset);
 
         for (int pos = 0; pos < cache.count(); ++pos) {
             int id = cache.getId(pos);
             if (id != -1) {
-                float endDataOffset = cache.setDataOffsetAfter(id, startDataOffset, sign);
+                float endDataOffset = cache.setDataOffsetAfter(id, startDataOffset);
                 inBounds = inBounds &&
                         Math.abs(endDataOffset) <= Math.abs(layoutOffset) &&
                         Math.abs(startDataOffset) <= Math.abs(layoutOffset);
@@ -698,7 +697,7 @@ public class LinearLayout extends OrientedLayout {
 
         float position = childOffset * factor.x +
                 childOffset * factor.y +
-                (childOffset + getOffsetSign() * 0.025f) * factor.z;
+                (childOffset + 0.025f) * factor.z;
 
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setPosition [%s], position = [%f], factor = [%s]",
                   child.getName(), position, factor);
@@ -763,4 +762,5 @@ public class LinearLayout extends OrientedLayout {
     protected CacheDataSet mCache;
     protected boolean mUniformSize;
     protected Gravity mGravity = Gravity.CENTER;
+    protected static final String TAG = LinearLayout.class.getSimpleName();
 }

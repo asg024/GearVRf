@@ -289,6 +289,12 @@ class GridAdapter implements Adapter {
         mAdapter.unregisterDataSetObserver(observer);
     }
 
+    @Override
+    public void unregisterAllDataSetObservers() {
+        mAdapter.unregisterAllDataSetObservers();
+    }
+
+
     private int getLinearPosition(final Position position) {
         int itemIdx = -1;
         if (position.column >= 0 && position.column < mNumOfColumns &&

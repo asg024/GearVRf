@@ -37,8 +37,8 @@ interface CacheDataSet {
 
     float getStartDataOffset(final int id);
     float getEndDataOffset(final int id);
-    float setDataOffsetBefore(final int id, float endDataOffset, final float sign);
-    float setDataOffsetAfter(final int id, float startDataOffset, final float sign);
+    float setDataOffsetBefore(final int id, float endDataOffset);
+    float setDataOffsetAfter(final int id, float startDataOffset);
     int getId(final int pos);
     int getPos(final int id);
     int searchPos(final int dataIndex);
@@ -373,33 +373,33 @@ class LinearCacheDataSet implements CacheDataSet {
     }
 
     @Override
-    synchronized public float setDataOffsetAfter(final int id, float startDataOffset, final float sign) {
+    synchronized public float setDataOffsetAfter(final int id, float startDataOffset) {
         CacheData data =  mCacheDataSet.get(id);
         if (data != null) {
             int pos = getPos(id);
             float startPadding = pos > 0 ? data.getStartPadding() : 0;
-            float offset = startDataOffset + sign * (startPadding + data.getSize()/ 2);
+            float offset = startDataOffset + (startPadding + data.getSize()/ 2);
             data.setOffset(offset);
             mCacheDataSet.put(id, data);
 
             float endPadding = pos < count() - 1 ? data.getEndPadding() : 0;
-            return startDataOffset + sign * (startPadding + data.getSize() + endPadding);
+            return startDataOffset + (startPadding + data.getSize() + endPadding);
         }
         return Float.NaN;
     }
 
     @Override
-    synchronized public float setDataOffsetBefore(final int id, float endDataOffset, final float sign) {
+    synchronized public float setDataOffsetBefore(final int id, float endDataOffset) {
         CacheData data =  mCacheDataSet.get(id);
         if (data != null) {
             int pos = getPos(id);
             float endPadding = pos < count() - 1 ? data.getEndPadding() : 0;
-            float offset = endDataOffset - sign * (endPadding + data.getSize()/ 2);
+            float offset = endDataOffset - (endPadding + data.getSize()/ 2);
             data.setOffset(offset);
             mCacheDataSet.put(id, data);
 
             float startPadding = pos > 0 ? data.getStartPadding() : 0;
-            return endDataOffset - sign * (startPadding + data.getSize() + endPadding);
+            return endDataOffset - (startPadding + data.getSize() + endPadding);
         }
         return Float.NaN;
     }

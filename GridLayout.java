@@ -135,7 +135,7 @@ public class GridLayout extends OrientedLayout {
         }
 
         @Override
-        protected Widget measureChild(final int dataIndex) {
+        protected Widget measureChild(final int dataIndex, boolean calculateOffset) {
            // int cacheId = mChunkBreaker.getChunkIndex(getCacheCount());
             int cacheId = mChunkBreaker.getChunkIndex(dataIndex);
             CacheDataSet cache = mCaches.get(cacheId);
@@ -146,7 +146,7 @@ public class GridLayout extends OrientedLayout {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild [%d] orientation = %s cacheId = %d cache.count = %d",
                     dataIndex, mOrientation, cacheId, cache.count());
 
-            Widget w = measureChild(dataIndex, cache);
+            Widget w = measureChild(dataIndex, calculateOffset, cache);
             if (mForcePostMeasurement) {
                 postMeasurement(cache);
             }
@@ -521,10 +521,10 @@ public class GridLayout extends OrientedLayout {
     }
 
     @Override
-    protected Widget measureChild(final int dataIndex) {
-        mColumnLayout.measureChild(dataIndex);
-        mRowLayout.measureChild(dataIndex);
-        return super.measureChild(dataIndex);
+    protected Widget measureChild(final int dataIndex, boolean calculateOffset) {
+        mColumnLayout.measureChild(dataIndex, calculateOffset);
+        mRowLayout.measureChild(dataIndex, calculateOffset);
+        return super.measureChild(dataIndex, calculateOffset);
     }
 
 

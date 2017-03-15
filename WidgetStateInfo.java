@@ -22,6 +22,7 @@ import android.content.res.Resources;
 import com.samsung.smcl.utility.Exceptions;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 import com.samsung.smcl.vr.widgets.Widget.Visibility;
 
@@ -200,20 +201,21 @@ class WidgetStateInfo {
         return material;
     }
 
-    static private int getDrawableId(Context context, String id) {
-        if (id.startsWith("R.drawable.")) {
-            id = id.substring("R.drawable.".length());
+    static private int getId(Context context, String id, String defType) {
+        String type = "R." + defType + ".";
+        if (id.startsWith(type)) {
+            id = id.substring(type.length());
         }
 
         Resources r = context.getResources();
-        int resId = r.getIdentifier(id, "drawable",
-                                    context.getPackageName());
+        int resId = r.getIdentifier(id, defType,
+                context.getPackageName());
         if (resId > 0) {
             return resId;
         } else {
             throw Exceptions
-            .RuntimeAssertion("Specified resource '%s' could not be found",
-                              id);
+                    .RuntimeAssertion("Specified resource '%s' could not be found",
+                            id);
         }
     }
 
@@ -241,6 +243,10 @@ class WidgetStateInfo {
 
     private enum BitmapProperties {
         resource_type, type, id
+    }
+
+    private enum BitmapType {
+        compressed, uncompressed
     }
 
     private enum TextureType {
@@ -294,6 +300,7 @@ class WidgetStateInfo {
         String resourceType = bitmapSpec
                 .getString(BitmapProperties.resource_type.name());
         String id = bitmapSpec.getString(BitmapProperties.id.name());
+        String type = bitmapSpec.getString(BitmapProperties.type.name());
         final GVRAndroidResource resource;
 
         switch (BitmapResourceType.valueOf(resourceType)) {
@@ -304,7 +311,18 @@ class WidgetStateInfo {
                 resource = new GVRAndroidResource(id);
                 break;
             case resource:
-                int resId = getDrawableId(context.getContext(), id);
+                int resId = -1;
+                switch (BitmapType.valueOf(type)) {
+                    case uncompressed:
+                        resId = getId(context.getContext(), id, "drawable");
+                        break;
+                    case compressed:
+                        resId = getId(context.getContext(), id, "raw");
+                        Log.d(TAG, "loadBitmapTextureFromJSON compressed id = %s resId = %d", id, resId);
+                        break;
+                    default:
+                        break;
+                }
                 resource = new GVRAndroidResource(context, resId);
                 break;
             default:

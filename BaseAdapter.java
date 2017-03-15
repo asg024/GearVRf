@@ -60,6 +60,11 @@ public abstract class BaseAdapter implements Adapter {
     }
 
     @Override
+    public void unregisterAllDataSetObservers() {
+        mDataSetObservable.unregisterAll();
+    }
+
+    @Override
     public void registerDataSetObserver(DataSetObserver observer) {
         mDataSetObservable.registerObserver(observer);
     }

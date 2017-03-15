@@ -9,15 +9,15 @@ import java.util.List;
 import java.util.Set;
 
 public class PageIndicatorWidget extends CheckableGroup {
-    private Set<OnPageScrollListener> mListeners = new LinkedHashSet<OnPageScrollListener>();
+    private Set<OnPageSelectedListener> mListeners = new LinkedHashSet<>();
 
     private float mPageIndicatorButtonWidth,  mPageIndicatorButtonHeight;
     private int mCurrentPage;
     private static final String TAG = PageIndicatorWidget.class.getSimpleName();
     private final int mDefaultPage;
 
-    public interface OnPageScrollListener {
-        void onScrollTo(final int pageId);
+    public interface OnPageSelectedListener {
+        void onPageSelected(final int pageId);
     }
 
     public PageIndicatorWidget(GVRContext context, int numIndicators, int defaultPageId,
@@ -65,23 +65,23 @@ public class PageIndicatorWidget extends CheckableGroup {
                 listeners = mListeners.toArray();
             }
             for (Object listener : listeners) {
-                ((OnPageScrollListener) listener).onScrollTo(mCurrentPage);
+                ((OnPageSelectedListener) listener).onPageSelected(mCurrentPage);
             }
         }
     }
 
-    public <T extends Widget & Checkable> boolean addOnPageScrollListener(OnPageScrollListener listener) {
+    public <T extends Widget & Checkable> boolean addOnPageSelectedListener(OnPageSelectedListener listener) {
         final boolean added;
         synchronized (mListeners) {
             added = mListeners.add(listener);
         }
         if (added) {
-            listener.onScrollTo(mCurrentPage);
+            listener.onPageSelected(mCurrentPage);
         }
         return added;
     }
 
-    public boolean removeOnPageScrollListener(OnPageScrollListener listener) {
+    public boolean removeOnPageSelectedListener(OnPageSelectedListener listener) {
         synchronized (mListeners) {
             return mListeners.remove(listener);
         }

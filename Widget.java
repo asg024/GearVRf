@@ -3228,6 +3228,7 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public boolean removeLayout(final Layout layout) {
         boolean removed = mLayouts.remove(layout);
+
         requestLayout();
         return removed;
     }

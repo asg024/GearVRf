@@ -1,11 +1,10 @@
 package com.samsung.smcl.vr.widgets;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.widgets.Layout.Axis;
 
 import android.content.Context;
 import android.database.DataSetObserver;
@@ -27,15 +26,20 @@ public class LayoutScroller {
     private int mDeltaScrollAmount;
 	private Scroller mScroller;
 	private static final int SCROLL_DURATION = 5000; // 5 sec
-	private List<OnScrollListener> listeners = new ArrayList<OnScrollListener>();
+	private Set<OnScrollListener> mOnScrollListeners = new HashSet<>();
+    private Set<OnPageChangedListener> mOnPageChangedListeners = new HashSet<>();
 
 	public interface OnScrollListener {
         void onScrollStarted(int startPosition);
         void onScrollFinished(int finalPosition);
 	}
 
+    public interface OnPageChangedListener {
+        void pageChanged(int page);
+    }
+
 	interface ScrollableList {
-	    int getCount();
+	    int getScrollingItemsCount();
 	    float getViewPortWidth();
         float getViewPortHeight();
         float getViewPortDepth();
@@ -48,7 +52,7 @@ public class LayoutScroller {
 	protected DataSetObserver mObserver = new DataSetObserver() {
 	    @Override
 	    public void onChanged() {
-	        int count = mScrollable.getCount();
+	        int count = mScrollable.getScrollingItemsCount();
 	        mPageCount = mSupportScrollByPage ?
 	                (int) Math.ceil((float)count/(float)mPageSize) : 1;
 
@@ -60,7 +64,7 @@ public class LayoutScroller {
 
 	    @Override
 	    public void onInvalidated() {
-	        int count = mScrollable.getCount();
+	        int count = mScrollable.getScrollingItemsCount();
 	        mPageCount = mSupportScrollByPage ?
 	                (int) Math.ceil((float)count/(float)mPageSize) : 1;
 
@@ -72,12 +76,12 @@ public class LayoutScroller {
 	};
 
 	public LayoutScroller(final Context context, final ScrollableList scrollable) {
-        this(context, scrollable, false, 1, 0, 0);
+        this(context, scrollable, false, 1, 1, 0);
     }
 
 	public LayoutScroller(final Context context, final ScrollableList scrollable,
 	        final boolean scrollOver) {
-		this(context, scrollable, scrollOver, 1, 0, 0);
+		this(context, scrollable, scrollOver, 1, 1, 0);
 	}
 
 	public LayoutScroller(final Context context, final ScrollableList scrollable,
@@ -98,12 +102,21 @@ public class LayoutScroller {
 		mScrollable.registerDataSetObserver(mObserver);
 	}
 
-    public void addListener(final OnScrollListener listener) {
-        listeners.add(listener);
+    public void addOnScrollListener(final OnScrollListener listener) {
+        mOnScrollListeners.add(listener);
     }
 
-    public void removeListener(final OnScrollListener listener) {
-        listeners.remove(listener);
+    public void removeOnScrollListener(final OnScrollListener listener) {
+        mOnScrollListeners.remove(listener);
+    }
+
+
+    public void addOnPageChangedListener(final OnPageChangedListener listener) {
+        mOnPageChangedListeners.add(listener);
+    }
+
+    public void removeOnPageChangedListener(final OnPageChangedListener listener) {
+        mOnPageChangedListeners.remove(listener);
     }
 
     static final float VELOCITY_MAX = 30000;
@@ -152,14 +165,14 @@ public class LayoutScroller {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "flingToPosition() startIndex =%d vilocity = %d",
                 mCurrentItemIndex, vilocity);
 
-        vilocity /= -mScrollable.getCount();
+        vilocity /= -mScrollable.getScrollingItemsCount();
 
         if (!mScroller.isFinished()) {
             mScroller.forceFinished(true);
         }
 
         mScroller.fling(mCurrentItemIndex, 0, vilocity, 0,
-            -mScrollable.getCount(), 2 * mScrollable.getCount(), 0, 0);
+            -mScrollable.getScrollingItemsCount(), 2 * mScrollable.getScrollingItemsCount(), 0, 0);
         mScroller.computeScrollOffset();
         scrollToPosition(mScroller.getFinalX());
         return scrolled;
@@ -207,7 +220,7 @@ public class LayoutScroller {
     }
 
 	public int scrollToEnd() {
-	    return scrollToItem(mScrollable.getCount() - 1);
+	    return scrollToItem(mScrollable.getScrollingItemsCount() - 1);
     }
 
 	public int scrollToNextItem() {
@@ -227,7 +240,7 @@ public class LayoutScroller {
     public int getCurrentPage() {
         int currentPage = 1;
         if (mSupportScrollByPage && mCurrentItemIndex >= 0 &&
-                mCurrentItemIndex < mScrollable.getCount()) {
+                mCurrentItemIndex < mScrollable.getScrollingItemsCount()) {
             currentPage = (int) Math.ceil(
             (float)(mCurrentItemIndex + 1)/(float)mPageSize);
         }
@@ -245,17 +258,17 @@ public class LayoutScroller {
 
     private int getValidPosition(int position) {
         int pos = position;
-        if (pos >= mScrollable.getCount()) {
+        if (pos >= mScrollable.getScrollingItemsCount()) {
             if (mScrollOver) {
-                pos %= mScrollable.getCount();
+                pos %= mScrollable.getScrollingItemsCount();
             } else {
-                pos = mScrollable.getCount() - 1;
+                pos = mScrollable.getScrollingItemsCount() - 1;
             }
         } else if (pos < 0) {
             if (mScrollOver) {
-                pos %= mScrollable.getCount();
-                pos += mScrollable.getCount();
-                pos %= mScrollable.getCount();
+                pos %= mScrollable.getScrollingItemsCount();
+                pos += mScrollable.getScrollingItemsCount();
+                pos %= mScrollable.getScrollingItemsCount();
             } else {
                 pos = 0;
             }
@@ -272,7 +285,9 @@ public class LayoutScroller {
                 mCurrentItemIndex, newPosition);
 
         if (newPosition != mCurrentItemIndex) {
-            for (OnScrollListener listener: listeners) {
+            int prevPage = getCurrentPage();
+
+            for (OnScrollListener listener: mOnScrollListeners) {
                 listener.onScrollStarted(mCurrentItemIndex);
             }
             int pos = getValidPosition(newPosition);
@@ -282,9 +297,17 @@ public class LayoutScroller {
             if (scrolled) {
                 mCurrentItemIndex = pos;
             }
-            for (OnScrollListener listener: listeners) {
+            for (OnScrollListener listener: mOnScrollListeners) {
                 listener.onScrollFinished(mCurrentItemIndex);
             }
+
+            int curPage =  getCurrentPage();
+            if (curPage != prevPage) {
+                for (OnPageChangedListener listener: mOnPageChangedListeners) {
+                    listener.pageChanged(curPage - 1);
+                }
+            }
+
         }
 
         return scrolled;

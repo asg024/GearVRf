@@ -248,7 +248,7 @@ abstract public class Layout {
      * @param dataIndex of child in Container
      * @return true item fits the container, false - otherwise
      */
-    synchronized Widget measureChild(final int dataIndex) {
+    synchronized Widget measureChild(final int dataIndex, boolean calculateOffset) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild dataIndex = %d", dataIndex);
 
         Widget widget = mContainer.get(dataIndex);
@@ -257,6 +257,17 @@ abstract public class Layout {
         }
         return widget;
     }
+
+    /**
+     * Calculate the child size along the axis and measure the offset inside the
+     * layout container
+     * @param dataIndex of child in Container
+     * @return true item fits the container, false - otherwise
+     */
+    synchronized Widget measureChild(final int dataIndex) {
+        return measureChild(dataIndex, true);
+    }
+
 
     /**
      * Measure the children in the specified direction along the specified axis
@@ -305,7 +316,7 @@ abstract public class Layout {
         if (isInvalidated()) {
             invalidate();
             for (int i = 0; i < mContainer.size(); ++i) {
-                Widget child = measureChild(i);
+                Widget child = measureChild(i, false);
                 if (measuredChildren != null  && child != null) {
                     measuredChildren.add(child);
                 }
@@ -334,8 +345,12 @@ abstract public class Layout {
         boolean inBounds = true;
         for (; dataIndex < mContainer.size() && inBounds; ++dataIndex) {
             Widget view = measureChild(dataIndex);
-            inBounds = postMeasurement() || !isViewPortEnabled();
-
+            inBounds = inViewPort(dataIndex);
+            if (!inBounds) {
+                invalidate(dataIndex);
+            } else {
+                inBounds = postMeasurement() || !isViewPortEnabled();
+            }
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
                             "isBounds = %b isViewPortEnabled=%b dataIndex = %d layout = %s",
                     view == null ? "<null>" : view.getName(), inBounds, isViewPortEnabled(),

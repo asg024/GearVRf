@@ -41,6 +41,7 @@ public class MultiPageWidget extends ListWidget {
      * Adapter associated with the items in the pages
      */
     private Adapter mItemAdapter;
+    private int mItemsPerPage = -1;
 
     /**
      * Keep tracking the item layouts in the page list. If the page list is empty at the moment
@@ -49,18 +50,6 @@ public class MultiPageWidget extends ListWidget {
      */
     private final Set<Layout> mItemLayouts = new HashSet<>();
 
-    private DataSetObserver mListDateSetObserver = new DataSetObserver() {
-        @Override
-        public void onChanged() {
-            recalculateViewPort();
-        }
-
-        @Override
-        public void onInvalidated() {
-            recalculateViewPort();
-        }
-    };
-
     /**
      * Construct a new {@code MultiPageWidget} instance
      * @param context
@@ -68,9 +57,10 @@ public class MultiPageWidget extends ListWidget {
      *                  {@link ListWidget}
      * @param sceneObject
      */
-    public MultiPageWidget(GVRContext context, final Adapter pageAdapter, GVRSceneObject sceneObject) {
+    public MultiPageWidget(GVRContext context, final Adapter pageAdapter, GVRSceneObject sceneObject,
+            int maxVisiblePageCount) {
         super(context, sceneObject, pageAdapter);
-        registerListDataSetObserver(mListDateSetObserver);
+        setMaxVisiblePageCount(maxVisiblePageCount);
     }
 
 
@@ -82,9 +72,10 @@ public class MultiPageWidget extends ListWidget {
      * @param width
      * @param height
      */
-    public MultiPageWidget(GVRContext context, final Adapter pageAdapter, float width, float height) {
+    public MultiPageWidget(GVRContext context, final Adapter pageAdapter,
+                           float width, float height, int maxVisiblePageCount) {
         super(context, pageAdapter, width, height);
-        registerListDataSetObserver(mListDateSetObserver);
+        setMaxVisiblePageCount(maxVisiblePageCount);
     }
 
     /**
@@ -95,10 +86,10 @@ public class MultiPageWidget extends ListWidget {
      * @param sceneObject
      */
     public MultiPageWidget(final GVRContext context, final Adapter pageAdapter,
-                        final GVRSceneObject sceneObject, NodeEntry attributes)
+                   final GVRSceneObject sceneObject, NodeEntry attributes, int maxVisiblePageCount)
             throws InstantiationException {
         super(context, sceneObject, attributes, pageAdapter);
-        registerListDataSetObserver(mListDateSetObserver);
+        setMaxVisiblePageCount(maxVisiblePageCount);
     }
 
     /**
@@ -141,9 +132,8 @@ public class MultiPageWidget extends ListWidget {
         for (Widget view: views) {
             ListWidget page = ((ListWidget)view);
             if (page != null) {
-                ListOnChangedListener listener = mPagesListOnChangedListeners.get(view);
+                ListOnChangedListener listener = mPagesListOnChangedListeners.get(page);
                 page.removeListOnChangedListener(listener);
-
                 page.clear();
             }
         }
@@ -155,13 +145,13 @@ public class MultiPageWidget extends ListWidget {
     protected void onRecycle(Widget view, int dataIndex) {
         if (view != null) {
             final ListWidget page = (ListWidget) view;
-            setAdapter(page, null);
+            setAdapter(page, dataIndex, null);
 
             page.recycleChildren();
-            ListOnChangedListener listener = mPagesListOnChangedListeners.get(dataIndex);
+            ListOnChangedListener listener = mPagesListOnChangedListeners.get(page);
             if (listener != null) {
                 page.removeListOnChangedListener(listener);
-                mPagesListOnChangedListeners.remove(dataIndex);
+                mPagesListOnChangedListeners.remove(page);
             }
         }
 
@@ -187,10 +177,11 @@ public class MultiPageWidget extends ListWidget {
         }
 
         void setBounds(int start, int length) {
+            int end = start + length - 1;
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setBounds  old [%d, %d] new [%d, %d]",
-                    mStart, mEnd - mStart, start, length);
+                    mStart, mEnd, start, end);
             mStart = start;
-            mEnd = mStart + length;
+            mEnd = end;
         }
 
         void setStart(int start) {
@@ -200,9 +191,10 @@ public class MultiPageWidget extends ListWidget {
         }
 
         void setLength(int length) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setEnd  old [%d, %d] new [%d, %d]",
-                    mStart, mEnd - mStart, mStart, length);
-            mEnd = mStart + length;
+            int end = mStart + length - 1;
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setLength  old [%d, %d] new [%d, %d]",
+                    mStart, mEnd, mStart, end);
+            mEnd = end;
         }
 
         private int getRealPosition(int position) {
@@ -281,6 +273,11 @@ public class MultiPageWidget extends ListWidget {
         public void unregisterDataSetObserver(DataSetObserver observer) {
             mAdapter.unregisterDataSetObserver(observer);
         }
+
+        @Override
+        public void unregisterAllDataSetObservers() {
+            mAdapter.unregisterAllDataSetObservers();
+        }
     }
 
     protected DataSetObserver mInternalItemsObserver = new DataSetObserver() {
@@ -314,17 +311,13 @@ public class MultiPageWidget extends ListWidget {
         }
     };
 
-    private void superOnChanged() {
-        super.onChanged();
-    }
-
     protected void onItemChanged(final Adapter adapter) {
         runOnGlThread(new Runnable() {
             @Override
             public void run() {
                 if (adapter != mItemAdapter) {
                     if (mItemAdapter != null) {
-                        mItemAdapter.unregisterDataSetObserver(mInternalItemsObserver);
+                        mItemAdapter.unregisterAllDataSetObservers();
 
                         // clear items in pages
                         List<Widget> views = getAllViews();
@@ -341,14 +334,13 @@ public class MultiPageWidget extends ListWidget {
                         observer.onInvalidated();
                     }
                 }
-                MultiPageWidget.this.superOnChanged();
+                MultiPageWidget.this.onChanged();
             }
         });
     }
 
 
-    protected void
-    setAdapter(ListWidget page, final Adapter adapter) {
+    protected void setAdapter(ListWidget page, final int pageIndex, final Adapter adapter) {
         if (adapter == null) {
             page.setAdapter(null);
         } else if (page.mAdapter == null ||
@@ -356,7 +348,11 @@ public class MultiPageWidget extends ListWidget {
 
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setAdapter page = %s adapter = %s",
                     page, adapter);
-            page.setAdapter(new SelectingAdapter(adapter));
+            SelectingAdapter pageAdapter = new SelectingAdapter(adapter);
+            if (mItemsPerPage >= 0) {
+                pageAdapter.setBounds(pageIndex * mItemsPerPage, mItemsPerPage);
+            }
+            page.setAdapter(pageAdapter);
         }
     }
 
@@ -387,7 +383,7 @@ public class MultiPageWidget extends ListWidget {
                 pageCount, mLayouts.size());
         if (mMaxVisiblePageCount != pageCount) {
             mMaxVisiblePageCount = pageCount;
-            recalculateViewPort();
+            recalculateViewPort(mAdapter);
             requestLayout();
         }
     }
@@ -423,16 +419,15 @@ public class MultiPageWidget extends ListWidget {
      * @param listLayout page list layout
      */
     public boolean applyListLayout(Layout listLayout) {
-        boolean ret =  super.applyLayout(listLayout);
-        recalculateViewPort();
-        return ret;
+        return super.applyLayout(listLayout);
     }
 
-    protected void recalculateViewPort() {
+    protected void recalculateViewPort(final Adapter adapter) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "recalculateViewPort mMaxVisiblePageCount = %d mAdapter =%s " +
                 "mAdapter.hasUniformViewSize() = %b",
-                mMaxVisiblePageCount, mAdapter, (mAdapter != null ? mAdapter.hasUniformViewSize() : false));
-        if (mMaxVisiblePageCount < Integer.MAX_VALUE && mAdapter != null && mAdapter.hasUniformViewSize()) {
+                mMaxVisiblePageCount, adapter, (adapter != null ? adapter.hasUniformViewSize() : false));
+
+        if (mMaxVisiblePageCount < Integer.MAX_VALUE && adapter != null && adapter.hasUniformViewSize()) {
             int[] ids = new int[mMaxVisiblePageCount];
             for (int i = 0; i < mMaxVisiblePageCount; ++i) {
                 ids[i] = i;
@@ -477,12 +472,17 @@ public class MultiPageWidget extends ListWidget {
      * @return true if layout has been removed successfully , false - otherwise
      */
     public boolean removeListLayout(final Layout listLayout) {
-        boolean ret =  super.removeLayout(listLayout);
-        recalculateViewPort();
-        return ret;
+        return super.removeLayout(listLayout);
     }
 
-    private Map<Widget, ListOnChangedListener> mPagesListOnChangedListeners = new HashMap<>();
+    @Override
+    protected void onChanged(final Adapter adapter) {
+        mItemsPerPage = -1;
+        recalculateViewPort(adapter);
+        super.onChanged(adapter);
+    }
+
+    private Map<ListWidget, ListOnChangedListener> mPagesListOnChangedListeners = new HashMap<>();
 
     class PageOnChangedListener implements ListOnChangedListener {
         private final int mPageIndex;
@@ -515,13 +515,16 @@ public class MultiPageWidget extends ListWidget {
                 SelectingAdapter adapter = ((SelectingAdapter) list.mAdapter);
 
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedFinished list = %s , index = %d end = %d",
-                        list, mPageIndex, (numOfMeasuredViews - 1));
-                adapter.setLength(numOfMeasuredViews - 1);
+                        list, mPageIndex, numOfMeasuredViews);
+                adapter.setLength(numOfMeasuredViews);
+                if (adapter.hasUniformViewSize() && mAdapter.hasUniformViewSize()) {
+                    mItemsPerPage = numOfMeasuredViews;
+                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedFinished mItemsPerPage = %d", mItemsPerPage);
+                }
             } else {
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedStart list = %s , index = %d adapter is null ",
                         list, mPageIndex);
             }
-
         }
     }
 
@@ -536,10 +539,100 @@ public class MultiPageWidget extends ListWidget {
                 page.applyLayout(layout.clone());
             }
         }
-        ListOnChangedListener listener = new PageOnChangedListener(dataIndex);
-        page.addListOnChangedListener(listener);
-        mPagesListOnChangedListeners.put(page, listener);
+        if (mItemsPerPage == -1) {
+            ListOnChangedListener listener = new PageOnChangedListener(dataIndex);
+            page.addListOnChangedListener(listener);
+            mPagesListOnChangedListeners.put(page, listener);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getViewFromAdapter index = %d registerOnChangeListener",
+                    dataIndex);
+        }
 
-        setAdapter(page, mItemAdapter);
+        setAdapter(page, dataIndex, mItemAdapter);
+    }
+
+
+    // default ScrollableList implementation should work with the items but not pages
+    // getPageScrollable should be used to operate with pages
+
+    @Override
+    public int getScrollingItemsCount() {
+        return mItemAdapter == null ? 0 : mItemAdapter.getCount();
+    }
+
+    @Override
+    public float getViewPortWidth() {
+        return mAdapter != null && mAdapter.hasUniformViewSize() ?
+                mAdapter.getViewWidthGuess(0) : MultiPageWidget.super.getViewPortWidth();
+    }
+
+    @Override
+    public float getViewPortHeight() {
+        return mAdapter != null && mAdapter.hasUniformViewSize() ?
+                mAdapter.getViewHeightGuess(0) : MultiPageWidget.super.getViewPortHeight();
+    }
+
+    @Override
+    public float getViewPortDepth() {
+        return mAdapter != null && mAdapter.hasUniformViewSize() ?
+                mAdapter.getViewDepthGuess(0) : MultiPageWidget.super.getViewPortDepth();
+    }
+
+    @Override
+    public boolean scrollToPosition(int pos) {
+        // needs to be reimplemented to work with items not pages
+        return  MultiPageWidget.super.scrollToPosition(pos);
+    }
+
+    @Override
+    public boolean scrollByOffset(float xOffset, float yOffset, float zOffset) {
+        // needs to be reimplemented to work with items not pages
+        return  MultiPageWidget.super.scrollByOffset(xOffset, yOffset, zOffset);
+    }
+
+    // provides the scrollableList implementation for page scrolling
+
+    public LayoutScroller.ScrollableList getPageScrollable() {
+        return new LayoutScroller.ScrollableList() {
+
+            @Override
+            public int getScrollingItemsCount() {
+                return  MultiPageWidget.super.getScrollingItemsCount();
+            }
+
+            @Override
+            public float getViewPortWidth() {
+                return  MultiPageWidget.super.getViewPortWidth();
+            }
+
+            @Override
+            public float getViewPortHeight() {
+                return  MultiPageWidget.super.getViewPortHeight();
+            }
+
+            @Override
+            public float getViewPortDepth() {
+                return  MultiPageWidget.super.getViewPortDepth();
+            }
+
+            @Override
+            public boolean scrollToPosition(int pos) {
+                return  MultiPageWidget.super.scrollToPosition(pos);
+            }
+
+            @Override
+            public boolean scrollByOffset(float xOffset, float yOffset, float zOffset) {
+                return  MultiPageWidget.super.scrollByOffset(xOffset, yOffset, zOffset);
+            }
+
+            @Override
+            public void registerDataSetObserver(DataSetObserver observer) {
+                MultiPageWidget.super.registerDataSetObserver(observer);
+            }
+
+            @Override
+            public void unregisterDataSetObserver(DataSetObserver observer) {
+                MultiPageWidget.super.unregisterDataSetObserver(observer);
+            }
+        };
     }
 }
