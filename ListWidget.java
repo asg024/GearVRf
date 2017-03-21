@@ -120,10 +120,15 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             mItemFocusEnabled = enabled;
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setItemFocusEnabled(%s): item focus enabled: %b", getName(), enabled);
 
-            List<ListItemHostWidget>  views = getAllHosts();
+            List<Widget> views = getAllViews();
 
-            for (ListItemHostWidget host: views) {
-                host.getGuest().setFocusEnabled(enabled);
+            for (int i = 0; i < views.size(); ++i ) {
+                Widget view = views.get(i);
+                if (view != null) {
+                    view.setFocusEnabled(enabled);
+                } else {
+                    Log.w(TAG, "setItemFocusEnabled(%s): Host at %d has no view!", getName(), i);
+                }
             }
         }
     }
@@ -204,9 +209,14 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             mItemTouchable = enabled;
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mItemTouchable(%s): item touch enabled: %b", getName(), enabled);
 
-            List<ListItemHostWidget>  views = getAllHosts();
-            for (ListItemHostWidget host: views) {
-                host.getGuest().setTouchable(enabled);
+            List<Widget> views = getAllViews();
+            for (int i = 0; i < views.size(); ++i) {
+                Widget view = views.get(i);
+                if (view != null) {
+                    view.setTouchable(enabled);
+                } else {
+                    Log.w(TAG, "setItemTouchable(%s): Host at %d has no view!", getName(), i);
+                }
             }
         }
     }
