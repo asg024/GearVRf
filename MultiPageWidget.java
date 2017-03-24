@@ -350,7 +350,9 @@ public class MultiPageWidget extends ListWidget {
                     page, adapter);
             SelectingAdapter pageAdapter = new SelectingAdapter(adapter);
             if (mItemsPerPage >= 0) {
-                pageAdapter.setBounds(pageIndex * mItemsPerPage, mItemsPerPage);
+                int start = pageIndex * mItemsPerPage;
+                int length = Math.min(mItemsPerPage, adapter.getCount() - start);
+                pageAdapter.setBounds(start, length);
             }
             page.setAdapter(pageAdapter);
         }

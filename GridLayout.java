@@ -29,6 +29,7 @@ import com.samsung.smcl.vr.widgets.LinearLayout.Gravity;
 
 public class GridLayout extends OrientedLayout {
     protected int mRowCount, mColumnCount;
+    protected static final String TAG = GridLayout.class.getSimpleName();
 
     class ChunkedLinearLayout extends LinearLayout {
         protected ChunkBreaker mChunkBreaker;
