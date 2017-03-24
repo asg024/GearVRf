@@ -10,6 +10,7 @@ import org.gearvrf.GVRSceneObject;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -126,6 +127,28 @@ public class MultiPageWidget extends ListWidget {
         super.unregisterDataSetObserver(observer);
     }
 
+    private Set<OnItemTouchListener> mOnItemTouchListeners = new LinkedHashSet<>();
+    @Override
+    public boolean addOnItemTouchListener(OnItemTouchListener listener) {
+        return mOnItemTouchListeners.add(listener);
+    }
+
+    @Override
+    public boolean removeOnItemTouchListener(OnItemTouchListener listener) {
+        return mOnItemTouchListeners.remove(listener);
+    }
+
+    private Set<OnItemFocusListener> mOnItemFocusListeners = new LinkedHashSet<>();
+    @Override
+    public boolean addOnItemFocusListener(OnItemFocusListener listener) {
+        return mOnItemFocusListeners.add(listener);
+    }
+
+    @Override
+    public boolean removeOnItemFocusListener(OnItemFocusListener listener) {
+        return mOnItemFocusListeners.remove(listener);
+    }
+
     @Override
     public void clear() {
         List<Widget> views = getAllViews();
@@ -152,6 +175,14 @@ public class MultiPageWidget extends ListWidget {
             if (listener != null) {
                 page.removeListOnChangedListener(listener);
                 mPagesListOnChangedListeners.remove(page);
+            }
+
+            for (OnItemFocusListener focusListener : mOnItemFocusListeners) {
+                page.removeOnItemFocusListener(focusListener);
+            }
+
+            for (OnItemTouchListener touchListener : mOnItemTouchListeners) {
+                page.addOnItemTouchListener(touchListener);
             }
         }
 
@@ -547,6 +578,13 @@ public class MultiPageWidget extends ListWidget {
             mPagesListOnChangedListeners.put(page, listener);
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getViewFromAdapter index = %d registerOnChangeListener",
                     dataIndex);
+        }
+
+        for (OnItemFocusListener focusListener : mOnItemFocusListeners) {
+            page.addOnItemFocusListener(focusListener);
+        }
+        for (OnItemTouchListener touchListener : mOnItemTouchListeners) {
+            page.addOnItemTouchListener(touchListener);
         }
 
         setAdapter(page, dataIndex, mItemAdapter);
