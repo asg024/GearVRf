@@ -141,7 +141,7 @@ public class GridLayout extends OrientedLayout {
             int cacheId = mChunkBreaker.getChunkIndex(dataIndex);
             CacheDataSet cache = mCaches.get(cacheId);
             if (cache == null) {
-                cache = new LinearCacheDataSet();
+                cache = new LinearCacheDataSet(mOuterPaddingEnabled);
                 mCaches.put(cacheId, cache);
             }
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild [%d] orientation = %s cacheId = %d cache.count = %d",
@@ -349,13 +349,15 @@ public class GridLayout extends OrientedLayout {
         mColumnLayout = new ChunkedLinearLayout(rhs.mColumnLayout);
     }
 
-    private static final String pattern = "\nGL attributes====== orientation = %s divider_padding = %s size [%s]";
+    private static final String pattern = "\nGL attributes====== orientation = %s " +
+            "divider_padding = %s outerPaddingEnabled [%b] size [%s]";
 
     /**
      * Return the string representation of the LinearLayout
      */
     public String toString() {
-        return super.toString() + String.format(pattern, mOrientation, mDividerPadding, mViewPort);
+        return super.toString() + String.format(pattern, mOrientation,
+                mDividerPadding, mOuterPaddingEnabled, mViewPort);
     }
 
 
@@ -489,6 +491,13 @@ public class GridLayout extends OrientedLayout {
                 break;
         }
         super.setDividerPadding(padding, axis);
+    }
+
+    @Override
+    public void enableOuterPadding(boolean enable) {
+        mColumnLayout.enableOuterPadding(enable);
+        mRowLayout.enableOuterPadding(enable);
+        super.enableOuterPadding(enable);
     }
 
     @Override

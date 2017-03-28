@@ -67,9 +67,21 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         return axis;
     }
 
+    /**
+     * Enable/disable leading and ending padding for group of the items
+     * @param enable
+     */
+    public void enableOuterPadding(final boolean enable) {
+        if (mOuterPaddingEnabled != enable) {
+            mOuterPaddingEnabled = enable;
+            invalidate();
+        }
+    }
+
     protected OrientedLayout(final OrientedLayout rhs) {
         super(rhs);
         mOrientation = rhs.mOrientation;
+        mOuterPaddingEnabled = rhs.mOuterPaddingEnabled;
     }
 
     @Override
@@ -80,13 +92,15 @@ public abstract class OrientedLayout extends AbsoluteLayout {
 
         OrientedLayout that = (OrientedLayout) o;
 
-        return mOrientation == that.mOrientation;
+        return mOrientation == that.mOrientation &&
+                mOuterPaddingEnabled == that.mOuterPaddingEnabled;
 
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
+        result = 31 * result + (mOuterPaddingEnabled ? 1 : 0);
         result = 31 * result + mOrientation.hashCode();
         return result;
     }
@@ -100,10 +114,10 @@ public abstract class OrientedLayout extends AbsoluteLayout {
             if (Float.isNaN(sizeWithPadding)) {
                 // child is not measured yet
                 sizeWithPadding = getChildSize(child, axis);
-                if (i > 0) {
+                if (i > 0 || mOuterPaddingEnabled) {
                     sizeWithPadding += getDividerPadding(axis) / 2;
                 }
-                if (i < children.length - 1) {
+                if (i < children.length - 1 || mOuterPaddingEnabled) {
                     sizeWithPadding += getDividerPadding(axis) / 2;
                 }
             }
@@ -136,4 +150,5 @@ public abstract class OrientedLayout extends AbsoluteLayout {
     }
 
     protected Orientation mOrientation = Orientation.HORIZONTAL;
+    protected boolean mOuterPaddingEnabled = false;
 }

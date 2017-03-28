@@ -346,7 +346,7 @@ public class LinearLayout extends OrientedLayout {
         if (dataIndex >= 0) {
             Widget widget = measureChild(dataIndex);
             totalSize = (direction == Direction.BACKWARD ? 1 : -1) *
-                    getMeasuredChildSizeWithPadding(dataIndex, axis);
+                    (getMeasuredChildSizeWithPadding(dataIndex, axis));
             if (widget != null && measuredChildren != null) {
                 measuredChildren.add(widget);
             }
@@ -660,6 +660,7 @@ public class LinearLayout extends OrientedLayout {
 
     protected void invalidateCache() {
         mCache.invalidate();
+        mCache.enableOuterPadding(mOuterPaddingEnabled);
     }
 
     protected void invalidateCache(final int dataIndex) {
@@ -756,10 +757,10 @@ public class LinearLayout extends OrientedLayout {
      * Initialize cache data set
      */
     protected void initCache() {
-        mCache = new LinearCacheDataSet();
+        mCache = new LinearCacheDataSet(mOuterPaddingEnabled);
     }
 
-    protected CacheDataSet mCache;
+    protected LinearCacheDataSet mCache;
     protected boolean mUniformSize;
     protected Gravity mGravity = Gravity.CENTER;
     protected static final String TAG = LinearLayout.class.getSimpleName();
