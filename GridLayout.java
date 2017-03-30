@@ -568,10 +568,10 @@ public class GridLayout extends OrientedLayout {
     }
 
     @Override
-    protected void measureUntilFull(int dataIndex, final Collection<Widget> measuredChildren) {
+    protected void measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
 // TODO: only left & top centralization is supported for now. Need to support center and right as well
         // no preferred position, just feed all data starting from beginning.
-        super.measureUntilFull(dataIndex == -1 ? 0 : dataIndex, measuredChildren);
+        super.measureUntilFull(centerDataIndex == -1 ? 0 : centerDataIndex, measuredChildren);
     }
 
     @Override

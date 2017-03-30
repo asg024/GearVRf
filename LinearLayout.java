@@ -397,9 +397,9 @@ public class LinearLayout extends OrientedLayout {
     }
 
     @Override
-    protected void measureUntilFull(int dataIndex, final Collection<Widget> measuredChildren) {
+    protected void measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
         // no preferred position, just feed all data starting from beginning.
-        if (dataIndex == -1) {
+        if (centerDataIndex == -1) {
             super.measureUntilFull(0, measuredChildren);
             return;
         }
@@ -423,16 +423,18 @@ public class LinearLayout extends OrientedLayout {
             default:
                 break;
         }
-        for (int i = dataIndex; i < mContainer.size() && i >= 0 && inBounds;) {
+        for (int i = centerDataIndex; i < mContainer.size() && i >= 0 && inBounds;) {
             Widget view = measureChild(i);
 
-            inBounds = inViewPort(dataIndex) || !isViewPortEnabled();
+            inBounds = !isViewPortEnabled() || inViewPort(i);
 
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
-                    "isBounds = %b index = %d layout = %s",
-                    view == null ? "null" : view.getName(), inBounds, i, this);
+                    "isBounds = %b index = %d isViewPortEnabled() = %b layout = %s",
+                    view == null ? "null" : view.getName(), inBounds, i, isViewPortEnabled(), this);
 
-            if (measuredChildren != null && view != null) {
+            if (!inBounds) {
+                invalidate(i);
+            } else if (measuredChildren != null && view != null) {
                 measuredChildren.add(view);
             }
 
@@ -440,7 +442,7 @@ public class LinearLayout extends OrientedLayout {
             if (mGravity == Gravity.CENTER &&
                     leftPart &&
                     (i == 0 || !inBounds)) {
-                i = dataIndex;
+                i = centerDataIndex;
                 inBounds = true;
                 leftPart = false;
             }
@@ -615,12 +617,18 @@ public class LinearLayout extends OrientedLayout {
     }
 
     protected boolean inViewPort(final int dataIndex, CacheDataSet cache) {
-        float startDataOffset = cache.getStartDataOffset(dataIndex);
-        float endDataOffset = cache.getEndDataOffset(dataIndex);
+        float startData = cache.getStartDataOffset(dataIndex) + getDivider() / 2;
+        float endData = cache.getEndDataOffset(dataIndex) - getDivider() / 2;
 
         float layoutOffset = getLayoutOffset();
-        return (Math.abs(endDataOffset) <= Math.abs(layoutOffset) ||
-                Math.abs(startDataOffset) <= Math.abs(layoutOffset));
+
+
+        boolean inViewport = (endData >= layoutOffset &&
+                startData <= -layoutOffset);
+
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "inViewPort [%d] = %b data[%f, %f] layout [%f, %f]",
+                dataIndex, inViewport, startData, endData, layoutOffset, -layoutOffset);
+        return inViewport;
     }
 
     /**

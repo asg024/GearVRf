@@ -336,25 +336,25 @@ abstract public class Layout {
 
     /**
      * Measure the children from container until the layout is full (if ViewPort is enabled)
-     * @param dataIndex of the item in center
+     * @param centerDataIndex of the item in center
      * @param measuredChildren the list of measured children
      * measuredChildren list can be passed as null if it's not needed to
      * create the list of the measured items
      */
-    protected void measureUntilFull(int dataIndex, final Collection<Widget> measuredChildren) {
+    protected void measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
         boolean inBounds = true;
-        for (; dataIndex < mContainer.size() && inBounds; ++dataIndex) {
-            Widget view = measureChild(dataIndex);
-            inBounds = inViewPort(dataIndex);
+        for (int i = centerDataIndex; i < mContainer.size() && inBounds; ++i) {
+            Widget view = measureChild(i);
+            inBounds = inViewPort(i);
             if (!inBounds) {
-                invalidate(dataIndex);
+                invalidate(i);
             } else {
                 inBounds = postMeasurement() || !isViewPortEnabled();
             }
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
                             "isBounds = %b isViewPortEnabled=%b dataIndex = %d layout = %s",
                     view == null ? "<null>" : view.getName(), inBounds, isViewPortEnabled(),
-                    dataIndex, this);
+                    i, this);
 
             if (measuredChildren != null && view != null && inBounds) {
                 measuredChildren.add(view);
