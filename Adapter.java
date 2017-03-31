@@ -158,7 +158,7 @@ public interface Adapter {
     void unregisterDataSetObserver(DataSetObserver observer);
 
     /**
-     * Unregister aall observers that has previously been registered with this
+     * Unregister all observers that have previously been registered with this
      * adapter via {@link #registerDataSetObserver(DataSetObserver)}.
      */
     void unregisterAllDataSetObservers();
