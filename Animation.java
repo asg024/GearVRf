@@ -11,10 +11,7 @@ import org.gearvrf.animation.GVROnFinish;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.R.integer;
-
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.vr.gvrf_launcher.Policy;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 
 /**
@@ -354,7 +351,7 @@ public abstract class Animation {
 
         @Override
         public void finished(GVRAnimation animation) {
-            mOnFinish.finished((Animation) ((AnimationAdapter) animation));
+            mOnFinish.finished(Animation.this);
         }
 
         private final OnFinish mOnFinish;

@@ -558,26 +558,22 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         private Vector3Axis mScrollByOffset = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
         private SimpleAnimationTracker animationTracker = SimpleAnimationTracker.get(getGVRContext());
 
-        protected List<ScrollAnimation> mScrollAnimations = new ArrayList<ScrollAnimation>();
-
-        private class ScrollAnimation extends GVRAnimation {
+        private class ScrollAnimation extends Animation {
             private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
             private final float mShiftBy;
             private float mShiftedBy;
             private final Layout mLayout;
             private final Axis mAxis;
-            private final GVRSceneObject mSceneKey;
 
-            ScrollAnimation(Layout layout, float shiftBy, Axis axis) {
-                super(new GVRSceneObject(getGVRContext()), Math.abs(shiftBy/ANIMATION_SPEED));
+            ScrollAnimation(Widget target, Layout layout, float shiftBy, Axis axis) {
+                super(target, Math.abs(shiftBy/ANIMATION_SPEED));
                 mShiftBy = shiftBy;
                 mLayout = layout;
                 mAxis = axis;
-                mSceneKey = getSceneObject();
             }
 
             @Override
-            protected void animate(GVRHybridObject target, float ratio) {
+            public void animate(Widget target, float ratio) {
                 float shifted  = mShiftedBy;
                 mShiftedBy = ratio * mShiftBy;
                 mLayout.shiftBy(mShiftedBy - shifted, mAxis);
@@ -624,11 +620,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                     }
                 }
             }
-            Log.d(TAG, "preMeasure direction = %s offset = %f axis = %s", direction, offset, axis);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "preMeasure direction = %s offset = %f axis = %s", direction, offset, axis);
             return offset;
         }
 
-        private void startShifting(Layout layout, float offset, Axis axis) {
+        private void startShifting(AnimationSet.Builder builder, Layout layout, float offset, Axis axis) {
             if (Float.isNaN(offset)) {
                 return;
             }
@@ -651,8 +647,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             }
 
             if (isTransitionAnimationEnabled()) {
-                ScrollAnimation animation = new ScrollAnimation(layout, shiftBy, axis);
-                mScrollAnimations.add(animation);
+                ScrollAnimation animation = new ScrollAnimation(ListWidget.this, layout, shiftBy, axis);
+                builder.add(animation);
             } else {
                 layout.shiftBy(shiftBy, axis);
                 requestLayout();
@@ -660,8 +656,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
 
         void scroll() {
-            Log.d(TAG, "scroll() mScrollToPosition = %d mScrollByOffset = %s",
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scroll() mScrollToPosition = %d mScrollByOffset = %s",
                   mScrollToPosition, mScrollByOffset);
+            AnimationSet.Builder builder = new AnimationSet.Builder(ListWidget.this);
 
             for (Layout layout: mLayouts) {
                 // measure all directions. Finally measuredChildren has to contain all
@@ -677,35 +674,30 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
                 for (Widget view: measuredChildren) {
                     ((ListItemHostWidget)view).setInLayout();
-                    Log.d(TAG, "measured item: %s set in layout xOffset= %f yOffset= %f zOffset= %f",
+                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measured item: %s set in layout xOffset= %f yOffset= %f zOffset= %f",
                           view.getName(), xOffset, yOffset, zOffset);
                 }
 
-                startShifting(layout, xOffset, Axis.X);
-                startShifting(layout, yOffset, Axis.Y);
-                startShifting(layout, zOffset, Axis.Z);
+                startShifting(builder, layout, xOffset, Axis.X);
+                startShifting(builder, layout, yOffset, Axis.Y);
+                startShifting(builder, layout, zOffset, Axis.Z);
             }
 
-            if (mScrollAnimations.isEmpty()) {
+            if (builder.isEmptySet()) {
                 finish(true);
             } else {
-                for (ScrollAnimation animation: mScrollAnimations) {
-                    animationTracker.track(animation.mSceneKey, animation,
-                                           new GVROnFinish() {
-                        @Override
-                        public final void finished(GVRAnimation animation) {
-                            mScrollAnimations.remove(animation);
-                            if (mScrollAnimations.isEmpty()) {
+                builder.build().track(animationTracker,
+                        new Animation.OnFinish() {
+                            @Override
+                            public final void finished(Animation animation) {
                                 finish(false);
                             }
-                        }
-                    });
-                }
+                        });
             }
         }
 
         void finish(boolean force) {
-            Log.d(TAG, "finish scrolling with force = %b", force);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "finish scrolling with force = %b", force);
             if (!force) {
                 for (Layout layout: mLayouts) {
                     force = true;
@@ -721,7 +713,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                                     Float.isNaN(mScrollByOffset.get(Axis.Z)));
                     }
                     if (!force) {
-                        Log.d(TAG, "finish scrolling pos = %d", pos);
+                        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "finish scrolling pos = %d", pos);
                         break;
                     }
                 }
