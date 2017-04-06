@@ -1,4 +1,9 @@
 package com.samsung.smcl.vr.widgets;
+
+import com.samsung.smcl.utility.Log;
+
+import org.gearvrf.GVRSceneObject;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IllegalFormatException;
@@ -7,10 +12,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.MissingFormatArgumentException;
 import java.util.Set;
-
-import org.gearvrf.GVRSceneObject;
-
-import com.samsung.smcl.utility.Log;
 
 public class NodeEntry {
     public static final String KEY_NAME = "name";
@@ -43,6 +44,15 @@ public class NodeEntry {
             properties = NameDemangler.demangleString(name);
         }
 
+        if (properties == null || properties.get(KEY_NAME) == null) {
+            if (properties == null) {
+                properties = new HashMap<String, String>();
+            } else {
+                properties.clear();
+            }
+            properties.put(KEY_NAME, name);
+        }
+
         // Validation
         if (properties != null) {
             for (String key: mandatoryKeys) {
@@ -65,7 +75,7 @@ public class NodeEntry {
     }
 
     public String getProperty(String key) {
-        return properties.get(key);
+        return properties == null ? null : properties.get(key);
     }
 
     public String getProperty(Enum<?> key) {
@@ -79,7 +89,7 @@ public class NodeEntry {
         } else {
             keyName = key.name();
         }
-        return properties.get(keyName);
+        return properties == null ? null : properties.get(keyName);
     }
 
     @Override

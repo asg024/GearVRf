@@ -39,12 +39,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.getInt;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.has;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.optBoolean;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONArray;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONObject;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
 
 public class Widget  implements Layout.WidgetContainer {
 
@@ -217,29 +212,33 @@ public class Widget  implements Layout.WidgetContainer {
         // attributes
         this(context, sceneObject, false);
 
-        // This gives us the demangled name, which is the name we'll use to
-        // refer to the widget
-        String attribute = attributes.getProperty("name");
-        setName(attribute);
+        String attribute = null;
+        if (attributes != null) {
+            // This gives us the demangled name, which is the name we'll use to
+            // refer to the widget
+            attribute = attributes.getProperty("name");
+            setName(attribute);
 
-        final boolean hasRenderData = sceneObject.getRenderData() != null;
+            final boolean hasRenderData = sceneObject.getRenderData() != null;
 
-        attribute = attributes.getProperty("touchable");
-        if (attribute != null) {
-            setTouchable(hasRenderData
+            attribute = attributes.getProperty("touchable");
+            if (attribute != null) {
+                setTouchable(hasRenderData
+                        && attribute.compareToIgnoreCase("false") != 0);
+            }
+
+            attribute = attributes.getProperty("focusenabled");
+            if (attribute != null) {
+                setFocusEnabled(attribute.compareToIgnoreCase("false") != 0);
+            }
+
+            attribute = attributes.getProperty("selected");
+            setSelected(attribute != null && hasRenderData
                     && attribute.compareToIgnoreCase("false") != 0);
+
+            attribute = attributes.getProperty("visibility");
         }
 
-        attribute = attributes.getProperty("focusenabled");
-        if (attribute != null) {
-            setFocusEnabled(attribute.compareToIgnoreCase("false") != 0);
-        }
-
-        attribute = attributes.getProperty("selected");
-        setSelected(attribute != null && hasRenderData
-                && attribute.compareToIgnoreCase("false") != 0);
-
-        attribute = attributes.getProperty("visibility");
         setVisibility(attribute != null ? Visibility.valueOf(attribute
                 .toUpperCase(Locale.ENGLISH)) : Visibility.VISIBLE);
 
