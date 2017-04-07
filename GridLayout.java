@@ -180,23 +180,19 @@ public class GridLayout extends OrientedLayout {
 
             if (dataIndex >= 0) {
                 int count =  mCaches.size();
-                float max = 0;
                 int sign = (direction == Direction.BACKWARD ? 1 : -1);
+                totalSize = getTotalSizeWithPadding(axis);
+
                 while (dataIndex >= 0 && dataIndex < mContainer.size() && count-- > 0) {
                     Widget widget = measureChild(dataIndex);
-                    float sizeWithPadding  = getMeasuredChildSizeWithPadding(dataIndex, axis);
-                    if (!Float.isNaN(sizeWithPadding)) {
-                        max = Math.max(max, sizeWithPadding);
-                    }
 
                     if (widget != null && measuredChildren != null) {
                         measuredChildren.add(widget);
                     }
                     dataIndex -= sign;
                 }
-                if (max > 0) {
-                    totalSize = sign * max;
-                }
+
+                totalSize = sign * (getTotalSizeWithPadding(axis) - totalSize);
             }
             return totalSize;
         }
@@ -315,6 +311,16 @@ public class GridLayout extends OrientedLayout {
             }
             return Float.NaN;
         }
+
+        @Override
+        protected float getTotalSizeWithPadding(final Axis axis) {
+            float ret = 0;
+            for (int i = mCaches.size(); --i >=0; ) {
+                ret = Math.max(ret, getTotalSizeWithPadding(mCaches.valueAt(i)));
+            }
+            return ret;
+        }
+
     }
 
     /**
@@ -541,28 +547,11 @@ public class GridLayout extends OrientedLayout {
     @Override
     protected float preMeasureNext(final List<Widget> measuredChildren,
             final Axis axis, final Direction direction) {
-        float totalSize = Float.NaN;
-        int dataIndex = getOrientationLayout().getNextDataId(axis, direction);
 
-        if (dataIndex >= 0) {
-            int count =  getOrientationLayout().mCaches.size();
-            float max = 0;
-            int sign = (direction == Direction.BACKWARD ? 1 : -1);
-            while (dataIndex >= 0 && dataIndex < mContainer.size() && count-- > 0) {
-                Widget widget = measureChild(dataIndex);
-                float sizeWithPadding  = getMeasuredChildSizeWithPadding(dataIndex, axis);
-                if (!Float.isNaN(sizeWithPadding)) {
-                    max = Math.max(max, sizeWithPadding);
-                }
-
-                if (widget != null && measuredChildren != null) {
-                    measuredChildren.add(widget);
-                }
-                dataIndex -= sign;
-            }
-            if (max > 0) {
-                totalSize = sign * max;
-            }
+        float totalSize = getOrientationLayout().preMeasureNext(measuredChildren, axis, direction);
+        for (int id: getOrientationLayout().mMeasuredChildren) {
+            getNonOrientationLayout().measureChild(id);
+            super.measureChild(id);
         }
         return totalSize;
     }
@@ -621,7 +610,14 @@ public class GridLayout extends OrientedLayout {
     @Override
     protected float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis) {
         return getOrientationLayout().getMeasuredChildSizeWithPadding(dataIndex, axis);
+
     }
+
+    @Override
+    protected float getTotalSizeWithPadding(final Axis axis) {
+        return getOrientationLayout().getTotalSizeWithPadding(axis);
+    }
+
 
     @Override
     public void shiftBy(final float offset, final Axis axis) {
@@ -657,6 +653,11 @@ public class GridLayout extends OrientedLayout {
     private ChunkedLinearLayout getOrientationLayout() {
         return mOrientation == Orientation.VERTICAL ?
                 mColumnLayout : mRowLayout;
+    }
+
+    private ChunkedLinearLayout getNonOrientationLayout() {
+        return mOrientation == Orientation.VERTICAL ?
+                mRowLayout : mColumnLayout;
     }
 
     private boolean init(Orientation orientation) {

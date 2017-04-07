@@ -37,6 +37,10 @@ interface CacheDataSet {
 
     float getStartDataOffset(final int id);
     float getEndDataOffset(final int id);
+
+    float getStartPadding(final int id);
+    float getEndPadding(final int id);
+
     float setDataOffsetBefore(final int id, float endDataOffset);
     float setDataOffsetAfter(final int id, float startDataOffset);
     int getId(final int pos);
@@ -118,14 +122,14 @@ class LinearCacheDataSet implements CacheDataSet {
     @Override
     synchronized public void copyTo(CacheDataSet to) {
         if (to != null && to instanceof LinearCacheDataSet) {
-            LinearCacheDataSet copy = (LinearCacheDataSet)to;
+            LinearCacheDataSet copy = (LinearCacheDataSet) to;
             copy.mTotalPadding = mTotalPadding;
             copy.mTotalSize = mTotalSize;
             copy.mOuterPaddingEnabled = mOuterPaddingEnabled;
 
             for (int pos = 0; pos < count(); ++pos) {
                 copy.mCacheDataSet.put(mCacheDataSet.keyAt(pos),
-                          new CacheData(mCacheDataSet.valueAt(pos)));
+                        new CacheData(mCacheDataSet.valueAt(pos)));
                 copy.mIdsSet.add(pos, mIdsSet.get(pos));
             }
             if (Log.isEnabled(Log.SUBSYSTEM.LAYOUT)) {
@@ -139,12 +143,12 @@ class LinearCacheDataSet implements CacheDataSet {
 
     synchronized public void dump() {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "\n==== DUMP CACHE start ======\nCache size = %d " +
-                "totalSize = %f totalPadding = %f mOuterPaddingEnabled = %b",
+                        "totalSize = %f totalPadding = %f mOuterPaddingEnabled = %b",
                 count(), mTotalSize, mTotalPadding, mOuterPaddingEnabled);
 
         for (int pos = 0; pos < count(); ++pos) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "data[%d, %d]: %s" , mIdsSet.get(pos), pos,
-                  mCacheDataSet.valueAt(pos));
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "data[%d, %d]: %s", mIdsSet.get(pos), pos,
+                    mCacheDataSet.valueAt(pos));
         }
 
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "\n==== DUMP CACHE end ======\n");
@@ -157,7 +161,7 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     synchronized public float addData(final int id, final int pos,
-            final float size, final float startPadding, final float endPadding) {
+                                      final float size, final float startPadding, final float endPadding) {
         CacheData data = new CacheData(id);
 
         data.setSize(size);
@@ -168,7 +172,7 @@ class LinearCacheDataSet implements CacheDataSet {
         mTotalSize += data.getSize();
 
         int actualPos = pos;
-        if (actualPos < 0 ) {
+        if (actualPos < 0) {
             actualPos = 0;
         } else if (actualPos > count()) {
             actualPos = count();
@@ -190,7 +194,7 @@ class LinearCacheDataSet implements CacheDataSet {
     @Override
     synchronized public int getPos(final int id) {
         int pos = 0;
-        for (int nextId: mIdsSet) {
+        for (int nextId : mIdsSet) {
             if (nextId == id) {
                 break;
             }
@@ -207,7 +211,7 @@ class LinearCacheDataSet implements CacheDataSet {
     @Override
     synchronized public float getDataOffset(final int id) {
         float offset = Float.NaN;
-        CacheData data =  mCacheDataSet.get(id);
+        CacheData data = mCacheDataSet.get(id);
         if (data != null) {
             offset = data.getOffset();
         }
@@ -217,7 +221,7 @@ class LinearCacheDataSet implements CacheDataSet {
     @Override
     synchronized public float getSizeWithPadding(final int id) {
         float sizeWithPadding = Float.NaN;
-        CacheData data =  mCacheDataSet.get(id);
+        CacheData data = mCacheDataSet.get(id);
         if (data != null) {
             int pos = getPos(id);
             sizeWithPadding = getStartPadding(pos, data) + data.getSize() + getEndPadding(pos, data);
@@ -229,7 +233,7 @@ class LinearCacheDataSet implements CacheDataSet {
     @Override
     synchronized public float getStartDataOffset(final int id) {
         float offset = Float.NaN;
-        CacheData data =  mCacheDataSet.get(id);
+        CacheData data = mCacheDataSet.get(id);
         if (data != null) {
             int pos = getPos(id);
             offset = data.getOffset() - getStartPadding(pos, data) - data.getSize() / 2;
@@ -240,7 +244,7 @@ class LinearCacheDataSet implements CacheDataSet {
     @Override
     synchronized public float getEndDataOffset(final int id) {
         float offset = Float.NaN;
-        CacheData data =  mCacheDataSet.get(id);
+        CacheData data = mCacheDataSet.get(id);
         if (data != null) {
             int pos = getPos(id);
             offset = data.getOffset() + data.getSize() / 2 + getEndPadding(pos, data);
@@ -250,7 +254,7 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     synchronized public void removeData(final int id) {
-        CacheData data =  mCacheDataSet.get(id);
+        CacheData data = mCacheDataSet.get(id);
         int pos = getPos(id);
         if (data != null && pos >= 0) {
             mTotalSize -= data.getSize();
@@ -275,7 +279,7 @@ class LinearCacheDataSet implements CacheDataSet {
             }
             // last item updated
             if (pos == count() - 1 && !mOuterPaddingEnabled) {
-                paddingSpace +=  mCacheDataSet.get(mIdsSet.get(pos - 1)).getEndPadding();
+                paddingSpace += mCacheDataSet.get(mIdsSet.get(pos - 1)).getEndPadding();
             }
             mTotalPadding += (addPadding ? 1 : -1) * paddingSpace;
         }
@@ -289,7 +293,7 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     synchronized public void invalidate(InvalidateOp op) {
-        switch(op) {
+        switch (op) {
             case ALL:
                 mCacheDataSet.clear();
                 mIdsSet.clear();
@@ -297,16 +301,16 @@ class LinearCacheDataSet implements CacheDataSet {
                 mTotalPadding = 0;
                 break;
             case OFFSET:
-                for (int pos = mCacheDataSet.size(); --pos >= 0;) {
-                    CacheData data =  mCacheDataSet.valueAt(pos);
+                for (int pos = mCacheDataSet.size(); --pos >= 0; ) {
+                    CacheData data = mCacheDataSet.valueAt(pos);
                     data.setOffset(Float.NaN);
                 }
                 break;
             case SIZE:
                 mTotalSize = 0;
                 mTotalPadding = 0;
-                for (int pos = mCacheDataSet.size(); --pos >= 0;) {
-                    CacheData data =  mCacheDataSet.valueAt(pos);
+                for (int pos = mCacheDataSet.size(); --pos >= 0; ) {
+                    CacheData data = mCacheDataSet.valueAt(pos);
                     data.setOffset(Float.NaN);
                     data.setSize(0);
                 }
@@ -314,8 +318,8 @@ class LinearCacheDataSet implements CacheDataSet {
             case PADDING:
                 mTotalSize = 0;
                 mTotalPadding = 0;
-                for (int pos = mCacheDataSet.size(); --pos >= 0;) {
-                    CacheData data =  mCacheDataSet.valueAt(pos);
+                for (int pos = mCacheDataSet.size(); --pos >= 0; ) {
+                    CacheData data = mCacheDataSet.valueAt(pos);
                     data.setOffset(Float.NaN);
                 }
                 break;
@@ -328,13 +332,13 @@ class LinearCacheDataSet implements CacheDataSet {
     @Override
     synchronized public float uniformSize() {
         float maxSize = 0;
-        for (int pos = mCacheDataSet.size(); --pos >= 0;) {
-            CacheData data =  mCacheDataSet.valueAt(pos);
+        for (int pos = mCacheDataSet.size(); --pos >= 0; ) {
+            CacheData data = mCacheDataSet.valueAt(pos);
             maxSize = Math.max(maxSize, data.getSize());
         }
 
-        for (int pos = mCacheDataSet.size(); --pos >= 0;) {
-            CacheData data =  mCacheDataSet.valueAt(pos);
+        for (int pos = mCacheDataSet.size(); --pos >= 0; ) {
+            CacheData data = mCacheDataSet.valueAt(pos);
             data.setSize(maxSize);
             mCacheDataSet.setValueAt(pos, data);
         }
@@ -351,8 +355,8 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     synchronized public float uniformPadding(final float uniformPadding) {
-        for (int pos = mCacheDataSet.size(); --pos >= 0;) {
-            CacheData data =  mCacheDataSet.valueAt(pos);
+        for (int pos = mCacheDataSet.size(); --pos >= 0; ) {
+            CacheData data = mCacheDataSet.valueAt(pos);
             data.setPadding(uniformPadding / 2, uniformPadding / 2);
             mCacheDataSet.setValueAt(pos, data);
         }
@@ -364,11 +368,11 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     synchronized public float setDataOffsetAfter(final int id, float startDataOffset) {
-        CacheData data =  mCacheDataSet.get(id);
+        CacheData data = mCacheDataSet.get(id);
         if (data != null) {
             int pos = getPos(id);
             float startPadding = getStartPadding(pos, data);
-            float offset = startDataOffset + (startPadding + data.getSize()/ 2);
+            float offset = startDataOffset + (startPadding + data.getSize() / 2);
             data.setOffset(offset);
             mCacheDataSet.put(id, data);
 
@@ -380,11 +384,11 @@ class LinearCacheDataSet implements CacheDataSet {
 
     @Override
     synchronized public float setDataOffsetBefore(final int id, float endDataOffset) {
-        CacheData data =  mCacheDataSet.get(id);
+        CacheData data = mCacheDataSet.get(id);
         if (data != null) {
             int pos = getPos(id);
             float endPadding = getEndPadding(pos, data);
-            float offset = endDataOffset - (endPadding + data.getSize()/ 2);
+            float offset = endDataOffset - (endPadding + data.getSize() / 2);
             data.setOffset(offset);
             mCacheDataSet.put(id, data);
 
@@ -397,6 +401,27 @@ class LinearCacheDataSet implements CacheDataSet {
     private float getStartPadding(final int pos, final CacheData data) {
         float startPadding = pos > 0 || mOuterPaddingEnabled ? data.getStartPadding() : 0;
         return startPadding;
+    }
+
+
+    public float getStartPadding(final int id) {
+        float padding = Float.NaN;
+        CacheData data = mCacheDataSet.get(id);
+        if (data != null) {
+            int pos = getPos(id);
+            padding = getStartPadding(pos, data);
+        }
+        return padding;
+    }
+
+    public float getEndPadding(final int id) {
+        float padding = Float.NaN;
+        CacheData data = mCacheDataSet.get(id);
+        if (data != null) {
+            int pos = getPos(id);
+            padding = getEndPadding(pos, data);
+        }
+        return padding;
     }
 
     private float getEndPadding(final int pos, final CacheData data) {

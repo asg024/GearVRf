@@ -15,6 +15,10 @@ public class AbsoluteLayout extends Layout {
         return getChildSize(dataIndex, axis) + getDividerPadding(axis);
     }
 
+    protected float getTotalSizeWithPadding(final Axis axis) {
+        return 0;
+    }
+
     @Override
     protected void shiftBy(final float offset, final Axis axis) {
     }

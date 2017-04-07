@@ -223,9 +223,16 @@ abstract public class Layout {
     protected abstract float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis);
 
     /**
+     * Get the total size with padding
      * @param axis {@link Axis}
-     * @return The padding between child objects that is set by {@link Layout#setDividerPadding }.
-     */
+     * @return total size with padding
+     * /
+    protected abstract float getTotalSizeWithPadding(final Axis axis);
+
+        /**
+         * @param axis {@link Axis}
+         * @return The padding between child objects that is set by {@link Layout#setDividerPadding }.
+         */
     public float getDividerPadding(final Axis axis) {
         return mDividerPadding.get(axis);
     }

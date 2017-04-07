@@ -281,6 +281,16 @@ public class LinearLayout extends OrientedLayout {
             getMeasuredChildSizeWithPadding(dataIndex, mCache);
     }
 
+    @Override
+    protected float getTotalSizeWithPadding(final Axis axis) {
+        return axis != getOrientationAxis() ? Float.NaN :
+                getTotalSizeWithPadding(mCache);
+    }
+
+    protected float getTotalSizeWithPadding(CacheDataSet cache) {
+        return cache.getTotalSizeWithPadding();
+    }
+
     protected float getMeasuredChildSizeWithPadding(final int dataIndex, CacheDataSet cache) {
         return cache.getSizeWithPadding(dataIndex);
     }
@@ -344,9 +354,11 @@ public class LinearLayout extends OrientedLayout {
         int dataIndex = getNextDataId(axis, direction);
 
         if (dataIndex >= 0) {
+            totalSize = getTotalSizeWithPadding(axis);
+
             Widget widget = measureChild(dataIndex);
             totalSize = (direction == Direction.BACKWARD ? 1 : -1) *
-                    (getMeasuredChildSizeWithPadding(dataIndex, axis));
+                    (getTotalSizeWithPadding(axis) - totalSize);
             if (widget != null && measuredChildren != null) {
                 measuredChildren.add(widget);
             }
@@ -363,24 +375,33 @@ public class LinearLayout extends OrientedLayout {
         float distance = Float.NaN;
 
         if (axis == getOrientationAxis() && cache.contains(dataIndex)) {
-            distance = -cache.getDataOffset(dataIndex);
-            float layoutOffset = getLayoutOffset();
-
             switch (mGravity) {
                 case TOP:
                 case LEFT:
                 case FRONT:
                 case FILL:
+                    distance = getLayoutOffset() - cache.getStartDataOffset(dataIndex);
+                    if (!mOuterPaddingEnabled) {
+                        distance -= cache.getStartPadding(dataIndex);
+                    }
+                    break;
                 case BOTTOM:
                 case RIGHT:
                 case BACK:
-                    distance += layoutOffset;
+                    distance = -getLayoutOffset() - cache.getEndDataOffset(dataIndex);
+                    if (!mOuterPaddingEnabled) {
+                        distance += cache.getEndPadding(dataIndex);
+                    }
                     break;
                 case CENTER:
+                    distance = -cache.getDataOffset(dataIndex);
+                    break;
                 default:
                     break;
             }
         }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getDistanceToChild dataIndex = %d distance = %f ",
+                dataIndex, distance);
         return distance;
     }
 
@@ -578,8 +599,8 @@ public class LinearLayout extends OrientedLayout {
                 dataIndex, pos, startDataOffset, endDataOffset);
 
         boolean inBounds = !Float.isNaN(cache.getDataOffset(dataIndex)) &&
-                Math.abs(endDataOffset) <= Math.abs(layoutOffset) &&
-                Math.abs(startDataOffset) <= Math.abs(layoutOffset);
+                endDataOffset > layoutOffset &&
+                startDataOffset < -layoutOffset;
 
         return inBounds;
     }
@@ -595,15 +616,15 @@ public class LinearLayout extends OrientedLayout {
         float startDataOffset = getStartingOffset((cache.getTotalSizeWithPadding()));
         float layoutOffset = getLayoutOffset();
 
-        boolean inBounds = Math.abs(startDataOffset) <= Math.abs(layoutOffset);
+        boolean inBounds = startDataOffset < -layoutOffset;
 
         for (int pos = 0; pos < cache.count(); ++pos) {
             int id = cache.getId(pos);
             if (id != -1) {
                 float endDataOffset = cache.setDataOffsetAfter(id, startDataOffset);
                 inBounds = inBounds &&
-                        Math.abs(endDataOffset) <= Math.abs(layoutOffset) &&
-                        Math.abs(startDataOffset) <= Math.abs(layoutOffset);
+                        endDataOffset > layoutOffset &&
+                        startDataOffset < -layoutOffset;
                 startDataOffset = endDataOffset;
             }
         }
@@ -617,14 +638,14 @@ public class LinearLayout extends OrientedLayout {
     }
 
     protected boolean inViewPort(final int dataIndex, CacheDataSet cache) {
-        float startData = cache.getStartDataOffset(dataIndex) + getDivider() / 2;
-        float endData = cache.getEndDataOffset(dataIndex) - getDivider() / 2;
+        float startData = cache.getStartDataOffset(dataIndex) + cache.getStartPadding(dataIndex);
+        float endData = cache.getEndDataOffset(dataIndex) - cache.getEndPadding(dataIndex);
 
         float layoutOffset = getLayoutOffset();
 
 
-        boolean inViewport = (endData >= layoutOffset &&
-                startData <= -layoutOffset);
+        boolean inViewport = (endData > layoutOffset &&
+                startData < -layoutOffset);
 
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "inViewPort [%d] = %b data[%f, %f] layout [%f, %f]",
                 dataIndex, inViewport, startData, endData, layoutOffset, -layoutOffset);
