@@ -348,7 +348,11 @@ public class MultiPageWidget extends ListWidget {
             public void run() {
                 if (adapter != mItemAdapter) {
                     if (mItemAdapter != null) {
-                        mItemAdapter.unregisterAllDataSetObservers();
+                        try {
+                            mItemAdapter.unregisterDataSetObserver(mInternalItemsObserver);
+                        } catch (IllegalStateException e) {
+                            Log.w(TAG, "onItemChanged(%s): internal observer not registered on adapter!", getName());
+                        }
 
                         // clear items in pages
                         List<Widget> views = getAllViews();

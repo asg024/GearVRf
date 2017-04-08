@@ -365,7 +365,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             public void run() {
                 if (adapter != mAdapter) {
                     if (mAdapter != null) {
-                        mAdapter.unregisterAllDataSetObservers();
+                        try {
+                            mAdapter.unregisterDataSetObserver(mInternalObserver);
+                        } catch (IllegalStateException e) {
+                            Log.w(TAG, "onChanged(%s): internal observer not registered on adapter!", getName());
+                        }
                         clear();
                     }
                     mAdapter = adapter;
