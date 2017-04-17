@@ -230,13 +230,4 @@ public class GroupWidget extends Widget {
     @SuppressWarnings("unused")
     private static final String TAG = GroupWidget.class.getSimpleName();
 
-    @Override
-    public Widget get(final int dataIndex) {
-        return getChild(dataIndex);
-    }
-
-    @Override
-    public int size() {
-        return getChildren().size();
-    }
 }

@@ -2126,6 +2126,7 @@ public class Widget  implements Layout.WidgetContainer {
             //see RootWidget's hierarchy and ctor; onLayout gets called before the GroupWidget is
             //fully constructed; this is not the correct fix; should be refactored so this never
             //can happen
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout: no layouts applied %s!", getName());
             return;
         }
         if (mLayouts.isEmpty()) {
@@ -3244,14 +3245,12 @@ public class Widget  implements Layout.WidgetContainer {
     /**
      * WidgetContainer default implementation
      */
-    @Override
     public Widget get(final int dataIndex) {
-        return null;
+        return getChildren().get(dataIndex);
     }
 
-    @Override
     public int size() {
-        return 0;
+        return getChildren().size();
     }
 
     @Override

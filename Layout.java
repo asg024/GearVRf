@@ -320,7 +320,7 @@ abstract public class Layout {
      * create the list of the measured items
      */
     protected void measureAll(List<Widget> measuredChildren) {
-        if (isInvalidated()) {
+        if (isInvalidated() || mContainer.size() != mMeasuredChildren.size()) {
             invalidate();
             for (int i = 0; i < mContainer.size(); ++i) {
                 Widget child = measureChild(i, false);
