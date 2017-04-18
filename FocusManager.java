@@ -1,9 +1,11 @@
 package com.samsung.smcl.vr.widgets;
 
-import java.lang.ref.WeakReference;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import android.app.Activity;
+
+import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.vr.gvrf_launcher.Holder;
+import com.samsung.smcl.vr.gvrf_launcher.HolderHelper;
+import com.samsung.smcl.vr.gvrf_launcher.MainThread;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRDrawFrameListener;
@@ -12,12 +14,9 @@ import org.gearvrf.GVRPicker.GVRPickedObject;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 
-import android.app.Activity;
-
-import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.vr.gvrf_launcher.Holder;
-import com.samsung.smcl.vr.gvrf_launcher.HolderHelper;
-import com.samsung.smcl.vr.gvrf_launcher.MainThread;
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * A class for tracking line-of-sight focus for {@link Widget} instances. In
@@ -167,25 +166,14 @@ public class FocusManager {
         }
     }
 
-    private volatile List<GVRPickedObject> mPickedObjectList;
+    private volatile GVRPickedObject[] mPickedObjects;
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
             final GVRScene mainScene = mContext.getMainScene();
-            mPickedObjectList = GVRPicker.findObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
+            mPickedObjects = GVRPicker.pickObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
 
-        //Erik Jaesler:
-        //This can't simply get run on the GL thread: it breaks the guarantee that onFocus() and
-        //onLongFocus() will be called on the main thread.  Not only is that potentially thread-unsafe,
-        //pulling the execution of those handlers onto the GL thread can cause rendering performance issues.
-        //Let's do the pick here and the rest on the main thread. One approach would be to hand the pick
-        //array to a pooled instance of FocusRunnable (now a class instead of just an instance) which is
-        //then run on the main thread.  Similar to what was being done with LauncherActivity.dispatchTouchEventImpl().
-        //MainThread.get(mContext).runOnMainThread(mFocusRunnable);
-
-        //see above but the focus handling makes state changes that should be but are not "transactional"
-        //leading to flickering while on focus; it is a weakness in gvrf to large extent
-        mFocusRunnable.run();
+            MainThread.get(mContext).runOnMainThread(mFocusRunnable);
         }
     };
 
@@ -198,10 +186,10 @@ public class FocusManager {
     private final Runnable mFocusRunnable = new Runnable() {
         @Override
         public void run() {
-            final List<GVRPickedObject> pickedObjectList = mPickedObjectList;
+            final GVRPickedObject[] pickedObjectList = mPickedObjects;
 
             // release old focus
-            if (pickedObjectList == null || pickedObjectList.isEmpty()) {
+            if (pickedObjectList == null || 0 == pickedObjectList.length) {
                 if (mCurrentFocus != null) {
                     Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onDrawFrame(): empty/null pick list; releasing current focus (%s)",
                         mCurrentFocusName);
