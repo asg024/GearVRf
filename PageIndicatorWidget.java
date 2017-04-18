@@ -14,7 +14,6 @@ public class PageIndicatorWidget extends CheckableGroup {
     private float mPageIndicatorButtonWidth,  mPageIndicatorButtonHeight;
     private int mCurrentPage;
     private static final String TAG = PageIndicatorWidget.class.getSimpleName();
-    private final int mDefaultPage;
 
     public interface OnPageSelectedListener {
         void onPageSelected(final int pageId);
@@ -29,10 +28,10 @@ public class PageIndicatorWidget extends CheckableGroup {
         mPageIndicatorButtonHeight = indicatorHeight;
         getDefaultLayout().setDividerPadding(mPageIndicatorButtonHeight / 2, Layout.Axis.Y);
 
-        addIndicatorChildren(numIndicators);
-
-        mDefaultPage = defaultPageId;
-        check(mDefaultPage);
+        if (numIndicators > 0) {
+            addIndicatorChildren(numIndicators);
+            check(defaultPageId);
+        }
     }
 
     private void addIndicatorChildren(int numIndicators) {
