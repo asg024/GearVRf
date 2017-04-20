@@ -1,26 +1,25 @@
 package com.samsung.smcl.vr.widgets;
 
+import android.database.DataSetObserver;
+
+import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.vr.gvrf_launcher.R;
+import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
+import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
+import com.samsung.smcl.vr.widgets.Layout.Axis;
+import com.samsung.smcl.vr.widgets.Layout.Direction;
+import com.samsung.smcl.vr.widgets.LayoutScroller.ScrollableList;
+
+import org.gearvrf.GVRContext;
+import org.gearvrf.GVRSceneObject;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.gearvrf.GVRContext;
-import org.gearvrf.GVRHybridObject;
-import org.gearvrf.GVRSceneObject;
-import org.gearvrf.animation.GVRAnimation;
-import org.gearvrf.animation.GVROnFinish;
-
-import android.database.DataSetObserver;
-
-import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
-import com.samsung.smcl.vr.widgets.Layout.Axis;
-import com.samsung.smcl.vr.widgets.Layout.Direction;
-import com.samsung.smcl.vr.widgets.LayoutScroller.ScrollableList;
 
 // TODO: Add support for animation (in particular, we need to handle layout changes)
 // TODO: Scrolling (this is different from rotating, a la AppRing)
@@ -46,18 +45,16 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         /**
          * Callback method to be invoked when an item in this {@link ListWidget} has been focused.
-         * @param item item whose focus state is changing
          * @param focused true if the item is focused, false - otherwise
          * @param dataIndex item position in the list
          */
-        void onFocus(Widget item, boolean focused, int dataIndex);
+        void onFocus(ListWidget list, boolean focused, int dataIndex);
 
         /**
          * Callback method to be invoked when the long focus occurred for the item in this {@link ListWidget} .
-         * @param item item with long focus
          * @param dataIndex item position in the list
          */
-        void onLongFocus(Widget item, int dataIndex);
+        void onLongFocus(ListWidget list, int dataIndex);
     }
 
     private final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<>();
@@ -118,16 +115,14 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     public void setItemFocusEnabled(boolean enabled) {
         if (enabled != mItemFocusEnabled) {
             mItemFocusEnabled = enabled;
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setItemFocusEnabled(%s): item focus enabled: %b", getName(), enabled);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setItemFocusEnabled(%s): item focus enabled: %b",
+                    getName(), enabled);
 
-            List<Widget> views = getAllViews();
-
-            for (int i = 0; i < views.size(); ++i ) {
-                Widget view = views.get(i);
+            for (Widget view: getAllViews()) {
                 if (view != null) {
                     view.setFocusEnabled(enabled);
                 } else {
-                    Log.w(TAG, "setItemFocusEnabled(%s): Host at %d has no view!", getName(), i);
+                    Log.w(TAG, "setItemFocusEnabled(%s): Host has no view!", getName());
                 }
             }
         }
@@ -147,7 +142,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
          *         touch event should take place; {@code false} to allow further
          *         processing.
          */
-        public boolean onTouch(int dataIndex);
+        boolean onTouch(ListWidget list, int dataIndex);
     }
 
     private final Set<OnItemTouchListener> mItemTouchListeners = new LinkedHashSet<>();
@@ -162,7 +157,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      *         {@code false} if the listener is already registered.
      */
     public boolean addOnItemTouchListener(final OnItemTouchListener listener) {
-        return mItemTouchListeners.add(listener);
+        boolean added =  mItemTouchListeners.add(listener);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "addOnItemTouchListener listener %s added = %b", listener, added);
+        return added;
     }
 
     /**
@@ -176,7 +173,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      *         registered with this object.
      */
     public boolean removeOnItemTouchListener(final OnItemTouchListener listener) {
-        return mItemTouchListeners.remove(listener);
+        boolean removed = mItemTouchListeners.remove(listener);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "removeOnItemTouchListener listener %s added = %b", listener, removed);
+        return removed;
     }
 
     private boolean mItemTouchable = true;
@@ -221,6 +220,40 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
     }
 
+    OnHierarchyChangedListener mOnListItemsUpdatedListener = new OnHierarchyChangedListener() {
+        public void onChildWidgetAdded(Widget parent, Widget child) {
+            if (child instanceof ListItemHostWidget) {
+                Widget item = ((ListItemHostWidget)child).getGuest();
+                if (item != null) {
+                    doOnItemAdded(item);
+                }
+            }
+        }
+        public void onChildWidgetRemoved(Widget parent, Widget child) {
+            if (child instanceof ListItemHostWidget) {
+                Widget item = ((ListItemHostWidget)child).getGuest();
+                if (item != null) {
+                    doOnItemRemoved(item);
+                }
+            }
+        }
+    };
+
+    protected void doOnItemAdded(Widget item) {
+        item.setFocusEnabled(mItemFocusEnabled);
+        item.setTouchable(mItemTouchable);
+
+        item.addFocusListener(mOnFocusListener);
+        item.addTouchListener(mOnTouchListener);
+    }
+
+    protected void doOnItemRemoved(Widget item) {
+        item.setTouchable(false);
+        item.setFocusEnabled(false);
+
+        item.removeFocusListener(mOnFocusListener);
+        item.removeTouchListener(mOnTouchListener);
+    }
 
     /**
      * Construct a new {@code ListWidget} instance wrapping an existing {@link GVRSceneObject} with
@@ -233,6 +266,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      */
     public ListWidget(final GVRContext gvrContext, GVRSceneObject sceneObj, final Adapter adapter) {
         super(gvrContext, sceneObj);
+        addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
         onChanged(adapter);
     }
 
@@ -247,6 +281,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      */
     public ListWidget(final GVRContext gvrContext, final Adapter adapter, float width, float height) {
         super(gvrContext, width, height);
+        addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
         onChanged(adapter);
     }
 
@@ -254,6 +289,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                       NodeEntry attributes, final Adapter adapter)
             throws InstantiationException {
         super(context, sceneObject, attributes);
+        addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
         onChanged(adapter);
     }
 
@@ -266,7 +302,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             if (parent instanceof ListItemHostWidget) {
                 int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
                 for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onFocus(widget, focused, dataIndex);
+                    listener.onFocus(ListWidget.this, focused, dataIndex);
                 }
                 ret = true;
             } else {
@@ -283,7 +319,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             if (parent instanceof ListItemHostWidget) {
                 int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
                 for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onLongFocus(widget, dataIndex);
+                    listener.onLongFocus(ListWidget.this, dataIndex);
                 }
                 ret = true;
             } else {
@@ -297,12 +333,18 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     private OnTouchListener mOnTouchListener = new OnTouchListener() {
         @Override
         public boolean onTouch(Widget widget) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch(%s) widget= %s ", getName(), widget);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch(%s) widget= %s mSelectOnTouchEnabled=%b ",
+                    getName(), widget, mSelectOnTouchEnabled);
             Widget parent = widget.getParent();
             if (parent instanceof ListItemHostWidget) {
-                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                ListItemHostWidget host = (ListItemHostWidget) parent;
+                int dataIndex = host.getDataIndex();
+                if (mSelectOnTouchEnabled) {
+                    toggleItem(dataIndex);
+                }
+
                 for (OnItemTouchListener listener : mItemTouchListeners) {
-                    listener.onTouch(dataIndex);
+                    listener.onTouch(ListWidget.this, dataIndex);
                 }
             } else {
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch widget is not a list item!");
@@ -483,28 +525,35 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
 
+    public Widget getView(int dataIndex) {
+        Widget view = null;
+        for (Widget child: getChildren()) {
+            if (child instanceof ListItemHostWidget) {
+                ListItemHostWidget host = ((ListItemHostWidget) child);
+                if (host.getDataIndex() == dataIndex) {
+                    view = host.getGuest();
+                    break;
+                }
+            }
+        }
+        return view;
+    }
+
     private List<ListItemHostWidget> mRecycledViews = new ArrayList<>();
     private boolean mTrimRequest;
 
 
     public void clear() {
-        for (Widget child: this.getChildren()) {
-            if (child instanceof ListItemHostWidget) {
-                Widget view  = ((ListItemHostWidget)child).getGuest();
-                if (view != null) {
-                    view.removeFocusListener(mOnFocusListener);
-                    view.removeTouchListener(mOnTouchListener);
-                }
-            }
+        for (Layout layout : mLayouts) {
+            layout.invalidate();
         }
+        clearSelection(false);
         super.clear();
     }
 
     protected void recycleChildren() {
-        for (Widget child: this.getChildren()) {
-            if (child instanceof ListItemHostWidget) {
-                recycle((ListItemHostWidget)child);
-            }
+        for (ListItemHostWidget host: getAllHosts()) {
+            recycle(host);
         }
     }
 
@@ -517,8 +566,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         if (!host.isRecycled()) {
             Widget view = host.getGuest();
-            view.removeFocusListener(mOnFocusListener);
-            view.removeTouchListener(mOnTouchListener);
             onRecycle(view, host.getDataIndex());
 
             for (Layout layout : mLayouts) {
@@ -733,12 +780,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
     }
 
-    protected void setupView(Widget view, final int dataIndex) {
-        view.setFocusEnabled(mItemFocusEnabled);
-        view.setTouchable(mItemTouchable);
-
-        view.addFocusListener(mOnFocusListener);
-        view.addTouchListener(mOnTouchListener);
+    protected boolean setupView(Widget view, final int dataIndex) {
+        return isSelected(dataIndex);
     }
 
     /**
@@ -747,8 +790,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * @return host view
      */
     private void setupHost(ListItemHostWidget host, Widget view, final int dataIndex) {
-        setupView(view, dataIndex);
+        boolean selected = setupView(view, dataIndex);
         host.setGuest(view, dataIndex);
+        host.setSelected(selected);
+
         if (getChildren().contains(host)) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setupItem(%s): added item(%s) at dataIndex [%d]",
                     getName(), view.getName(), dataIndex);
@@ -827,9 +872,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         ListItemHostWidget host = null;
         try {
             host = getHostView(dataIndex);
-                Widget view = getViewFromAdapter(dataIndex, host);
-                if (view != null && host.isRecycled()) {
-                    setupHost(host, view, dataIndex);
+            Widget view = getViewFromAdapter(dataIndex, host);
+            if (view != null && host.isRecycled()) {
+                setupHost(host, view, dataIndex);
             }
             if (host != null) {
                 boolean added = addChild(host, true);
@@ -838,7 +883,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             }
         } catch (Exception e) {
             Log.e(TAG, e, "getRecycleableView(%s): exception at %d: %s",
-                  getName(), dataIndex, e.getMessage());
+                    getName(), dataIndex, e.getMessage());
         }
         return host;
     }
@@ -861,8 +906,24 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * no affecting the guest transformation.
      */
     protected class ListItemHostWidget extends GroupWidget {
+        // <<<<<<<< test code
+        final int checkResId = R.drawable.checkbox_checked;
+        final Widget selectedMark;
+        // >>>>>>>> test code
+
         public ListItemHostWidget(GVRContext gvrContext) {
             super(gvrContext, 0, 0);
+
+            // <<<<<<<< test code
+            selectedMark = new Widget(gvrContext, 2, 2);
+            selectedMark.setName("selectedMark");
+            selectedMark.setTexture(Helpers.getFutureBitmapTexture(getGVRContext(),
+                    checkResId));
+            selectedMark.setFollowParentFocus(true);
+            selectedMark.setFollowParentInput(true);
+            selectedMark.setPositionZ(0.05f);
+            // >>>>>>>> test code
+
             applyLayout(new AbsoluteLayout());
             recycle();
         }
@@ -898,10 +959,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
          */
         public void recycle() {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "recycle(%s), dataIndex = %d", getName(), mDataIndex);
-            setGuest(null, -1);
-            setTouchable(false);
-            setFocusEnabled(false);
             setSelected(false);
+            setGuest(null, -1);
             setViewPortVisibility(ViewPortVisibility.INVISIBLE);
             mSetInLayout = false;
             hostWidth = hostHeight = hostDepth = 0;
@@ -945,15 +1004,23 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         @Override
         public void setSelected(final boolean selected) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "host.setSelected [%s] index = %d selected [%b]",
+                    this, getDataIndex(), selected);
+
+            // <<<<<<<< test code
+            if (selected != isSelected()) {
+                if (selected) {
+                    addChild(selectedMark);
+                } else {
+                    removeChild(selectedMark);
+                }
+            }
+            // >>>>>>>> test code
+
             super.setSelected(selected);
             if (!isRecycled()) {
                 mGuestWidget.setSelected(selected);
             }
-        }
-
-        public boolean isSelected() {
-            return !isRecycled() ? mGuestWidget.isSelected() :
-                super.isSelected();
         }
 
         /**
@@ -990,13 +1057,26 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     private boolean mMultiSelectionSupported;
+    private boolean mSelectOnTouchEnabled;
 
     /**
      * Enable/disable multi-selection option
      * @param enable
      */
     public void enableMultiSelection(boolean enable) {
-        mMultiSelectionSupported = enable;
+        if (enable != mMultiSelectionSupported) {
+            clearSelection();
+            mMultiSelectionSupported = enable;
+        }
+    }
+
+    /**
+     * Enable/disable select on touch
+     * @param enable
+     */
+    public void enableSelectOnTouch(boolean enable) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "enableSelectOnTouch %s enable = %b", getName(), enable);
+        mSelectOnTouchEnabled = enable;
     }
 
     /**
@@ -1008,11 +1088,26 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
+     * @return {@code true} if the select on touch option is enabled
+     *         {@code false} otherwise.
+     */
+    public boolean isSelectOnTouchEnabled() {
+        return mSelectOnTouchEnabled;
+    }
+
+
+    /**
      * Clear the selection of all the items if any.
      * @return {@code true} if at least one item was deselected,
      *         {@code false} otherwise.
      */
     public boolean clearSelection() {
+        return clearSelection(true);
+    }
+
+    protected boolean clearSelection(boolean requestLayout) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "clearSelection [%d]", mSelectedItemsList.size());
+
         boolean updateLayout = false;
         List<ListItemHostWidget>  views = getAllHosts();
         for (ListItemHostWidget host: views) {
@@ -1021,9 +1116,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 updateLayout = true;
             }
         }
-        if (updateLayout) {
+        if (updateLayout && requestLayout) {
             requestLayout();
         }
+        clearSelectedItemsList();
         return updateLayout;
     }
 
@@ -1037,17 +1133,57 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * @return {@code true} if the requested operation is successful,
      *         {@code false} otherwise.
      */
-    public boolean setItemSelected(int dataIndex, boolean select) {
-        boolean done = false;
-
-        ListItemHostWidget hostWidget = getHostView(dataIndex, false);
-        if (hostWidget != null && hostWidget.isSelected() != select) {
-            if (select && !mMultiSelectionSupported) {
-                clearSelection();
+    public boolean selectItem(int dataIndex, boolean select) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selectItem [%d] select [%b]", dataIndex, select);
+        if (dataIndex < 0 || dataIndex >= size()) {
+            throw new IndexOutOfBoundsException("Selection index [" + dataIndex + "] is out of bounds!");
+        }
+        boolean selected = updateSelectedItemsList(dataIndex, select);
+        if (selected) {
+            ListItemHostWidget hostWidget = getHostView(dataIndex, false);
+            if (hostWidget != null) {
+                hostWidget.setSelected(select);
+                requestLayout();
             }
-            hostWidget.setSelected(select);
-            requestLayout();
-            done = true;
+        }
+
+        return selected;
+    }
+
+    public boolean toggleItem(int dataIndex) {
+        return selectItem(dataIndex, !isSelected(dataIndex));
+    }
+
+    protected void clearSelectedItemsList() {
+        mSelectedItemsList.clear();
+    }
+
+    protected boolean updateSelectedItemsList(List<Integer> dataIndexs, boolean select) {
+        boolean updated = false;
+        for (int dataIndex: dataIndexs) {
+            updated = updateSelectedItemsList(dataIndex, select) || updated;
+        }
+        return updated;
+    }
+
+    protected boolean updateSelectedItemsList(int dataIndex, boolean select) {
+        boolean done = false;
+        boolean contains =  isSelected(dataIndex);
+        if (select) {
+            if (!contains) {
+                if (!mMultiSelectionSupported) {
+                    clearSelection(false);
+                }
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateSelectedItemsList add index = %d", dataIndex);
+                mSelectedItemsList.add(dataIndex);
+                done = true;
+            }
+        } else {
+            if (contains) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateSelectedItemsList remove index = %d", dataIndex);
+                mSelectedItemsList.remove(dataIndex);
+                done = true;
+            }
         }
         return done;
     }
@@ -1060,24 +1196,22 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * @return {@code true} if the item is selected, {@code false} otherwise.
      */
     public boolean isSelected(int dataIndex) {
-        ListItemHostWidget hostWidget = getHostView(dataIndex, false);
-        return  (hostWidget != null) && hostWidget.isSelected();
+        return dataIndex < size() && mSelectedItemsList.contains(dataIndex);
     }
 
     /**
      * @return get the list of selected views.
      */
-    public List<Widget> getSelectedItems() {
-        List<Widget> seletcedList = new ArrayList<Widget>();
-
-        for (Widget w : getChildren()) {
-            ListItemHostWidget hostWidget = (ListItemHostWidget)w;
-            if (hostWidget.isSelected()) {
-                seletcedList.add(hostWidget.getGuest());
-            }
+    public Set<Integer> getSelectedItems() {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getSelectedItems: size = %d", mSelectedItemsList.size());
+        for (int id: mSelectedItemsList) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selected: <%d>", id);
         }
-        return seletcedList;
+
+        return new HashSet<>(mSelectedItemsList);
     }
+
+    protected Set<Integer> mSelectedItemsList = new HashSet<>();
 
     //  =================== Scrolling <start> =========================
 
@@ -1215,13 +1349,12 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             }
         }
 
-        if (host == null) {
+        if (host == null  && enforceNew) {
             if (!mRecycledViews.isEmpty()) {
-                host = mRecycledViews.get(0);
-                mRecycledViews.remove(0);
+                host = mRecycledViews.remove(0);
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "reuse recycled view: %s", host);
 
-            } else if (enforceNew) {
+            } else {
                 host = makeHost(getGVRContext());
             }
         }
@@ -1247,7 +1380,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             runOnGlThread(new Runnable() {
                 @Override
                 public void run() {
-
                     for(DataSetObserver observer: mObservers) {
                         observer.onChanged();
                     }
@@ -1257,6 +1389,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         @Override
         public void onInvalidated() {
+            clear();
             ListWidget.this.onChanged();
             // make sure it is executed after finishing onChanged()
             runOnGlThread(new Runnable() {

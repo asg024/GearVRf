@@ -8,6 +8,7 @@ import com.samsung.smcl.utility.Utility;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -128,14 +129,19 @@ public class MultiPageWidget extends ListWidget {
     }
 
     private Set<OnItemTouchListener> mOnItemTouchListeners = new LinkedHashSet<>();
+
     @Override
     public boolean addOnItemTouchListener(OnItemTouchListener listener) {
-        return mOnItemTouchListeners.add(listener);
+        boolean added = mOnItemTouchListeners.add(listener);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "addOnItemTouchListener listener %s added = %b", listener, added);
+        return added;
     }
 
     @Override
     public boolean removeOnItemTouchListener(OnItemTouchListener listener) {
-        return mOnItemTouchListeners.remove(listener);
+        boolean removed = mOnItemTouchListeners.remove(listener);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "removeOnItemTouchListener listener %s removed = %b", listener, removed);
+        return removed;
     }
 
     private Set<OnItemFocusListener> mOnItemFocusListeners = new LinkedHashSet<>();
@@ -176,14 +182,7 @@ public class MultiPageWidget extends ListWidget {
                 page.removeListOnChangedListener(listener);
                 mPagesListOnChangedListeners.remove(page);
             }
-
-            for (OnItemFocusListener focusListener : mOnItemFocusListeners) {
-                page.removeOnItemFocusListener(focusListener);
-            }
-
-            for (OnItemTouchListener touchListener : mOnItemTouchListeners) {
-                page.addOnItemTouchListener(touchListener);
-            }
+            page.clearSelectedItemsList();
         }
 
         super.onRecycle(view, dataIndex);
@@ -228,9 +227,17 @@ public class MultiPageWidget extends ListWidget {
             mEnd = end;
         }
 
-        private int getRealPosition(int position) {
+        private int getGlobalPosition(int position) {
             return position < 0 || position >= getCount() ?
                     -1 : mStart + position;
+        }
+
+        private int getLocalPosition(int position) {
+            return containsGlobalPosition(position) ? position - mStart : -1;
+        }
+
+        private boolean containsGlobalPosition(int dataIndex) {
+            return dataIndex >= mStart && dataIndex <= mEnd;
         }
 
         @Override
@@ -240,24 +247,24 @@ public class MultiPageWidget extends ListWidget {
 
         @Override
         public Object getItem(int position) {
-            return mAdapter.getItem(getRealPosition(position));
+            return mAdapter.getItem(getGlobalPosition(position));
         }
 
         @Override
         public long getItemId(int position) {
-            return mAdapter.getItemId(getRealPosition(position));
+            return mAdapter.getItemId(getGlobalPosition(position));
         }
 
         @Override
         public int getItemViewType(int position) {
-            return mAdapter.getItemViewType(getRealPosition(position));
+            return mAdapter.getItemViewType(getGlobalPosition(position));
         }
 
         @Override
         public Widget getView(int position, Widget convertView, GroupWidget parent) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getView pos = %d, realPos = %d start = %d, end = %d",
-                    position, getRealPosition(position), mStart, mEnd);
-            return mAdapter.getView(getRealPosition(position), convertView, parent);
+                    position, getGlobalPosition(position), mStart, mEnd);
+            return mAdapter.getView(getGlobalPosition(position), convertView, parent);
         }
 
         @Override
@@ -277,17 +284,17 @@ public class MultiPageWidget extends ListWidget {
 
         @Override
         public float getViewWidthGuess(int position) {
-            return mAdapter.getViewWidthGuess(getRealPosition(position));
+            return mAdapter.getViewWidthGuess(getGlobalPosition(position));
         }
 
         @Override
         public float getViewHeightGuess(int position) {
-            return mAdapter.getViewHeightGuess(getRealPosition(position));
+            return mAdapter.getViewHeightGuess(getGlobalPosition(position));
         }
 
         @Override
         public float getViewDepthGuess(int position) {
-            return mAdapter.getViewDepthGuess(getRealPosition(position));
+            return mAdapter.getViewDepthGuess(getGlobalPosition(position));
         }
 
         @Override
@@ -342,6 +349,49 @@ public class MultiPageWidget extends ListWidget {
         }
     };
 
+    private OnItemTouchListener mInternalOnItemTouchListener = new OnItemTouchListener() {
+        public boolean onTouch(ListWidget list, int dataIndex) {
+
+            if (isSelectOnTouchEnabled()) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG,
+                        "mSelectOnTouchListener[%s] for index = %d", list.getName(), dataIndex);
+                toggleItem(list, dataIndex);
+            }
+
+            Set<OnItemTouchListener> copyList = new HashSet<>(mOnItemTouchListeners);
+            SelectingAdapter adapter = ((SelectingAdapter) list.mAdapter);
+            int globalPosition = adapter.getGlobalPosition(dataIndex);
+
+            for (OnItemTouchListener listener: copyList) {
+                listener.onTouch(MultiPageWidget.this, globalPosition);
+            }
+            return true;
+        };
+    };
+
+    private OnItemFocusListener mInternalOnItemFocusListener = new OnItemFocusListener() {
+        public void onFocus(ListWidget list, boolean focused, int dataIndex) {
+            Set<OnItemFocusListener> copyList = new HashSet<>(mOnItemFocusListeners);
+
+            SelectingAdapter adapter = ((SelectingAdapter) list.mAdapter);
+            int globalPosition = adapter.getGlobalPosition(dataIndex);
+            for (OnItemFocusListener listener: copyList) {
+                listener.onFocus(MultiPageWidget.this, focused, globalPosition);
+            }
+
+        }
+        public void onLongFocus(ListWidget list, int dataIndex) {
+            Set<OnItemFocusListener> copyList = new HashSet<>(mOnItemFocusListeners);
+
+            SelectingAdapter adapter = ((SelectingAdapter) list.mAdapter);
+            int globalPosition = adapter.getGlobalPosition(dataIndex);
+            for (OnItemFocusListener listener: copyList) {
+                listener.onLongFocus(MultiPageWidget.this, globalPosition);
+            }
+
+        }
+    };
+
     protected void onItemChanged(final Adapter adapter) {
         runOnGlThread(new Runnable() {
             @Override
@@ -353,12 +403,7 @@ public class MultiPageWidget extends ListWidget {
                         } catch (IllegalStateException e) {
                             Log.w(TAG, "onItemChanged(%s): internal observer not registered on adapter!", getName());
                         }
-
-                        // clear items in pages
-                        List<Widget> views = getAllViews();
-                        for (Widget view: views) {
-                            ((ListWidget)view).clear();
-                        }
+                        clear();
                     }
                     mItemAdapter = adapter;
                     if (mItemAdapter != null) {
@@ -388,6 +433,7 @@ public class MultiPageWidget extends ListWidget {
                 int start = pageIndex * mItemsPerPage;
                 int length = Math.min(mItemsPerPage, adapter.getCount() - start);
                 pageAdapter.setBounds(start, length);
+                page.updateSelectedItemsList(getLocalSelectedItemsList(pageAdapter), true);
             }
             page.setAdapter(pageAdapter);
         }
@@ -554,6 +600,8 @@ public class MultiPageWidget extends ListWidget {
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedFinished list = %s , index = %d end = %d",
                         list, mPageIndex, numOfMeasuredViews);
                 adapter.setLength(numOfMeasuredViews);
+                selectItems(list, getLocalSelectedItemsList(adapter), true);
+
                 if (adapter.hasUniformViewSize() && mAdapter.hasUniformViewSize()) {
                     mItemsPerPage = numOfMeasuredViews;
                     Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedFinished mItemsPerPage = %d", mItemsPerPage);
@@ -566,7 +614,7 @@ public class MultiPageWidget extends ListWidget {
     }
 
     @Override
-    protected void setupView(Widget view, final int dataIndex) {
+    protected boolean setupView(Widget view, final int dataIndex) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getViewFromAdapter index = %d", dataIndex);
 
         super.setupView(view, dataIndex);
@@ -584,16 +632,182 @@ public class MultiPageWidget extends ListWidget {
                     dataIndex);
         }
 
-        for (OnItemFocusListener focusListener : mOnItemFocusListeners) {
-            page.addOnItemFocusListener(focusListener);
-        }
-        for (OnItemTouchListener touchListener : mOnItemTouchListeners) {
-            page.addOnItemTouchListener(touchListener);
-        }
-
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setupView: page %s, mSelectItemOnTouchEnabled = %b",
+                page.getName(), mSelectItemOnTouchEnabled);
         setAdapter(page, dataIndex, mItemAdapter);
+        return false;
     }
 
+    protected void doOnItemAdded(Widget item) {
+        super.doOnItemAdded(item);
+
+        ListWidget page = (ListWidget)item;
+
+        page.addOnItemFocusListener(mInternalOnItemFocusListener);
+        page.addOnItemTouchListener(mInternalOnItemTouchListener);
+        page.enableMultiSelection(isMultiSelectionEnabled());
+    }
+
+    protected void doOnItemRemoved(Widget item) {
+        ListWidget page = (ListWidget)item;
+        page.removeOnItemFocusListener(mInternalOnItemFocusListener);
+        page.addOnItemTouchListener(mInternalOnItemTouchListener);
+        super.doOnItemRemoved(item);
+    }
+
+    private void selectItems(ListWidget page, List<Integer> dataIndexes, boolean select) {
+        // select items in the page
+        for (int dataIndex: dataIndexes) {
+            page.selectItem(dataIndex, select);
+        }
+    }
+
+    private List<Integer> getLocalSelectedItemsList(SelectingAdapter adapter) {
+        List<Integer> list = new ArrayList<>();
+        for (int index: mSelectedItemsList) {
+            int localIndex = adapter.getLocalPosition(index);
+            if (localIndex >= 0) {
+                list.add(localIndex);
+            }
+        }
+        return list;
+    }
+
+    // use the separate flag for the item selection because the pages are not selectable
+    private boolean mSelectItemOnTouchEnabled;
+
+    @Override
+    public void enableSelectOnTouch(boolean enable) {
+        mSelectItemOnTouchEnabled = enable;
+    }
+
+    @Override
+    public void enableMultiSelection(boolean enable) {
+        if (isMultiSelectionEnabled() != enable) {
+            super.enableMultiSelection(enable);
+            for (Widget view : getAllViews()) {
+                ListWidget page = (ListWidget) view;
+                page.enableMultiSelection(enable);
+            }
+        }
+    }
+
+    @Override
+    public boolean isSelectOnTouchEnabled() {
+        return mSelectItemOnTouchEnabled;
+    }
+
+    @Override
+    protected boolean clearSelection(boolean requestLayout) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "clearSelection [%d]", mSelectedItemsList.size());
+
+        boolean updateLayout = false;
+        List<Widget>  views = getAllViews();
+
+        for (Widget view: views) {
+            ListWidget page = (ListWidget)view;
+            updateLayout = page.clearSelection(requestLayout) || updateLayout;
+        }
+        if (updateLayout && requestLayout) {
+            requestLayout();
+        }
+        clearSelectedItemsList();
+        return updateLayout;
+    }
+
+    /**
+     * Select or deselect an item at position {@code pos}.
+     *
+     * @param dataIndex
+     *            item position in the adapter
+     * @param select
+     *            operation to perform select or deselect.
+     * @return {@code true} if the requested operation is successful,
+     *         {@code false} otherwise.
+     */
+    public boolean selectItem(int dataIndex, boolean select) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selectItem [%d] select [%b]", dataIndex, select);
+        if (dataIndex < 0 || dataIndex >= mItemAdapter.getCount()) {
+            throw new IndexOutOfBoundsException("Selection index [" + dataIndex + "] is out of bounds!");
+        }
+
+        boolean done = updateSelectedItemsList(dataIndex, select);
+
+        if (done) {
+            List<Widget> views = new ArrayList<>();
+
+            if (mItemsPerPage >= 0) {
+                int pageIndex = dataIndex / mItemsPerPage;
+                Widget view = getListView(pageIndex);
+                if (view != null) {
+                    views.add(view);
+                }
+            } else {
+                views = getAllViews();
+            }
+
+            for (Widget view: views) {
+                if (selectItem(((ListWidget) view), dataIndex, select)) {
+                    requestLayout();
+                    break;
+                }
+            }
+        }
+
+        return done;
+    }
+
+    protected Widget getListView(int dataIndex) {
+        return  super.getView(dataIndex);
+    }
+
+    @Override
+    public Widget getView(int dataIndex) {
+        Widget itemView = null;
+        for (Widget view: getAllViews()) {
+            ListWidget page = (ListWidget)view;
+            SelectingAdapter adapter = ((SelectingAdapter) page.mAdapter);
+            int localPosition = adapter.getLocalPosition(dataIndex);
+            if (localPosition != -1) {
+                itemView = page.getView(localPosition);
+                break;
+            }
+        }
+        return itemView;
+    }
+
+    private boolean toggleItem(ListWidget page, int dataIndex) {
+        SelectingAdapter adapter = ((SelectingAdapter) page.mAdapter);
+        int globalPosition = adapter.getGlobalPosition(dataIndex);
+        if (globalPosition < 0) {
+            throw new IndexOutOfBoundsException("Selection index [" + dataIndex + "] is out of bounds!");
+        }
+
+        boolean select = !isSelected(globalPosition);
+
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selectItem dataIndex [%d] global [%d]  select [%b]",
+                dataIndex, globalPosition, select);
+
+        return updateSelectedItemsList(globalPosition, select) ?
+                page.selectItem(dataIndex, select) : false;
+    }
+
+    private boolean selectItem(ListWidget page, int dataIndex, boolean select) {
+        SelectingAdapter adapter = ((SelectingAdapter) page.mAdapter);
+        int localPosition = adapter.getLocalPosition(dataIndex);
+        return (localPosition >= 0)  ? page.selectItem(localPosition, select) : false;
+    }
+
+    /**
+     * Check whether the item at position {@code pos} is selected.
+     *
+     * @param dataIndex
+     *            item position in adapter
+     * @return {@code true} if the item is selected, {@code false} otherwise.
+     */
+    public boolean isSelected(int dataIndex) {
+        return dataIndex < mItemAdapter.getCount() && mSelectedItemsList.contains(dataIndex);
+    }
 
     // default ScrollableList implementation should work with the items but not pages
     // getPageScrollable should be used to operate with pages
