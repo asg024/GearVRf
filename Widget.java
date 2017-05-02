@@ -829,7 +829,9 @@ public class Widget  implements Layout.WidgetContainer {
     public void setSelected(final boolean selected) {
         if (selected != mIsSelected) {
             mIsSelected = selected;
-            updateState();
+            if (onSelected(mIsSelected)) {
+                updateState();
+            }
         }
     }
 
@@ -2154,6 +2156,19 @@ public class Widget  implements Layout.WidgetContainer {
      */
     protected boolean onBackKey() {
         return false;
+    }
+
+    /**
+     * Hook method for handling changes in selection state for this object.
+     *
+     * @param selected
+     *            {@code True} if the object has gained selection, {@code false} if it has lost
+     *            selection.
+     * @return {@code True} to accept selection, {@code false} if not. Returns {@code true} by
+     *            default.
+     */
+    protected boolean onSelected(boolean selected) {
+        return true;
     }
 
     /**

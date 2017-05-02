@@ -906,23 +906,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      * no affecting the guest transformation.
      */
     protected class ListItemHostWidget extends GroupWidget {
-        // <<<<<<<< test code
-        final int checkResId = R.drawable.checkbox_checked;
-        final Widget selectedMark;
-        // >>>>>>>> test code
-
         public ListItemHostWidget(GVRContext gvrContext) {
             super(gvrContext, 0, 0);
-
-            // <<<<<<<< test code
-            selectedMark = new Widget(gvrContext, 2, 2);
-            selectedMark.setName("selectedMark");
-            selectedMark.setTexture(Helpers.getFutureBitmapTexture(getGVRContext(),
-                    checkResId));
-            selectedMark.setFollowParentFocus(true);
-            selectedMark.setFollowParentInput(true);
-            selectedMark.setPositionZ(0.05f);
-            // >>>>>>>> test code
 
             applyLayout(new AbsoluteLayout());
             recycle();
@@ -1006,16 +991,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         public void setSelected(final boolean selected) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "host.setSelected [%s] index = %d selected [%b]",
                     this, getDataIndex(), selected);
-
-            // <<<<<<<< test code
-            if (selected != isSelected()) {
-                if (selected) {
-                    addChild(selectedMark);
-                } else {
-                    removeChild(selectedMark);
-                }
-            }
-            // >>>>>>>> test code
 
             super.setSelected(selected);
             if (!isRecycled()) {
