@@ -806,7 +806,9 @@ public class MultiPageWidget extends ListWidget {
      * @return {@code true} if the item is selected, {@code false} otherwise.
      */
     public boolean isSelected(int dataIndex) {
-        return dataIndex < mItemAdapter.getCount() && mSelectedItemsList.contains(dataIndex);
+        return mItemAdapter != null &&
+                dataIndex < mItemAdapter.getCount() &&
+                mSelectedItemsList.contains(dataIndex);
     }
 
     // default ScrollableList implementation should work with the items but not pages
