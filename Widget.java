@@ -1418,6 +1418,16 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
+     * Set [X, Y, Z] current scale to same value
+     *
+     * @param scale
+     *            Scaling factor for all axes.
+     */
+    public void setScale(float scale) {
+        setScale(scale, scale, scale);
+    }
+
+    /**
      * Set the widget's current scaling on the 'X' axis.
      *
      * @param x
