@@ -139,7 +139,7 @@ public class Button extends Widget implements TextContainer {
             if (!(mTextContainer instanceof TextWidget)) {
                 // Text was previously empty or null; swap our cached TextParams
                 // for a new TextWidget to display the text
-                createTextWidget();
+                createText();
             } else {
                 // TODO: Remove when 2nd+ TextWidget issue is resolved
                 ((Widget) mTextContainer).setVisibility(Visibility.VISIBLE);
@@ -221,6 +221,10 @@ public class Button extends Widget implements TextContainer {
         return new Graphic(getGVRContext(), getWidth(), getHeight());
     }
 
+    protected Widget getGraphic() {
+        return mGraphic;
+    }
+
     @Override
     protected void onLayout() {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout() called (%s)", getName());
@@ -256,7 +260,7 @@ public class Button extends Widget implements TextContainer {
             mGraphic = createGraphicWidget();
             if (mGraphic != null) {
                 mGraphic.setName(".graphic");
-                addChildInner(mGraphic, mGraphic.getSceneObject(), -1);
+                addChild(mGraphic, 0);
                 for (Layout layout: mLayouts) {
                     layout.invalidate();
                 }
@@ -279,24 +283,28 @@ public class Button extends Widget implements TextContainer {
         return mTextWidgetHeight;
     }
 
-    private void createTextWidget() {
+    protected TextWidget createTextWidget() {
+        Log.d(TAG, "createTextWidget(%s) [%f, %f]", getName(), getTextWidgetWidth(), getTextWidgetHeight());
+        final TextWidget textWidget = new TextWidget(getGVRContext(),
+                getTextWidgetWidth(), getTextWidgetHeight());
+        Log.d(TAG, "createTextWidget(%s): setting rendering order",
+                getName());
+        textWidget.setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
+        Log.d(TAG, "createTextWidget(%s): setting gravity", getName());
+        textWidget.setGravity(Gravity.CENTER);
+        textWidget.setName(".text");
+        Log.d(TAG, "createTextWidget(%s): setting params", getName());
+        textWidget.setTextParams(mTextContainer);
+        return textWidget;
+    }
+
+    private void createText() {
         runOnGlThread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "createTextWidget(%s) [%f, %f]", getName(), getTextWidgetWidth(), getTextWidgetHeight());
-                final TextWidget textWidget = new TextWidget(getGVRContext(),
-                        getTextWidgetWidth(), getTextWidgetHeight());
-                Log.d(TAG, "createTextWidget(%s): setting rendering order",
-                      getName());
-                textWidget.setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
-                Log.d(TAG, "createTextWidget(%s): setting gravity", getName());
-                textWidget.setGravity(Gravity.CENTER);
-                textWidget.setName(".text");
-                Log.d(TAG, "createTextWidget(%s): setting params", getName());
-                textWidget.setTextParams(mTextContainer);
-
+                TextWidget textWidget = createTextWidget();
                 mTextContainer = textWidget;
-                addChildInner(textWidget, textWidget.getSceneObject(), 0);
+                addChild(textWidget);
                 Log.d(TAG, "createTextWidget(%s): requesting layout", getName());
 
                 for (Layout layout: mLayouts) {

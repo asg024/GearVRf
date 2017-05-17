@@ -2,11 +2,11 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMesh;
-import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
 
 public class Checkbox extends CheckableButton {
 
+    private static final float PADDING_Z = 0.025f;
     public Checkbox(GVRContext context, float width, float height) {
         super(context, width, height);
     }
@@ -24,15 +24,28 @@ public class Checkbox extends CheckableButton {
         super(context, mesh);
     }
 
+    protected TextWidget createTextWidget() {
+        TextWidget textWidget = super.createTextWidget();
+        textWidget.setPositionZ(PADDING_Z);
+        return textWidget;
+    }
+
+    @Override
+    protected float getTextWidgetWidth() {
+        return getWidth() - getHeight() - getDefaultLayout().getDividerPadding(Layout.Axis.X);
+    }
+
     @Override
     protected Widget createGraphicWidget() {
-        return new Graphic(getGVRContext(), getHeight());
+        Widget graphic = new Graphic(getGVRContext(), getHeight());
+        graphic.setPositionZ(PADDING_Z);
+        graphic.setRenderingOrder(getRenderingOrder() + 1);
+        return graphic;
     }
 
     static private class Graphic extends Widget {
         Graphic(GVRContext context, float size) {
             super(context, size, size);
-            setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
         }
     }
 
