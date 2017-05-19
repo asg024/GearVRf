@@ -14,13 +14,13 @@ import java.util.MissingFormatArgumentException;
 import java.util.Set;
 
 public class NodeEntry {
-    public static final String KEY_NAME = "name";
-    public static final String KEY_CLASS_NAME = "class";
-    public static final String ROOT_NODE_NAME = "RootNode";
-    public static final String ROOT_NODE_CLASS_NAME = "com.samsung.smcl.vr.widgets.AbsoluteLayout";
+    private static final String KEY_NAME = "name";
+    private static final String KEY_CLASS_NAME = "class";
+    private static final String ROOT_NODE_NAME = "RootNode";
+    private static final String ROOT_NODE_CLASS_NAME = "com.samsung.smcl.vr.widgets.AbsoluteLayout";
 
-    protected static Set<String> mandatoryKeys = new HashSet<String>();
-    protected static Set<String> caseSensitiveKeys = new HashSet<String>();
+    private final static Set<String> mandatoryKeys = new HashSet<>();
+    private final static Set<String> caseSensitiveKeys = new HashSet<>();
 
     static {
         mandatoryKeys.add(KEY_NAME);
@@ -30,14 +30,14 @@ public class NodeEntry {
     }
 
     protected String name;
-    protected String className;
-    protected Map<String, String> properties = new HashMap<String, String>();
+    private String className;
+    private Map<String, String> properties = new HashMap<>();
 
     public NodeEntry(GVRSceneObject sceneObject) throws IllegalFormatException {
         String name = sceneObject.getName();
         Log.d(TAG, "NodeEntry(): %s", name);
         if (ROOT_NODE_NAME.equals(name)) {
-            properties = new HashMap<String, String>();
+            properties = new HashMap<>();
             properties.put(KEY_CLASS_NAME, ROOT_NODE_CLASS_NAME);
             properties.put(KEY_NAME, ROOT_NODE_NAME);
         } else {
@@ -46,7 +46,7 @@ public class NodeEntry {
 
         if (properties == null || properties.get(KEY_NAME) == null) {
             if (properties == null) {
-                properties = new HashMap<String, String>();
+                properties = new HashMap<>();
             } else {
                 properties.clear();
             }
@@ -58,7 +58,7 @@ public class NodeEntry {
             for (String key: mandatoryKeys) {
                 if (!properties.containsKey(key)) {
                     throw new MissingFormatArgumentException("Incorrect widget properties format for: " + name +
-                            " the mandatery key <" + key + "> does not exist!");
+                            " the mandatory key <" + key + "> does not exist!");
                 }
             }
             this.name = properties.get(KEY_NAME);
@@ -107,11 +107,9 @@ public class NodeEntry {
     }
 
     static class NameDemangler {
-        public static final String ENTRY_SEPERATOR_REGEX = "__";
-        public static final String KEY_VALUE_SEPERATOR = "_";
-        public static final String KEY_VALUE_SEPERATOR_REGEX = "\\_";
-
-        public static final String KEY_NAME = "name";
+        private static final String ENTRY_SEPERATOR_REGEX = "__";
+        private static final String KEY_VALUE_SEPERATOR = "_";
+        private static final String KEY_VALUE_SEPERATOR_REGEX = "\\_";
 
         /**
          * Returns a {@code Map<String, String>} containing key value pairs
@@ -126,7 +124,7 @@ public class NodeEntry {
          * returns null if {@code mangledString} is not a mangled string.
          */
         public static Map<String,String> demangleString(String mangledString) {
-            Map<String,String> res = new HashMap<String,String>();
+            Map<String,String> res = new HashMap<>();
 
             String[] entries = mangledString.split(ENTRY_SEPERATOR_REGEX);
             if (entries.length == 1 && !entries[0].contains(KEY_VALUE_SEPERATOR)) {

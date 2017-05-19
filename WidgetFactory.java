@@ -14,7 +14,7 @@ import com.samsung.smcl.vr.widgets.NodeEntry.NameDemangler;
 public class WidgetFactory {
     /**
      * Create a {@link Widget} to wrap the specified {@link GVRSceneObject}. By
-     * default, {@code sceneObject} is wrapped in an {@link AbsoluteLayout}. If
+     * default, {@code sceneObject} is wrapped in an {@link GroupWidget}. If
      * another {@code Widget} class is specified in {@code sceneObject}'s
      * metadata (as "{@code class_WidgetClassName}"), it will be wrapped in an
      * instance of the specified class instead.
@@ -28,7 +28,7 @@ public class WidgetFactory {
      *             If the {@code Widget} can't be instantiated for any reason.
      */
     @SuppressWarnings("unchecked")
-    public static Widget createWidget(final GVRSceneObject sceneObject)
+    static Widget createWidget(final GVRSceneObject sceneObject)
             throws InstantiationException {
         Class<? extends Widget> widgetClass = GroupWidget.class;
         NodeEntry attributes = new NodeEntry(sceneObject);
@@ -186,7 +186,7 @@ public class WidgetFactory {
      *            The {@link GVRContext} to load the model into.
      * @param modelFile
      *            The asset file to load the model from.
-     * @param childName
+     * @param nodeName
      *            Name of the child of {@code root} to wrap.
      * @return A new {@code AbsoluteLayout} instance.
      * @throws InstantiationException
@@ -213,7 +213,7 @@ public class WidgetFactory {
      *            The {@link GVRContext} to load the model into.
      * @param modelFile
      *            The asset file to load the model from.
-     * @param childName
+     * @param nodeName
      *            Name of the child of {@code root} to wrap.
      * @param widgetClass
      *            The {@linkplain Class} of the {@code Widget} to wrap the child
@@ -241,19 +241,10 @@ public class WidgetFactory {
             Constructor<? extends Widget> ctor = widgetClass
                     .getConstructor(GVRContext.class, GVRSceneObject.class,
                                     NodeEntry.class);
-            Widget widget = (Widget) ctor.newInstance(sceneObject
+            return ctor.newInstance(sceneObject
                     .getGVRContext(), sceneObject, attributes);
-            return widget;
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-            throw new InstantiationException(e.getLocalizedMessage());
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-            throw new InstantiationException(e.getLocalizedMessage());
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            throw new InstantiationException(e.getLocalizedMessage());
-        } catch (InvocationTargetException e) {
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
             e.printStackTrace();
             throw new InstantiationException(e.getLocalizedMessage());
         }

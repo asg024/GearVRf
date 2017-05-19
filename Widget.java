@@ -189,7 +189,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @param sceneObject
      *            The {@link GVRSceneObject} to wrap.
      */
-    public Widget(final GVRContext context, final GVRSceneObject sceneObject) {
+    protected Widget(final GVRContext context, final GVRSceneObject sceneObject) {
         this(context, sceneObject, true);
     }
 
@@ -206,7 +206,8 @@ public class Widget  implements Layout.WidgetContainer {
      *            TODO
      * @throws InstantiationException
      */
-    public Widget(final GVRContext context, final GVRSceneObject sceneObject,
+    /* package */
+    Widget(final GVRContext context, final GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
         // Skip setting up the metadata so that it gets processed after
         // attributes
