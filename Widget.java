@@ -13,6 +13,7 @@ import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
 
 import org.gearvrf.GVRAndroidResource;
+import org.gearvrf.GVRAssetLoader;
 import org.gearvrf.GVRBitmapTexture;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMaterial;
@@ -72,10 +73,16 @@ public class Widget  implements Layout.WidgetContainer {
         @Override
         public void onInit(GVRContext gvrContext, MainScene scene) {
             FocusManager.get(gvrContext).init(gvrContext);
-            sGLThread = new WeakReference<Thread>(Thread.currentThread());
-            sDefaultTexture = gvrContext.loadTexture(new GVRAndroidResource(
+            sGLThread = new WeakReference<>(Thread.currentThread());
+            GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
+            sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
                     gvrContext, R.raw.default_bkgd));
             Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
+        }
+
+        @Override
+        public void onPostInit() {
+
         }
     };
 
