@@ -95,8 +95,12 @@ public class PageIndicatorWidget extends CheckableGroup {
         if (diff > 0) {
             addIndicatorChildren(diff);
         } else if (diff < 0) {
-            removeIndicatorChildren(diff);
+            removeIndicatorChildren(-diff);
         }
+        if (mCurrentPage >=num ) {
+            mCurrentPage = 0;
+        }
+        setCurrentPage(mCurrentPage);
 
         return diff;
     }

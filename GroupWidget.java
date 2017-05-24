@@ -189,7 +189,7 @@ public class GroupWidget extends Widget {
         boolean inViewPort = true;
 
         for (Layout layout: mLayouts) {
-            inViewPort = inViewPort && (layout.inViewPort(dataIndex) || !layout.isViewPortEnabled());
+            inViewPort = inViewPort && (layout.inViewPort(dataIndex) || !layout.isClippingEnabled());
         }
         return inViewPort;
     }

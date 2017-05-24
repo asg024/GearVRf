@@ -40,17 +40,17 @@ public abstract class BaseAdapter implements Adapter {
     public boolean hasUniformViewSize() { return false; }
 
     @Override
-    public float getViewWidthGuess(final int itemId) {
+    public float getUniformWidth() {
         return Float.NaN;
     }
 
     @Override
-    public float getViewHeightGuess(final int itemId) {
+    public float getUniformHeight() {
         return Float.NaN;
     }
 
     @Override
-    public float getViewDepthGuess(final int itemId) {
+    public float getUniformDepth() {
         return Float.NaN;
     }
 

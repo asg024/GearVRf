@@ -793,6 +793,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         boolean selected = setupView(view, dataIndex);
         host.setGuest(view, dataIndex);
         host.setSelected(selected);
+        host.requestLayout();
 
         if (getChildren().contains(host)) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setupItem(%s): added item(%s) at dataIndex [%d]",
@@ -872,12 +873,15 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         ListItemHostWidget host = null;
         try {
             host = getHostView(dataIndex);
-            Widget view = getViewFromAdapter(dataIndex, host);
-            if (view != null && host.isRecycled()) {
-                setupHost(host, view, dataIndex);
-            }
             if (host != null) {
+                if (host.isRecycled()) {
+                    Widget view = getViewFromAdapter(dataIndex, host);
+                    if (view != null) {
+                        setupHost(host, view, dataIndex);
+                    }
+                }
                 boolean added = addChild(host, true);
+                host.layout();
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getRecycleableView: item [%s] is added [%b] to the list",
                         host, added);
             }
@@ -937,6 +941,30 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 }
             }
             mDataIndex = dataIndex;
+        }
+
+        @Override
+        public float getLayoutWidth() {
+            return mAdapter != null && mAdapter.hasUniformViewSize() ?
+                    mAdapter.getUniformWidth():
+                    mGuestWidget != null ?
+                            mGuestWidget.getLayoutWidth() : 0;
+        }
+
+        @Override
+        public float getLayoutHeight() {
+            return mAdapter != null && mAdapter.hasUniformViewSize() ?
+                    mAdapter.getUniformHeight():
+                    mGuestWidget != null ?
+                            mGuestWidget.getLayoutHeight() : 0;
+        }
+
+        @Override
+        public float getLayoutDepth() {
+            return mAdapter != null && mAdapter.hasUniformViewSize() ?
+                    mAdapter.getUniformDepth():
+                    mGuestWidget != null ?
+                            mGuestWidget.getLayoutDepth() : 0;
         }
 
         /**
@@ -1402,23 +1430,4 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     public boolean isDynamic() {
         return true;
     }
-
-    public float getWidthGuess(final int dataIndex) {
-        return mAdapter == null || dataIndex >= getDataCount() || !mAdapter.hasUniformViewSize() ?
-                Float.NaN :
-                mAdapter.getViewWidthGuess(dataIndex);
-    }
-
-    public float getHeightGuess(final int dataIndex) {
-        return mAdapter == null || dataIndex >= getDataCount() || !mAdapter.hasUniformViewSize() ?
-                Float.NaN :
-                mAdapter.getViewHeightGuess(dataIndex);
-    }
-
-    public float getDepthGuess(final int dataIndex) {
-        return mAdapter == null || dataIndex >= getDataCount() || !mAdapter.hasUniformViewSize() ?
-                Float.NaN :
-                mAdapter.getViewDepthGuess(dataIndex);
-    }
-
 }

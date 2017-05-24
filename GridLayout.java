@@ -275,8 +275,8 @@ public class GridLayout extends OrientedLayout {
         protected float getChildSize(final int dataIndex, Axis axis) {
             int chunkSize = mChunkBreaker != null ? mChunkBreaker.getChunkSize() : 0;
             float size =  mSize > 0 ?
-                            (mApplyViewPort ?
-                                  Math.min(mSize, getAxisSize(axis)/(
+                            (mClippingEnabled ?
+                                  Math.min(mSize, getViewPortSize(axis)/(
                                           chunkSize > 0 ? chunkSize : 1)) :
                                   mSize) :
                             super.getChildSize(dataIndex, axis);
@@ -670,8 +670,8 @@ public class GridLayout extends OrientedLayout {
                 } else {
                     mRowLayout.setChunkBreaker(new ChunkBreakerBy(mColumnCount));
                     mColumnLayout.setChunkBreaker(new ChunkBreakerTo(mColumnCount));
-                    mRowLayout.enableViewPort(mApplyViewPort);
-                    mColumnLayout.enableViewPort(mApplyViewPort);
+                    mRowLayout.enableClipping(mClippingEnabled);
+                    mColumnLayout.enableClipping(mClippingEnabled);
 
                     mRowLayout.forcePostMeasurement(true);
                     mColumnLayout.forcePostMeasurement(false);
@@ -686,8 +686,8 @@ public class GridLayout extends OrientedLayout {
                 } else {
                     mRowLayout.setChunkBreaker(new ChunkBreakerTo(mRowCount));
                     mColumnLayout.setChunkBreaker(new ChunkBreakerBy(mRowCount));
-                    mRowLayout.enableViewPort(mApplyViewPort);
-                    mColumnLayout.enableViewPort(mApplyViewPort);
+                    mRowLayout.enableClipping(mClippingEnabled);
+                    mColumnLayout.enableClipping(mClippingEnabled);
 
                     mRowLayout.forcePostMeasurement(false);
                     mColumnLayout.forcePostMeasurement(true);

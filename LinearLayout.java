@@ -15,7 +15,7 @@ import java.util.List;
  * space in the layout by setting gravity to FILL. The default gravity is {@link Gravity#CENTER}.
  *
  * The size of the layout determines the viewport size (virtual area used by the list rendering engine) if the
- * flag {@link Layout#mApplyViewPort} is set. Otherwise all items are rendered in the list even if they
+ * flag {@link Layout#mClippingEnabled} is set. Otherwise all items are rendered in the list even if they
  * occupy larger space  than the container size is. The unlimited size can be specified for the layout. For
  * layout with unlimited size only {@link Gravity#CENTER} can be applied.
  */
@@ -69,7 +69,7 @@ public class LinearLayout extends OrientedLayout {
      */
     public String toString() {
         return super.toString() + String.format(pattern, mOrientation, mGravity, mDividerPadding,
-                mUniformSize, mViewPort, mApplyViewPort);
+                mUniformSize, mViewPort, mClippingEnabled);
     }
 
     public LinearLayout() {
@@ -182,7 +182,7 @@ public class LinearLayout extends OrientedLayout {
      */
     protected float getLayoutOffset() {
         //final int offsetSign = getOffsetSign();
-        final float axisSize = getAxisSize(getOrientationAxis());
+        final float axisSize = getViewPortSize(getOrientationAxis());
         float layoutOffset = - axisSize / 2;
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getLayoutOffset(): dimension: %5.2f, layoutOffset: %5.2f",
               axisSize, layoutOffset);
@@ -195,7 +195,7 @@ public class LinearLayout extends OrientedLayout {
      * @param totalSize total size occupied by the content
      */
     protected float getStartingOffset(final float totalSize) {
-        final float axisSize = getAxisSize(getOrientationAxis());
+        final float axisSize = getViewPortSize(getOrientationAxis());
         float startingOffset = 0;
 
         switch (mGravity) {
@@ -447,11 +447,11 @@ public class LinearLayout extends OrientedLayout {
         for (int i = centerDataIndex; i < mContainer.size() && i >= 0 && inBounds;) {
             Widget view = measureChild(i);
 
-            inBounds = !isViewPortEnabled() || inViewPort(i);
+            inBounds = !isClippingEnabled() || inViewPort(i);
 
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
                     "isBounds = %b index = %d isViewPortEnabled() = %b layout = %s",
-                    view == null ? "null" : view.getName(), inBounds, i, isViewPortEnabled(), this);
+                    view == null ? "null" : view.getName(), inBounds, i, isClippingEnabled(), this);
 
             if (!inBounds) {
                 invalidate(i);
@@ -547,7 +547,7 @@ public class LinearLayout extends OrientedLayout {
         }
 
         if (mGravity == Gravity.FILL) {
-            if (mApplyViewPort && cache.getTotalSize() >= getAxisSize(getOrientationAxis())) {
+            if (mClippingEnabled && cache.getTotalSize() >= getViewPortSize(getOrientationAxis())) {
                 // reset padding for all items if size of the data exceeds the view port
                 cache.uniformPadding(0);
             } else {
@@ -658,7 +658,7 @@ public class LinearLayout extends OrientedLayout {
      * @return the uniform padding amount
      */
     protected float computeUniformPadding(final CacheDataSet cache) {
-        float axisSize = getAxisSize(getOrientationAxis());
+        float axisSize = getViewPortSize(getOrientationAxis());
         float totalPadding = axisSize - cache.getTotalSize();
         float uniformPadding = totalPadding > 0 && cache.count() > 1 ?
                 totalPadding / (cache.count() - 1)  : 0;
@@ -683,8 +683,8 @@ public class LinearLayout extends OrientedLayout {
 
     @Override
     public void invalidate() {
-        invalidateCache();
         super.invalidate();
+        invalidateCache();
     }
 
     protected void invalidateCache() {

@@ -36,13 +36,13 @@ abstract public class Layout {
 
         Layout layout = (Layout) o;
 
-        if (mApplyViewPort != layout.mApplyViewPort) return false;
+        if (mClippingEnabled != layout.mClippingEnabled) return false;
         return mDividerPadding.equals(layout.mDividerPadding);
     }
 
     @Override
     public int hashCode() {
-        int result = (mApplyViewPort ? 1 : 0);
+        int result = (mClippingEnabled ? 1 : 0);
         result = 31 * result + mDividerPadding.hashCode();
         return result;
     }
@@ -50,9 +50,10 @@ abstract public class Layout {
     interface WidgetContainer {
         Widget get(final int dataIndex);
         int size();
-        float getWidthGuess(final int dataIndex);
-        float getHeightGuess(final int dataIndex);
-        float getDepthGuess(final int dataIndex);
+
+        float getBoundsWidth();
+        float getBoundsHeight();
+        float getBoundsDepth();
         boolean isEmpty();
 
         /**
@@ -65,7 +66,7 @@ abstract public class Layout {
     }
 
     protected Vector3Axis mViewPort = new Vector3Axis();
-    protected boolean mApplyViewPort;
+    protected boolean mClippingEnabled;
     protected Vector3Axis mDividerPadding = new Vector3Axis();
     protected WidgetContainer mContainer;
     protected Set<Integer> mMeasuredChildren = new LinkedHashSet<>();
@@ -77,7 +78,7 @@ abstract public class Layout {
 
     protected Layout(final Layout rhs) {
         this();
-        mApplyViewPort = rhs.mApplyViewPort;
+        mClippingEnabled = rhs.mClippingEnabled;
         mDividerPadding = rhs.mDividerPadding;
     }
 
@@ -88,25 +89,25 @@ abstract public class Layout {
 
     /**
      * The size of the ViewPort (virtual area used by the list rendering engine)
-     * If {@link Layout#mApplyViewPort} is set to true the ViewPort is applied during layout.
+     * If {@link Layout#mClippingEnabled} is set to true the ViewPort is applied during layout.
      * The unlimited size can be specified for the layout.
      *
      * @param enable true to apply the view port, false - otherwise, all items are rendered in the list even if they
      * occupy larger space  than the container size is.
      */
-    public void enableViewPort(boolean enable) {
-        if (mApplyViewPort != enable) {
-            mApplyViewPort = enable;
+    public void enableClipping(boolean enable) {
+        if (mClippingEnabled != enable) {
+            mClippingEnabled = enable;
             invalidate();
         }
     }
 
     /**
-     * @return true if ViewPort is enabled, false - otherwise
+     * @return true if clipping is enabled, false - otherwise
      */
 
-    public boolean isViewPortEnabled() {
-        return mApplyViewPort;
+    public boolean isClippingEnabled() {
+        return mClippingEnabled;
     }
 
     /**
@@ -115,11 +116,9 @@ abstract public class Layout {
      * @param viewPort View port for data set
      */
     void onLayoutApplied(final WidgetContainer container, final Vector3Axis viewPort) {
-        if (mContainer != container && mViewPort != viewPort) {
-            mContainer = container;
-            mViewPort = viewPort;
-            invalidate();
-        }
+        mContainer = container;
+        mViewPort = viewPort;
+        invalidate();
     }
 
     /**
@@ -169,36 +168,21 @@ abstract public class Layout {
      */
     protected float getChildSize(final int dataIndex, final Axis axis) {
         float size = 0;
-        switch (axis) {
-            case X:
-                size = mContainer.getWidthGuess(dataIndex);
-                if (Float.isNaN(size)) {
-                    Widget child = mContainer.get(dataIndex);
-                    if (child != null) {
-                        size = child.getLayoutWidth();
-                    }
-                }
-                break;
-            case Y:
-                size = mContainer.getHeightGuess(dataIndex);
-                if (Float.isNaN(size)) {
-                    Widget child = mContainer.get(dataIndex);
-                    if (child != null) {
-                        size = child.getLayoutHeight();
-                    }
-                }
-                break;
-            case Z:
-                size = mContainer.getDepthGuess(dataIndex);
-                if (Float.isNaN(size)) {
-                    Widget child = mContainer.get(dataIndex);
-                    if (child != null) {
-                        size = child.getLayoutDepth();
-                    }
-                }
-                break;
-            default:
-                throw new RuntimeAssertion("Bad axis specified: %s", axis);
+        Widget child = mContainer.get(dataIndex);
+        if (child != null) {
+            switch (axis) {
+                case X:
+                    size = child.getLayoutWidth();
+                    break;
+                case Y:
+                    size = child.getLayoutHeight();
+                    break;
+                case Z:
+                    size = child.getLayoutDepth();
+                    break;
+                default:
+                    throw new RuntimeAssertion("Bad axis specified: %s", axis);
+            }
         }
         return size;
     }
@@ -208,9 +192,41 @@ abstract public class Layout {
      * @param axis {@link Axis}
      * @return size
      */
-    protected float getAxisSize(final Axis axis) {
+    public float getSize(final Axis axis) {
+        float size = 0;
+        if (mViewPort != null && mClippingEnabled) {
+            size = mViewPort.get(axis);
+        } else if (mContainer != null) {
+            size = getSizeImpl(axis);
+        }
+        return size;
+    }
+
+
+    protected float getSizeImpl(final Axis axis) {
+        float size = 0;
+        switch (axis) {
+            case X:
+                size = mContainer.getBoundsWidth();
+                break;
+            case Y:
+                size = mContainer.getBoundsHeight();
+                break;
+            case Z:
+                size = mContainer.getBoundsDepth();
+                break;
+        }
+        return size;
+    }
+
+    /**
+     * Get viewport size along the axis
+     * @param axis {@link Axis}
+     * @return size
+     */
+    protected float getViewPortSize(final Axis axis) {
         float size =  mViewPort == null ? 0 : mViewPort.get(axis);
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getAxisSize for %s %f mViewPort = %s", axis, size, mViewPort);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getViewPortSize for %s %f mViewPort = %s", axis, size, mViewPort);
         return size;
     }
 
@@ -356,11 +372,11 @@ abstract public class Layout {
             if (!inBounds) {
                 invalidate(i);
             } else {
-                inBounds = postMeasurement() || !isViewPortEnabled();
+                inBounds = postMeasurement() || !mClippingEnabled;
             }
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
                             "isBounds = %b isViewPortEnabled=%b dataIndex = %d layout = %s",
-                    view == null ? "<null>" : view.getName(), inBounds, isViewPortEnabled(),
+                    view == null ? "<null>" : view.getName(), inBounds, mClippingEnabled,
                     i, this);
 
             if (measuredChildren != null && view != null && inBounds) {
@@ -383,7 +399,7 @@ abstract public class Layout {
      */
     protected void layoutChild(final int dataIndex) {
         if (!mContainer.isDynamic()) {
-            boolean visibleInLayout = !isViewPortEnabled() || inViewPort(dataIndex);
+            boolean visibleInLayout = !mClippingEnabled || inViewPort(dataIndex);
             ViewPortVisibility visibility = visibleInLayout ?
                     ViewPortVisibility.FULLY_VISIBLE : ViewPortVisibility.INVISIBLE;
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: child with dataId [%d] viewportVisibility = %s",

@@ -283,18 +283,18 @@ public class MultiPageWidget extends ListWidget {
         }
 
         @Override
-        public float getViewWidthGuess(int position) {
-            return mAdapter.getViewWidthGuess(getGlobalPosition(position));
+        public float getUniformWidth() {
+            return mAdapter.getUniformWidth();
         }
 
         @Override
-        public float getViewHeightGuess(int position) {
-            return mAdapter.getViewHeightGuess(getGlobalPosition(position));
+        public float getUniformHeight() {
+            return mAdapter.getUniformHeight();
         }
 
         @Override
-        public float getViewDepthGuess(int position) {
-            return mAdapter.getViewDepthGuess(getGlobalPosition(position));
+        public float getUniformDepth() {
+            return mAdapter.getUniformDepth();
         }
 
         @Override
@@ -457,7 +457,7 @@ public class MultiPageWidget extends ListWidget {
 
     /**
      * Set the max number of visible views in the list
-     * It will automatically enable viewport flag {@link Layout#mApplyViewPort}
+     * It will automatically enable viewport flag {@link Layout#mClippingEnabled}
      * The existing viewport set for ListWidget will be overridden  based on the viewCount
      * @param pageCount
      */
@@ -511,13 +511,14 @@ public class MultiPageWidget extends ListWidget {
                 mMaxVisiblePageCount, adapter, (adapter != null ? adapter.hasUniformViewSize() : false));
 
         if (mMaxVisiblePageCount < Integer.MAX_VALUE && adapter != null && adapter.hasUniformViewSize()) {
-            int[] ids = new int[mMaxVisiblePageCount];
-            for (int i = 0; i < mMaxVisiblePageCount; ++i) {
+            int num = Math.min(mMaxVisiblePageCount, adapter.getCount());
+            int[] ids = new int[num];
+            for (int i = 0; i < num; ++i) {
                 ids[i] = i;
             }
             float width = 0, height = 0, depth = 0;
             for (Layout listLayout: mLayouts) {
-                listLayout.enableViewPort(true);
+                listLayout.enableClipping(true);
                 width = Math.max(listLayout.calculateWidth(ids), width);
                 height = Math.max(listLayout.calculateHeight(ids), height);
                 depth = Math.max(listLayout.calculateDepth(ids), depth);
@@ -822,19 +823,19 @@ public class MultiPageWidget extends ListWidget {
     @Override
     public float getViewPortWidth() {
         return mAdapter != null && mAdapter.hasUniformViewSize() ?
-                mAdapter.getViewWidthGuess(0) : MultiPageWidget.super.getViewPortWidth();
+                mAdapter.getUniformWidth() : MultiPageWidget.super.getViewPortWidth();
     }
 
     @Override
     public float getViewPortHeight() {
         return mAdapter != null && mAdapter.hasUniformViewSize() ?
-                mAdapter.getViewHeightGuess(0) : MultiPageWidget.super.getViewPortHeight();
+                mAdapter.getUniformHeight() : MultiPageWidget.super.getViewPortHeight();
     }
 
     @Override
     public float getViewPortDepth() {
         return mAdapter != null && mAdapter.hasUniformViewSize() ?
-                mAdapter.getViewDepthGuess(0) : MultiPageWidget.super.getViewPortDepth();
+                mAdapter.getUniformDepth() : MultiPageWidget.super.getViewPortDepth();
     }
 
     @Override

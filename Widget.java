@@ -996,16 +996,25 @@ public class Widget  implements Layout.WidgetContainer {
         return getBoundingBoxInternal().getDepth();
     }
 
+    private float getLayoutSize(final Layout.Axis axis) {
+        float size = 0;
+        for (Layout layout : mLayouts) {
+            size = Math.max(size, layout.getSize(axis));
+        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getLayoutSize [%s] axis [%s] size [%f]", this, axis, size);
+        return size;
+    }
+
     public float getLayoutWidth() {
-        return getBoundsWidth();
+        return getLayoutSize(Layout.Axis.X);
     }
 
     public float getLayoutHeight() {
-        return getBoundsHeight();
+        return getLayoutSize(Layout.Axis.Y);
     }
 
     public float getLayoutDepth() {
-        return getBoundsDepth();
+        return getLayoutSize(Layout.Axis.Z);
     }
 
     public float getBoundsWidth() {
@@ -1055,28 +1064,27 @@ public class Widget  implements Layout.WidgetContainer {
         return mViewPort.get(Layout.Axis.Z);
     }
 
-    public void setViewPortWidth(float viewPortWidth) {
-        mViewPort.set(viewPortWidth, Layout.Axis.X);
-        for (Layout layout: mLayouts) {
-            layout.onLayoutApplied(this, mViewPort);
+    private void updateViewPort(float size, Layout.Axis axis) {
+        Log.d(TAG, "Widget[%s] setViewPort : viewport = %s size = %f", this, mViewPort, size);
+        if (mViewPort.get(axis) != size) {
+            mViewPort.set(size, axis);
+            for (Layout layout : mLayouts) {
+                layout.onLayoutApplied(this, mViewPort);
+            }
+            requestLayout();
         }
-        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
+    }
+
+    public void setViewPortWidth(float viewPortWidth) {
+        updateViewPort(viewPortWidth, Layout.Axis.X);
     }
 
     public void setViewPortHeight(float viewPortHeight) {
-        mViewPort.set(viewPortHeight, Layout.Axis.Y);
-        for (Layout layout: mLayouts) {
-            layout.onLayoutApplied(this, mViewPort);
-        }
-        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
+        updateViewPort(viewPortHeight, Layout.Axis.Y);
     }
 
     public void setViewPortDepth(float viewPortDepth) {
-        mViewPort.set(viewPortDepth, Layout.Axis.Z);
-        for (Layout layout: mLayouts) {
-            layout.onLayoutApplied(this, mViewPort);
-        }
-        Log.d(TAG, "groupWidget[%s] setViewPort : viewport = %s", mViewPort, this);
+        updateViewPort(viewPortDepth, Layout.Axis.Z);
     }
 
     /**
@@ -3228,7 +3236,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return An instance derived from {@link Layout} or {@code null}.
      */
     public Layout getDefaultLayout() {
-        return null;
+        return new AbsoluteLayout();
     }
 
     /**
@@ -3279,8 +3287,10 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public boolean removeLayout(final Layout layout) {
         boolean removed = mLayouts.remove(layout);
-
-        requestLayout();
+        if (layout != null && removed) {
+            layout.onLayoutApplied(this, new Vector3Axis());
+            requestLayout();
+        }
         return removed;
     }
 
@@ -3312,21 +3322,6 @@ public class Widget  implements Layout.WidgetContainer {
     @Override
     public boolean isDynamic() {
         return false;
-    }
-
-    @Override
-    public float getWidthGuess(final int dataIndex) {
-        return Float.NaN;
-    }
-
-    @Override
-    public float getHeightGuess(final int dataIndex) {
-        return Float.NaN;
-    }
-
-    @Override
-    public float getDepthGuess(final int dataIndex) {
-        return Float.NaN;
     }
 
     private final GVRSceneObject mSceneObject;

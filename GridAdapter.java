@@ -260,18 +260,18 @@ class GridAdapter implements Adapter {
     }
 
     @Override
-    public float getViewWidthGuess(int itemId) {
-        return mAdapter.getViewWidthGuess(itemId);
+    public float getUniformWidth() {
+        return mAdapter.getUniformWidth();
     }
 
     @Override
-    public float getViewHeightGuess(int itemId) {
-        return mAdapter.getViewHeightGuess(itemId);
+    public float getUniformHeight() {
+        return mAdapter.getUniformHeight();
     }
 
     @Override
-    public float getViewDepthGuess(int itemId) {
-        return mAdapter.getViewDepthGuess(itemId);
+    public float getUniformDepth() {
+        return mAdapter.getUniformDepth();
     }
 
     @Override

@@ -111,28 +111,25 @@ public interface Adapter {
      * Get the view width. In case of uniform size, it might be not necessary to create view to get
      * the width. Float.NAN can be returned if the width is unknown at that point.
      *
-     * @param itemId
      * @return view width
      */
-    float getViewWidthGuess(final int itemId);
+    float getUniformWidth();
 
     /**
      * Get the view height. In case of uniform size, it might be not necessary to create view to get
      * the height. Float.NAN can be returned if the height is unknown at that point.
      *
-     * @param itemId
      * @return view height
      */
-    float getViewHeightGuess(final int itemId);
+    float getUniformHeight();
 
     /**
      * Get the view depth. In case of uniform size, it might be not necessary to create view to get
      * the depth. Float.NAN can be returned if the depth is unknown at that point.
-     * @param itemId
      *
      * @return view depth
      */
-    float getViewDepthGuess(final int itemId);
+    float getUniformDepth();
 
     /**
      * @return True if this adapter doesn't contain any data.
