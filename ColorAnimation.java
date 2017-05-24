@@ -27,7 +27,7 @@ public class ColorAnimation extends MaterialAnimation {
     public ColorAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
         this(target, (float) parameters.getDouble("duration"), //
-                Helpers.getJSONColor(parameters, "color"));
+                Helpers.getJSONColorGl(parameters, "color"));
     }
 
     public float[] getColor() {

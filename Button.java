@@ -17,6 +17,7 @@ import java.util.List;
 
 import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.getInt;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.has;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optBoolean;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
 
@@ -74,11 +75,12 @@ public class Button extends Widget implements TextContainer {
     }
 
     @Override
-    protected void setupMetadata() throws JSONException, NoSuchMethodException {
-        super.setupMetadata();
-        JSONObject metaData = getObjectMetadata();
-        if (metaData != null) {
+    protected void onSetupMetadata(JSONObject metaData) throws JSONException {
+        super.onSetupMetadata(metaData);
+        if (has(metaData, ButtonProperties.textWidgetWidth)) {
             mTextWidgetWidth = getInt(metaData, ButtonProperties.textWidgetWidth);
+        }
+        if (has(metaData, ButtonProperties.textWidgetHeight)) {
             mTextWidgetHeight = getInt(metaData, ButtonProperties.textWidgetHeight);
         }
     }

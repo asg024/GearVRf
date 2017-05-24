@@ -23,8 +23,6 @@ public abstract class CheckableButton extends Button implements Checkable {
         String attr = attributes.getProperty("checked");
         setChecked(attr != null && attr.compareToIgnoreCase("false") == 0);
 
-        final JSONObject metaData = getObjectMetadata();
-        setChecked(metaData.optBoolean("checked"));
         init();
     }
 
@@ -83,6 +81,11 @@ public abstract class CheckableButton extends Button implements Checkable {
     protected CheckableButton(GVRContext context, GVRMesh mesh) {
         super(context, mesh);
         init();
+    }
+
+    @Override
+    protected void onSetupMetadata(JSONObject metaData) {
+        setChecked(metaData.optBoolean("checked"));
     }
 
     @Override

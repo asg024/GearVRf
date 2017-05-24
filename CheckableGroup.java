@@ -180,14 +180,11 @@ public class CheckableGroup extends GroupWidget {
     }
 
     @Override
-    protected void setupMetadata() throws NoSuchMethodException, JSONException {
-        super.setupMetadata();
-        JSONObject metadata = getObjectMetadata();
-        if (metadata != null) {
-            int checkedIndex = optInt(metadata, CheckableGroupProperties.checkedIndex, -1);
-            if (checkedIndex >= 0) {
-                check(checkedIndex);
-            }
+    protected void onSetupMetadata(JSONObject metadata) throws JSONException {
+        super.onSetupMetadata(metadata);
+        int checkedIndex = optInt(metadata, CheckableGroupProperties.checkedIndex, -1);
+        if (checkedIndex >= 0) {
+            check(checkedIndex);
         }
     }
 

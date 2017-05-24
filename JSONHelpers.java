@@ -1,5 +1,6 @@
 package com.samsung.smcl.vr.widgets;
 
+import java.io.File;
 import java.util.Iterator;
 
 import org.json.JSONArray;
@@ -7,6 +8,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.os.Environment;
+import android.support.annotation.NonNull;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.UnmodifiableJSONArray;
@@ -415,10 +418,48 @@ abstract public class JSONHelpers {
      */
     public static JSONObject loadJSONAsset(Context context, final String asset)
             throws JSONException {
-        String rawJson = Utility.readTextFile(context, asset);
-        Log.v(Log.SUBSYSTEM.WIDGET, "init(): raw JSON: %s", rawJson);
+        return getJsonObject(Utility.readTextFile(context, asset));
+    }
+
+    /**
+     * Load a JSON file from one of the public directories defined by {@link Environment}.
+     *
+     * @param publicDirectory
+     *            One of the {@code DIRECTORY_*} constants defined by {@code Environment}.
+     * @param file
+     *            Relative path to file in the public directory.
+     * @return New instance of {@link JSONObject}
+     * @throws JSONException
+     */
+    public static JSONObject loadPublicJSONFile(final String publicDirectory, final String file)
+            throws JSONException {
+        final File dir = Environment.getExternalStoragePublicDirectory(publicDirectory);
+        String rawJson = null;
+        if (dir.exists()) {
+            final File f = new File(dir, file);
+            rawJson = Utility.readTextFile(f);
+        }
+
+        return getJsonObject(rawJson);
+    }
+
+    /**
+     * Load a JSON file from {@link Environment#DIRECTORY_DOCUMENTS}.
+     *
+     * @param file
+     *            Relative path to file in "Documents" directory.
+     * @return New instance of {@link JSONObject}
+     * @throws JSONException
+     */
+    public static JSONObject loadPublicJSONDocument(final String file) throws JSONException {
+        return loadPublicJSONFile(Environment.DIRECTORY_DOCUMENTS, file);
+    }
+
+    @NonNull
+    private static JSONObject getJsonObject(String rawJson) throws JSONException {
+        Log.v(TAG, "getJsonObject(): raw JSON: %s", rawJson);
         if (rawJson == null) {
-            rawJson = "";
+            return new JSONObject();
         }
         return new JSONObject(rawJson);
     }

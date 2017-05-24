@@ -162,25 +162,25 @@ class WidgetStateInfo {
                     }
                     break;
                 case color:
-                    final float[] color = Helpers.getJSONColor(materialSpec,
+                    final float[] color = Helpers.getJSONColorGl(materialSpec,
                                                                key);
                     material.setColor(color[0], color[1], color[2]);
                     break;
                 case ambient_color:
                     final float[] ambientColor = Helpers
-                            .getJSONColor(materialSpec, key);
+                            .getJSONColorGl(materialSpec, key);
                     material.setAmbientColor(ambientColor[0], ambientColor[1],
                                              ambientColor[2], ambientColor[3]);
                     break;
                 case diffuse_color:
                     final float[] diffuseColor = Helpers
-                            .getJSONColor(materialSpec, key);
+                            .getJSONColorGl(materialSpec, key);
                     material.setDiffuseColor(diffuseColor[0], diffuseColor[1],
                                              diffuseColor[2], diffuseColor[3]);
                     break;
                 case specular_color:
                     final float[] specularColor = Helpers
-                            .getJSONColor(materialSpec, key);
+                            .getJSONColorGl(materialSpec, key);
                     material.setSpecularColor(specularColor[0],
                                               specularColor[1],
                                               specularColor[2],

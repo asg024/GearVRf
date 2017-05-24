@@ -264,7 +264,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     public Widget(final GVRContext context, final float width,
             final float height) {
-        this(context, new GVRSceneObject(context, width, height));
+        this(context, new GVRSceneObject(context, width, height), false);
 
         GVRRenderData renderData = getRenderData();
         if (renderData != null) {
@@ -272,6 +272,12 @@ public class Widget  implements Layout.WidgetContainer {
                     GVRShaderType.Texture.ID);
             material.setMainTexture(sDefaultTexture);
             setMaterial(material);
+        }
+
+        try {
+            setupMetadata();
+        } catch (Exception e) {
+            throw new RuntimeException(e.getLocalizedMessage(), e);
         }
     }
 
@@ -2029,12 +2035,15 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    final protected JSONObject getObjectMetadata() {
+    private JSONObject getObjectMetadata() {
         final JSONObject metadata = sObjectMetadata.optJSONObject(getName());
         final JSONObject defaultMetadata = getDefaultMetadata(getClass(),
                                                               getName());
 
         if (defaultMetadata == null) {
+            if (metadata == null) {
+                return new JSONObject();
+            }
             return metadata;
         } else if (metadata == null) {
             return defaultMetadata;
@@ -2605,7 +2614,7 @@ public class Widget  implements Layout.WidgetContainer {
             try {
                 setupMetadata();
             } catch (Exception e) {
-                throw new RuntimeException(e.getLocalizedMessage());
+                throw new RuntimeException(e.getLocalizedMessage(), e);
             }
         }
         mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
@@ -3018,6 +3027,11 @@ public class Widget  implements Layout.WidgetContainer {
             throws JSONException {
         JSONObject json = JSONHelpers.loadJSONAsset(context,
                                                     "default_metadata.json");
+        JSONObject publicJson = JSONHelpers.loadPublicJSONDocument("user_default_metadata.json");
+        Log.d(TAG, "loadDefaultMetadata(): public: %s", publicJson);
+
+        JSONHelpers.merge(publicJson, json);
+
         Log.d(TAG, "loadDefaultMetadata(): %s", json);
         sDefaultMetadata = new UnmodifiableJSONObject(
                 json.optJSONObject("objects"));
@@ -3046,43 +3060,47 @@ public class Widget  implements Layout.WidgetContainer {
         return json;
     }
 
+    protected void onSetupMetadata(JSONObject metaData) throws JSONException {
+
+    }
+
     protected void setupMetadata() throws JSONException, NoSuchMethodException {
-        JSONObject metaData = getObjectMetadata();
-        if (metaData != null) {
-            Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
-                  getName(), metaData);
+        final JSONObject metaData = getObjectMetadata();
+        Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
+                getName(), metaData);
 
-            mIsTouchable = optBoolean(metaData, Properties.touchable,
-                                      mIsTouchable);
-            mFocusEnabled = optBoolean(metaData, Properties.focusenabled,
-                                       mFocusEnabled);
-            mIsSelected = optBoolean(metaData, Properties.selected, mIsSelected);
-            Visibility visibility = optEnum(metaData, Properties.visibility,
-                                            mVisibility);
-            setVisibility(visibility);
+        mIsTouchable = optBoolean(metaData, Properties.touchable,
+                mIsTouchable);
+        mFocusEnabled = optBoolean(metaData, Properties.focusenabled,
+                mFocusEnabled);
+        mIsSelected = optBoolean(metaData, Properties.selected, mIsSelected);
+        Visibility visibility = optEnum(metaData, Properties.visibility,
+                mVisibility);
+        setVisibility(visibility);
 
-            final boolean hasStates = has(metaData, Properties.states);
-            final boolean hasLevels = has(metaData, Properties.levels);
-            final boolean hasLevel = has(metaData, Properties.level);
-            Log.d(TAG,
-                  "setupMetadata(): for '%s'; states: %b, levels %b, level %b",
-                  getName(), hasStates, hasLevels, hasLevel);
-            if (hasStates) {
-                if (hasLevels || hasLevel) {
-                    throw RuntimeAssertion("Invalid metadata for '%s': both 'states' and 'levels' are present",
-                                           getName());
-                }
-                setupStates(metaData);
-            } else if (hasLevels) {
-                if (hasLevel) {
-                    mLevel = getInt(metaData, Properties.level);
-                    setupLevels(metaData);
-                }
-            } else if (hasLevel) {
-                throw RuntimeAssertion("Invalid metadata for '%s': 'level' specified without level specifications",
-                                       getName());
+        final boolean hasStates = has(metaData, Properties.states);
+        final boolean hasLevels = has(metaData, Properties.levels);
+        final boolean hasLevel = has(metaData, Properties.level);
+        Log.d(TAG,
+                "setupMetadata(): for '%s'; states: %b, levels %b, level %b",
+                getName(), hasStates, hasLevels, hasLevel);
+        if (hasStates) {
+            if (hasLevels || hasLevel) {
+                throw RuntimeAssertion("Invalid metadata for '%s': both 'states' and 'levels' are present",
+                        getName());
             }
+            setupStates(metaData);
+        } else if (hasLevels) {
+            if (hasLevel) {
+                mLevel = getInt(metaData, Properties.level);
+                setupLevels(metaData);
+            }
+        } else if (hasLevel) {
+            throw RuntimeAssertion("Invalid metadata for '%s': 'level' specified without level specifications",
+                    getName());
         }
+
+        onSetupMetadata(metaData);
     }
 
     private void setupLevels(JSONObject metaData) throws JSONException,
