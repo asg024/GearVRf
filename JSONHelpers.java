@@ -15,9 +15,11 @@ import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.UnmodifiableJSONArray;
 import com.samsung.smcl.utility.UnmodifiableJSONObject;
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.Policy;
 
 abstract public class JSONHelpers {
+
+    public static final JSONObject EMPTY_OBJECT = new UnmodifiableJSONObject(new JSONObject());
+    public static final JSONArray EMPTY_ARRAY = new UnmodifiableJSONArray(new JSONArray());
 
     public static <P extends Enum<P>> Object get(final JSONObject json, P e)
             throws JSONException {
@@ -132,6 +134,15 @@ abstract public class JSONHelpers {
         return json.optJSONObject(e.name());
     }
 
+    public static <P extends Enum<P>> JSONObject optJSONObject(final JSONObject json, P e,
+                                                               boolean emptyForNull) {
+        JSONObject jsonObject = optJSONObject(json, e);
+        if (jsonObject == null && emptyForNull) {
+            jsonObject = EMPTY_OBJECT;
+        }
+        return jsonObject;
+    }
+
     public static <P extends Enum<P>> JSONArray getJSONArray(
             final JSONObject json, P e) throws JSONException {
         return json.getJSONArray(e.name());
@@ -140,6 +151,15 @@ abstract public class JSONHelpers {
     public static <P extends Enum<P>> JSONArray optJSONArray(
             final JSONObject json, P e) {
         return json.optJSONArray(e.name());
+    }
+
+    public static <P extends Enum<P>> JSONArray optJSONArray(final JSONObject json, P e,
+                                                             boolean emptyForNull) {
+        JSONArray jsonArray = optJSONArray(json, e);
+        if (jsonArray == null && emptyForNull) {
+            jsonArray = EMPTY_ARRAY;
+        }
+        return jsonArray;
     }
 
     public static <P extends Enum<P>> boolean has(final JSONObject json, P e) {
@@ -434,6 +454,26 @@ abstract public class JSONHelpers {
     public static JSONObject loadPublicJSONFile(final String publicDirectory, final String file)
             throws JSONException {
         final File dir = Environment.getExternalStoragePublicDirectory(publicDirectory);
+        return loadJSONFile(dir, file);
+    }
+
+    public static JSONObject loadJSONFile(Context context, final String file) throws JSONException {
+        return loadJSONFile(context.getFilesDir(), file);
+    }
+
+    public static JSONObject loadJSONFile(Context context, final String directory, final String file) throws JSONException {
+        Log.d(TAG, "loadJSONFile(): Context.getDir(): %s", context.getDir(Environment.DIRECTORY_DOCUMENTS, Context.MODE_PRIVATE));
+        File dir = new File(context.getFilesDir(), directory);
+        return loadJSONFile(dir, file);
+    }
+
+    public static JSONObject loadJSONDocument(Context context, final String file) throws JSONException {
+        return loadJSONFile(context, Environment.DIRECTORY_DOCUMENTS, file);
+    }
+
+    @NonNull
+    private static JSONObject loadJSONFile(File dir, String file) throws JSONException {
+        Log.d(TAG, "loadJSONFile(): %s", dir.getPath());
         String rawJson = null;
         if (dir.exists()) {
             final File f = new File(dir, file);
@@ -453,6 +493,34 @@ abstract public class JSONHelpers {
      */
     public static JSONObject loadPublicJSONDocument(final String file) throws JSONException {
         return loadPublicJSONFile(Environment.DIRECTORY_DOCUMENTS, file);
+    }
+
+    /**
+     * Load a JSON file from a private application directory as defined by {@link Environment}.
+     *
+     * @param directory
+     *            One of the {@code DIRECTORY_*} constants defined by {@code Environment}.
+     * @param file
+     *            Relative path to file in the public directory.
+     * @return New instance of {@link JSONObject}
+     * @throws JSONException
+     */
+    public static JSONObject loadExternalJSONFile(Context context, final String directory,
+                                                  final String file) throws JSONException {
+        final File dir = context.getExternalFilesDir(directory);
+        return loadJSONFile(dir, file);
+    }
+
+    /**
+     * Load a JSON file from the application's private {@link Environment#DIRECTORY_DOCUMENTS}.
+     *
+     * @param file
+     *            Relative path to file in "Documents" directory.
+     * @return New instance of {@link JSONObject}
+     * @throws JSONException
+     */
+    public static JSONObject loadExternalJSONDocument(Context context, final String file) throws JSONException {
+        return loadExternalJSONFile(context, Environment.DIRECTORY_DOCUMENTS, file);
     }
 
     @NonNull
@@ -845,5 +913,5 @@ abstract public class JSONHelpers {
         }
     }
 
-    private static final String TAG = JSONHelpers.class.getName();
+    private static final String TAG = JSONHelpers.class.getSimpleName();
 }

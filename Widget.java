@@ -3054,7 +3054,7 @@ public class Widget  implements Layout.WidgetContainer {
             throws JSONException {
         JSONObject json = JSONHelpers.loadJSONAsset(context,
                                                     "default_metadata.json");
-        JSONObject publicJson = JSONHelpers.loadPublicJSONDocument("user_default_metadata.json");
+        JSONObject publicJson = JSONHelpers.loadExternalJSONDocument(context, "user_default_metadata.json");
         Log.d(TAG, "loadDefaultMetadata(): public: %s", publicJson);
 
         JSONHelpers.merge(publicJson, json);
