@@ -978,7 +978,7 @@ public class Widget  implements Layout.WidgetContainer {
     public void setTexture(final int bitmapId) {
         final GVRAndroidResource resource = new GVRAndroidResource(
                 mContext.getContext(), bitmapId);
-        setTexture(mContext.loadFutureTexture(resource));
+        setTexture(mContext.getAssetLoader().loadFutureTexture(resource));
     }
 
     /**

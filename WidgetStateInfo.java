@@ -5,6 +5,7 @@ import java.util.Iterator;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRAndroidResource.TextureCallback;
+import org.gearvrf.GVRAssetLoader;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMaterial.GVRShaderType;
@@ -13,6 +14,7 @@ import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTextureParameters;
 import org.gearvrf.GVRTextureParameters.TextureFilterType;
 import org.gearvrf.GVRTextureParameters.TextureWrapType;
+import org.gearvrf.asynchronous.GVRCompressedTexture;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -342,26 +344,27 @@ class WidgetStateInfo {
             textureParams = null;
         }
 
-        context.loadTexture(new TextureCallback() {
+        context.getAssetLoader().loadTexture(
+                resource, new TextureCallback() {
+                    @Override
+                    public void loaded(GVRTexture resource,
+                                       GVRAndroidResource androidResource) {
+                        material.setTexture(key, resource);
+                    }
 
-            @Override
-            public void loaded(GVRTexture resource,
-                    GVRAndroidResource androidResource) {
-                material.setTexture(key, resource);
-            }
+                    @Override
+                    public void failed(Throwable t, GVRAndroidResource androidResource) {
+                        t.printStackTrace();
+                        Log.e(TAG, t, "Failed to load texture '%s' from spec: %s", key,
+                                textureSpec);
+                    }
 
-            @Override
-            public void failed(Throwable t, GVRAndroidResource androidResource) {
-                t.printStackTrace();
-                Log.e(TAG, t, "Failed to load texture '%s' from spec: %s", key,
-                      textureSpec);
-            }
-
-            @Override
-            public boolean stillWanted(GVRAndroidResource androidResource) {
-                return true;
-            }
-        }, resource, textureParams);
+                    @Override
+                    public boolean stillWanted(GVRAndroidResource androidResource) {
+                        return true;
+                    }
+                },
+                textureParams, GVRAssetLoader.DEFAULT_PRIORITY, GVRCompressedTexture.BALANCED);
     }
 
     private enum TextureParametersProperties {
