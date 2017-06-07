@@ -250,10 +250,16 @@ public class Widget  implements Layout.WidgetContainer {
         setVisibility(attribute != null ? Visibility.valueOf(attribute
                 .toUpperCase(Locale.ENGLISH)) : Visibility.VISIBLE);
 
-        createChildren(context, sceneObject);
-
         try {
-            setupMetadata();
+            final JSONObject metaData = getObjectMetadata();
+            Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
+                    getName(), metaData);
+
+            setupAttributes(metaData);
+
+            createChildren(context, sceneObject);
+
+            setupStatesAndLevels(metaData);
         } catch (Exception e) {
             throw new InstantiationException(e.getLocalizedMessage());
         }
@@ -2050,10 +2056,16 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    private JSONObject getObjectMetadata() {
+    protected JSONObject getObjectMetadata() {
+        if (mMetadata == null) {
+            mMetadata = new UnmodifiableJSONObject(buildObjectMetadata());
+        }
+        return mMetadata;
+    }
+
+    private JSONObject buildObjectMetadata() {
         final JSONObject metadata = sObjectMetadata.optJSONObject(getName());
-        final JSONObject defaultMetadata = getDefaultMetadata(getClass(),
-                                                              getName());
+        final JSONObject defaultMetadata = getDefaultMetadata(getClass());
 
         if (defaultMetadata == null) {
             if (metadata == null) {
@@ -2871,7 +2883,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     /* package */
     @SuppressWarnings("unchecked")
-    private JSONObject getDefaultMetadata(Class<? extends Widget> clazz, String name) {
+    private JSONObject getDefaultMetadata(Class<? extends Widget> clazz) {
         final String canonicalName = getCanonicalName(clazz);
         final JSONObject defaultMetadata = sDefaultMetadata
                 .optJSONObject(canonicalName);
@@ -2881,14 +2893,14 @@ public class Widget  implements Layout.WidgetContainer {
         if (defaultMetadata == null) {
             // Recursively check for default metadata up the class hierarchy
             final Class<?> superclass = clazz.getSuperclass();
-            if (Widget.class.isAssignableFrom(superclass)) {
-                return getDefaultMetadata((Class<? extends Widget>) superclass, name);
+            if (isWidgetClass(superclass)) {
+                return getDefaultMetadata((Class<? extends Widget>) superclass);
             }
         }
         return defaultMetadata;
     }
 
-    private String getCanonicalName(Class<? extends Widget> clazz) {
+    private static String getCanonicalName(Class<? extends Widget> clazz) {
         String canonicalName = sCanonicalNames.get(clazz);
         if (canonicalName == null) {
             canonicalName = clazz.getCanonicalName();
@@ -3053,6 +3065,10 @@ public class Widget  implements Layout.WidgetContainer {
         return json;
     }
 
+    private static boolean isWidgetClass(Class<?> clazz) {
+        return Widget.class.isAssignableFrom(clazz);
+    }
+
     private static void loadMetadata(Context context) throws JSONException,
             NoSuchMethodException {
         loadDefaultMetadata(context);
@@ -3075,15 +3091,16 @@ public class Widget  implements Layout.WidgetContainer {
         return json;
     }
 
-    protected void onSetupMetadata(JSONObject metaData) throws JSONException {
-
-    }
-
-    protected void setupMetadata() throws JSONException, NoSuchMethodException {
+    private void setupMetadata() throws JSONException, NoSuchMethodException {
         final JSONObject metaData = getObjectMetadata();
         Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
                 getName(), metaData);
 
+        setupAttributes(metaData);
+        setupStatesAndLevels(metaData);
+    }
+
+    private void setupAttributes(JSONObject metaData) {
         mIsTouchable = optBoolean(metaData, Properties.touchable,
                 mIsTouchable);
         mFocusEnabled = optBoolean(metaData, Properties.focusenabled,
@@ -3092,7 +3109,9 @@ public class Widget  implements Layout.WidgetContainer {
         Visibility visibility = optEnum(metaData, Properties.visibility,
                 mVisibility);
         setVisibility(visibility);
+    }
 
+    private void setupStatesAndLevels(JSONObject metaData) throws JSONException, NoSuchMethodException {
         final boolean hasStates = has(metaData, Properties.states);
         final boolean hasLevels = has(metaData, Properties.levels);
         final boolean hasLevel = has(metaData, Properties.level);
@@ -3114,8 +3133,6 @@ public class Widget  implements Layout.WidgetContainer {
             throw RuntimeAssertion("Invalid metadata for '%s': 'level' specified without level specifications",
                     getName());
         }
-
-        onSetupMetadata(metaData);
     }
 
     private void setupLevels(JSONObject metaData) throws JSONException,
@@ -3328,7 +3345,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     private final GVRContext mContext;
 
-    protected final TransformCache mTransformCache;
+    private final TransformCache mTransformCache;
     private BoundingBox mBoundingBox;
     private boolean mLayoutRequested;
     private boolean mChanged;
@@ -3409,10 +3426,12 @@ public class Widget  implements Layout.WidgetContainer {
     private Widget mParent;
     private String mName;
 
-    private int mLevel = 0;
-    private List<WidgetState> mLevelInfo = new ArrayList<WidgetState>();
+    private JSONObject mMetadata;
 
-    private final List<Widget> mChildren = new ArrayList<Widget>();
+    private int mLevel = 0;
+    private List<WidgetState> mLevelInfo = new ArrayList<>();
+
+    private final List<Widget> mChildren = new ArrayList<>();
 
     private final Set<OnBackKeyListener> mBackKeyListeners = new LinkedHashSet<>();
     private final Set<OnFocusListener> mFocusListeners = new LinkedHashSet<>();

@@ -2,7 +2,6 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -28,12 +27,12 @@ public class CheckableGroup extends GroupWidget {
     public CheckableGroup(GVRContext context, GVRSceneObject sceneObject, NodeEntry attributes)
             throws InstantiationException {
         super(context, sceneObject, attributes);
+        init();
         String attr = attributes.getProperty(CheckableGroupProperties.checkedIndex);
         if (attr != null) {
             int checkedIndex = Integer.parseInt(attr);
             check(checkedIndex);
         }
-        init();
     }
 
     public CheckableGroup(GVRContext context, float width, float height) {
@@ -179,15 +178,6 @@ public class CheckableGroup extends GroupWidget {
         return mAllowMultiCheck;
     }
 
-    @Override
-    protected void onSetupMetadata(JSONObject metadata) throws JSONException {
-        super.onSetupMetadata(metadata);
-        int checkedIndex = optInt(metadata, CheckableGroupProperties.checkedIndex, -1);
-        if (checkedIndex >= 0) {
-            check(checkedIndex);
-        }
-    }
-
     private <T extends Widget & Checkable> boolean checkInternal(T checkableWidget, boolean check) {
         if (checkableWidget.isChecked() != check) {
             checkableWidget.setChecked(check);
@@ -197,6 +187,11 @@ public class CheckableGroup extends GroupWidget {
     }
 
     private void init() {
+        JSONObject metadata = getObjectMetadata();
+        int checkedIndex = optInt(metadata, CheckableGroupProperties.checkedIndex, -1);
+        if (checkedIndex >= 0) {
+            check(checkedIndex);
+        }
         mDefaultLayout.setOrientation(OrientedLayout.Orientation.VERTICAL);
     }
 

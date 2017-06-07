@@ -5,7 +5,6 @@ import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.graphics.drawable.Drawable;
@@ -16,9 +15,8 @@ import com.samsung.smcl.utility.Log;
 import java.util.List;
 
 import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.getInt;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.has;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optBoolean;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optDouble;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
 
 /**
@@ -72,17 +70,6 @@ public class Button extends Widget implements TextContainer {
 
     private enum ButtonProperties {
         textWidgetWidth, textWidgetHeight;
-    }
-
-    @Override
-    protected void onSetupMetadata(JSONObject metaData) throws JSONException {
-        super.onSetupMetadata(metaData);
-        if (has(metaData, ButtonProperties.textWidgetWidth)) {
-            mTextWidgetWidth = getInt(metaData, ButtonProperties.textWidgetWidth);
-        }
-        if (has(metaData, ButtonProperties.textWidgetHeight)) {
-            mTextWidgetHeight = getInt(metaData, ButtonProperties.textWidgetHeight);
-        }
     }
 
     public Button(GVRContext context, GVRSceneObject sceneObject) {
@@ -317,10 +304,10 @@ public class Button extends Widget implements TextContainer {
         });
     }
 
-
     private void init() {
-        mTextWidgetWidth = getWidth();
-        mTextWidgetHeight = getHeight();
+        JSONObject metaData = getObjectMetadata();
+        mTextWidgetWidth = (float) optDouble(metaData, ButtonProperties.textWidgetWidth, getWidth());
+        mTextWidgetHeight = (float) optDouble(metaData, ButtonProperties.textWidgetHeight, getHeight());
 
         setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
 

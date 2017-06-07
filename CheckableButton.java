@@ -6,9 +6,6 @@ import java.util.Set;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRSceneObject;
-import org.json.JSONObject;
-
-import com.samsung.smcl.utility.Log;
 
 public abstract class CheckableButton extends Button implements Checkable {
 
@@ -20,10 +17,10 @@ public abstract class CheckableButton extends Button implements Checkable {
     public CheckableButton(GVRContext context, GVRSceneObject sceneObject,
                            NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
-        String attr = attributes.getProperty("checked");
-        setChecked(attr != null && attr.compareToIgnoreCase("false") == 0);
 
         init();
+        String attr = attributes.getProperty("checked");
+        setChecked(attr != null && attr.compareToIgnoreCase("false") == 0);
     }
 
     public CheckableButton(GVRContext context, GVRSceneObject sceneObject) {
@@ -84,11 +81,6 @@ public abstract class CheckableButton extends Button implements Checkable {
     }
 
     @Override
-    protected void onSetupMetadata(JSONObject metaData) {
-        setChecked(metaData.optBoolean("checked"));
-    }
-
-    @Override
     protected boolean onTouch() {
         super.onTouch();
         toggle();
@@ -105,6 +97,7 @@ public abstract class CheckableButton extends Button implements Checkable {
     }
 
     private void init() {
+        setChecked(getObjectMetadata().optBoolean("checked"));
         mDefaultLayout.setGravity(LinearLayout.Gravity.LEFT);
     }
 
