@@ -518,7 +518,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         for (Widget child: getChildren()) {
             if (child instanceof ListItemHostWidget) {
                 Widget item =  ((ListItemHostWidget) child).getGuest();
-                views.add(item);
+                if (item != null) {
+                    views.add(item);
+                }
             }
         }
         return views;

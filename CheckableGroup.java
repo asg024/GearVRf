@@ -220,10 +220,9 @@ public class CheckableGroup extends GroupWidget {
         synchronized (mListeners) {
             listeners = mListeners.toArray();
         }
-        List<T> checkableChildren = getCheckableChildren();
+        int index = getCheckableChildren().indexOf(checkableWidget);
         for (Object listener : listeners) {
-            ((OnCheckChangedListener) listener).onCheckChanged(this, checkableWidget,
-                    checkableChildren.indexOf(checkableWidget));
+            ((OnCheckChangedListener) listener).onCheckChanged(this, checkableWidget, index);
         }
     }
 
@@ -233,7 +232,6 @@ public class CheckableGroup extends GroupWidget {
 
     private boolean mAllowMultiCheck;
     private Set<OnCheckChangedListener> mListeners = new LinkedHashSet<>();
-    private LinkedHashSet<Checkable> mCheckableChildren = new LinkedHashSet<>();
     private boolean mProtectFromCheckChanged;
     private LinearLayout mDefaultLayout = new LinearLayout();
 

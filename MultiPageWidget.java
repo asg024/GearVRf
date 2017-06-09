@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.Float.NaN;
+
 /**
  * The list of the items combined into the multiple pages.
  *
@@ -172,11 +174,11 @@ public class MultiPageWidget extends ListWidget {
 
     @Override
     protected void onRecycle(Widget view, int dataIndex) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onRecycle [%d] %s", dataIndex, view);
         if (view != null) {
             final ListWidget page = (ListWidget) view;
             setAdapter(page, dataIndex, null);
 
-            page.recycleChildren();
             ListOnChangedListener listener = mPagesListOnChangedListeners.get(page);
             if (listener != null) {
                 page.removeListOnChangedListener(listener);
@@ -304,17 +306,17 @@ public class MultiPageWidget extends ListWidget {
 
         @Override
         public void registerDataSetObserver(DataSetObserver observer) {
-            mAdapter.registerDataSetObserver(observer);
+           // mAdapter.registerDataSetObserver(observer);
         }
 
         @Override
         public void unregisterDataSetObserver(DataSetObserver observer) {
-            mAdapter.unregisterDataSetObserver(observer);
+           // mAdapter.unregisterDataSetObserver(observer);
         }
 
         @Override
         public void unregisterAllDataSetObservers() {
-            mAdapter.unregisterAllDataSetObservers();
+            //mAdapter.unregisterAllDataSetObservers();
         }
     }
 
@@ -336,6 +338,7 @@ public class MultiPageWidget extends ListWidget {
 
         @Override
         public void onInvalidated() {
+            mItemsPerPage = -1;
             MultiPageWidget.this.onItemChanged(mItemAdapter);
             // make sure it is executed after finishing onChanged()
             runOnGlThread(new Runnable() {
@@ -422,6 +425,9 @@ public class MultiPageWidget extends ListWidget {
 
     protected void setAdapter(ListWidget page, final int pageIndex, final Adapter adapter) {
         if (adapter == null) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setAdapter page[%d] = %s adapter = %s",
+                    pageIndex, page, adapter);
+
             page.setAdapter(null);
         } else if (page.mAdapter == null ||
                 adapter != (((SelectingAdapter)page.mAdapter).mAdapter)) {
@@ -519,9 +525,18 @@ public class MultiPageWidget extends ListWidget {
             float width = 0, height = 0, depth = 0;
             for (Layout listLayout: mLayouts) {
                 listLayout.enableClipping(true);
-                width = Math.max(listLayout.calculateWidth(ids), width);
-                height = Math.max(listLayout.calculateHeight(ids), height);
-                depth = Math.max(listLayout.calculateDepth(ids), depth);
+                float w = listLayout.calculateWidth(ids);
+                if (!Float.isNaN(w)) {
+                    width = Math.max(w, width);
+                }
+                float h = listLayout.calculateHeight(ids);
+                if (!Float.isNaN(h)) {
+                    height = Math.max(h, height);
+                }
+                float d = listLayout.calculateDepth(ids);
+                if (!Float.isNaN(d)) {
+                    depth = Math.max(d, depth);
+                }
             }
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "recalculateViewPort mMaxVisiblePageCount = %d [%f, %f, %f]",
                     mMaxVisiblePageCount, width, height, depth);
@@ -559,11 +574,11 @@ public class MultiPageWidget extends ListWidget {
         return super.removeLayout(listLayout);
     }
 
+    // TODO: remove this workaround as soon as 21650 is resolved
     @Override
-    protected void onChanged(final Adapter adapter) {
-        mItemsPerPage = -1;
-        recalculateViewPort(adapter);
-        super.onChanged(adapter);
+    protected void recycleChildren() {
+        super.recycleChildren();
+        recalculateViewPort(mAdapter);
     }
 
     private Map<ListWidget, ListOnChangedListener> mPagesListOnChangedListeners = new HashMap<>();
