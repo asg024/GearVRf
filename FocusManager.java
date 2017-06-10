@@ -200,6 +200,10 @@ public class FocusManager {
 
             Focusable focusable = null;
             for (GVRPickedObject picked : pickedObjectList) {
+                if (picked == null) {
+                    Log.w(TAG, "onDrawFrame(): got a null reference in the pickedObjectList");
+                    continue;
+                }
                 final GVRSceneObject quad = picked.getHitObject();
                 if (quad != null) {
                     if (!compareCurrentFocusName(quad)) {
