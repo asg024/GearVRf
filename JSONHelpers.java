@@ -623,7 +623,7 @@ abstract public class JSONHelpers {
                 safePut(dest, key, value);
             }
         }
-        return null;
+        return dest;
     }
 
     /**

@@ -2885,19 +2885,41 @@ public class Widget  implements Layout.WidgetContainer {
     @SuppressWarnings("unchecked")
     private JSONObject getDefaultMetadata(Class<? extends Widget> clazz) {
         final String canonicalName = getCanonicalName(clazz);
-        final JSONObject defaultMetadata = sDefaultMetadata
+
+        // Recursively check for default metadata up the class hierarchy
+        final JSONObject superMetadata;
+        final Class<?> superclass = clazz.getSuperclass();
+        if (isWidgetClass(superclass)) {
+            superMetadata = getDefaultMetadata((Class<? extends Widget>) superclass);
+        } else {
+            superMetadata = new JSONObject();
+        }
+        Log.d(TAG,
+                "getDefaultMetadata(%s): getting super metadata for %s: %s",
+                getName(), canonicalName, superMetadata);
+
+        JSONObject defaultMetadata = sDefaultMetadata
                 .optJSONObject(canonicalName);
         Log.d(TAG,
-              "getDefaultMetadata(%s): getting default metadata for %s: %s",
-              getName(), canonicalName, defaultMetadata);
+                "getDefaultMetadata(%s): getting default metadata for %s: %s",
+                getName(), canonicalName, defaultMetadata);
         if (defaultMetadata == null) {
-            // Recursively check for default metadata up the class hierarchy
-            final Class<?> superclass = clazz.getSuperclass();
-            if (isWidgetClass(superclass)) {
-                return getDefaultMetadata((Class<? extends Widget>) superclass);
-            }
+            defaultMetadata = new JSONObject();
+        } else {
+            Log.d(TAG, "getDefaultMetadata(%s): copy default metadata for %s ...", getName(),
+                    canonicalName);
+            defaultMetadata = JSONHelpers.copy(defaultMetadata);
         }
-        return defaultMetadata;
+        Log.d(TAG,
+                "getDefaultMetadata(%s): getting default metadata for %s: %s",
+                getName(), canonicalName, defaultMetadata);
+
+        JSONObject mergedMetadata = JSONHelpers.merge(defaultMetadata, superMetadata);
+        Log.d(TAG,
+                "getDefaultMetadata(%s): getting merged metadata for %s: %s",
+                getName(), canonicalName, mergedMetadata);
+
+        return mergedMetadata;
     }
 
     private static String getCanonicalName(Class<? extends Widget> clazz) {
