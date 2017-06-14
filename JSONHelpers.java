@@ -336,20 +336,15 @@ abstract public class JSONHelpers {
     }
 
     /**
-     * Check if the specified {@link JSONObject} has a string-encoded
-     * {@code Enum} at {@code key}.
+     * Check if the specified {@link JSONObject} has an {@link Enum} at {@code key}.
      * <p>
-     * If the item is not naturally an {@code Enum} and {@code coerce} is
-     * {@code true}, checks to see if it is a {@link String} with one of the
-     * {@code Enum's} {@linkplain Enum#valueOf(Class, String) values}.
+     * If the item is not naturally an {@code Enum}, checks to see if it is a {@link String} with
+     * one of the {@code Enum's} {@linkplain Enum#valueOf(Class, String) values}.
      *
      * @param json
      *            {@code JSONObject} to inspect
      * @param key
      *            Item in object to check
-     * @param coerce
-     *            If {@code true}, check if the value can be coerced to the
-     *            specified {@code Enum}
      * @return {@code True} if the item exists and is an {@code Enum};
      *         {@code false} otherwise
      */
@@ -368,6 +363,7 @@ abstract public class JSONHelpers {
             final String s = (String) o;
             try {
                 Enum.valueOf(enumType, s);
+                return true;
             } catch (IllegalArgumentException e) {
                 Log.e(TAG, e,
                       "isEnum(): failed to coerce value at '%s' to %s (%s)",
@@ -473,11 +469,17 @@ abstract public class JSONHelpers {
 
     @NonNull
     private static JSONObject loadJSONFile(File dir, String file) throws JSONException {
-        Log.d(TAG, "loadJSONFile(): %s", dir.getPath());
         String rawJson = null;
         if (dir.exists()) {
             final File f = new File(dir, file);
-            rawJson = Utility.readTextFile(f);
+            if (f.exists()) {
+                rawJson = Utility.readTextFile(f);
+                Log.d(TAG, "loadJSONFile(): %s", f.getPath());
+            } else {
+                Log.w(TAG, "loadJSONFile(): file %s doesn't exists", f.getPath());
+            }
+        } else {
+            Log.w(TAG, "loadJSONFile(): directory %s doesn't exists", dir.getPath());
         }
 
         return getJsonObject(rawJson);
