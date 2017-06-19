@@ -111,7 +111,7 @@ public class PageIndicatorWidget extends CheckableGroup {
 
     public boolean setCurrentPage(final int page) {
         Log.d(TAG, "setPageId pageId = %d", page);
-        return check(page);
+        return page >= 0 && page < getCheckableCount() ? check(page) : false;
     }
 
     private class PageIndicatorButton extends CheckableButton {
