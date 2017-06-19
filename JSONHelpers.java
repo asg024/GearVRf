@@ -8,6 +8,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 
@@ -18,7 +20,15 @@ import com.samsung.smcl.utility.Utility;
 
 abstract public class JSONHelpers {
 
+    /**
+     * An {@link UnmodifiableJSONObject} that is returned by several methods if a {@link JSONObject}
+     * is not mapped to a specified key.  Helps to avoid a lot of {@code null}-checking logic.
+     */
     public static final JSONObject EMPTY_OBJECT = new UnmodifiableJSONObject(new JSONObject());
+    /**
+     * An {@link UnmodifiableJSONArray} that is returned by several methods if a {@link JSONArray}
+     * is not mapped to a specified key.  Helps to avoid a lot of {@code null}-checking logic.
+     */
     public static final JSONArray EMPTY_ARRAY = new UnmodifiableJSONArray(new JSONArray());
 
     public static <P extends Enum<P>> Object get(final JSONObject json, P e)
@@ -58,6 +68,21 @@ abstract public class JSONHelpers {
     public static <P extends Enum<P>> double optDouble(final JSONObject json,
             P e, double fallback) {
         return json.optDouble(e.name(), fallback);
+    }
+
+    public static <P extends Enum<P>> float getFloat(final JSONObject json,
+                                                       P e) throws JSONException {
+        return (float) json.getDouble(e.name());
+    }
+
+    public static <P extends Enum<P>> float optFloat(final JSONObject json,
+                                                       P e) {
+        return (float) json.optDouble(e.name());
+    }
+
+    public static <P extends Enum<P>> float optFloat(final JSONObject json,
+                                                       P e, double fallback) {
+        return (float) json.optDouble(e.name(), fallback);
     }
 
     public static <P extends Enum<P>> int getInt(final JSONObject json, P e)
@@ -134,6 +159,18 @@ abstract public class JSONHelpers {
         return json.optJSONObject(e.name());
     }
 
+    /**
+     * Returns the value mapped by enum if it exists and is a {@link JSONObject}. If the value does
+     * not exist by that enum, and {@code emptyForNull} is {@code true}, returns
+     * {@link #EMPTY_OBJECT}. Otherwise, returns {@code null}.
+     *
+     * @param json {@link JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param emptyForNull {@code True} to return {@code EMPTY_OBJECT} if there is no mapped data,
+     *                                 {@code false} to return {@code null} in that case
+     * @return A {@code JSONObject} if the mapping exists; {@code EMPTY_OBJECT} if it doesn't and
+     * {@code emptyForNull} is {@code true}; {@code null} otherwise
+     */
     public static <P extends Enum<P>> JSONObject optJSONObject(final JSONObject json, P e,
                                                                boolean emptyForNull) {
         JSONObject jsonObject = optJSONObject(json, e);
@@ -153,6 +190,19 @@ abstract public class JSONHelpers {
         return json.optJSONArray(e.name());
     }
 
+
+    /**
+     * Returns the value mapped by enum if it exists and is a {@link JSONArray}. If the value does not
+     * exist by that enum, and {@code emptyForNull} is {@code true}, returns {@link #EMPTY_ARRAY}.
+     * Otherwise, returns {@code null}.
+     *
+     * @param json {@code JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param emptyForNull {@code True} to return {@code EMPTY_ARRAY} if there is no mapped data,
+     *                                 {@code false} to return {@code null} in that case
+     * @return A {@code JSONObject} if the mapping exists; {@code EMPTY_ARRAY} if it doesn't and
+     * {@code emptyForNull} is {@code true}; {@code null} otherwise
+     */
     public static <P extends Enum<P>> JSONArray optJSONArray(final JSONObject json, P e,
                                                              boolean emptyForNull) {
         JSONArray jsonArray = optJSONArray(json, e);
@@ -160,6 +210,152 @@ abstract public class JSONHelpers {
             jsonArray = EMPTY_ARRAY;
         }
         return jsonArray;
+    }
+
+    /**
+     * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
+     * "y" members into a {@link Point}.
+     *
+     * @param json {@code JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @return An instance of {@code Point} or {@null} if there is no object mapping for {@code e}.
+     */
+    public static <P extends Enum<P>> Point optPoint(final JSONObject json, P e) {
+        return optPoint(json, e, null);
+    }
+
+    /**
+     * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
+     * "y" members into a {@link Point}. The values in {@code fallback} are used if either field is
+     * missing; if {@code fallback} is {@code null}, 0 (zero) is used.
+     *
+     * @param json {@code JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param fallback Default value to return if there is no mapping
+     * @return An instance of {@code Point} or {@code fallback} if there is no object mapping for
+     * {@code e}.
+     */
+    public static <P extends Enum<P>> Point optPoint(final JSONObject json, P e, Point fallback) {
+        Point p = fallback;
+        JSONObject value = optJSONObject(json, e);
+        Log.d(TAG, "optPoint(): raw: %s", value);
+        if (value != null && isPoint(value)) {
+            int x = value.optInt("x", fallback != null ? fallback.x : 0);
+            int y = value.optInt("y", fallback != null ? fallback.y : 0);
+            Log.d(TAG, "optPoint(): x: %d, y: %d", x, y);
+            p = new Point(x, y);
+        }
+
+        return p;
+    }
+
+    /**
+     * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
+     * "y" members into a {@link Point}. If the value does not exist by that enum, and
+     * {@code emptyForNull} is {@code true}, returns a default constructed {@code Point}. Otherwise,
+     * returns {@code null}.
+     *
+     * @param json {@code JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param emptyForNull {@code True} to return a default constructed {@code Point} if there is no
+     *                                 mapped data, {@code false} to return {@code null} in that case
+     * @return A {@code Point} if the mapping exists or {@code emptyForNull} is {@code true};
+     * {@code null} otherwise
+     */
+    public static <P extends Enum<P>> Point optPoint(final JSONObject json, P e, boolean emptyForNull) {
+        Point p = optPoint(json, e);
+        if (p == null && emptyForNull) {
+            p = new Point();
+        }
+        return p;
+    }
+
+    /**
+     * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
+     * "y" members into a {@link PointF}.
+     *
+     * @param json {@code JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @return An instance of {@code PointF} or {@null} if there is no object mapping for {@code e}.
+     */
+    public static <P extends Enum<P>> PointF optPointF(final JSONObject json, P e) {
+        return optPointF(json, e, null);
+    }
+
+    /**
+     * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
+     * "y" members into a {@link PointF}.  The values in {@code fallback} are used if either field
+     * is missing; if {@code fallback} is {@code null}, {@link Float#NaN} is used.
+     *
+     * @param json {@code JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param fallback Default value to return if there is no mapping
+     * @return An instance of {@code PointF} or {@code fallback} if there is no object mapping for
+     * {@code e}.
+     */
+    public static <P extends Enum<P>> PointF optPointF(final JSONObject json, P e, PointF fallback) {
+        PointF p = fallback;
+        JSONObject value = optJSONObject(json, e);
+        if (value != null && isPoint(value)) {
+            float x = (float) value.optDouble("x", fallback != null ? fallback.x : Float.NaN);
+            float y = (float) value.optDouble("y", fallback != null ? fallback.y : Float.NaN);
+
+            p = new PointF(x,y);
+        }
+
+        return p;
+    }
+
+    /**
+     * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
+     * "y" members into a {@link Point}. If the value does not exist by that enum, and
+     * {@code emptyForNull} is {@code true}, returns a default constructed {@code Point}. Otherwise,
+     * returns {@code null}.
+     *
+     * @param json {@code JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param emptyForNull {@code True} to return a default constructed {@code Point} if there is no
+     *                                 mapped data, {@code false} to return {@code null} in that case
+     * @return A {@code Point} if the mapping exists or {@code emptyForNull} is {@code true};
+     * {@code null} otherwise
+     */
+    public static <P extends Enum<P>> PointF optPointF(final JSONObject json, P e, boolean emptyForNull) {
+        PointF p = optPointF(json, e);
+        if (p == null && emptyForNull) {
+            p = new PointF();
+        }
+        return p;
+    }
+
+    /**
+     * Checks whether the value mapped by enum exists, is a {@link JSONObject}, has at least one
+     * field named either "x" or "y", and that if either field is present, it is a number.  If at
+     * least one of the fields is present, it can be assumed that the missing field is defaulted to
+     * zero.  If both are missing, it's ambiguous, at best, whether the object in question can
+     * reasonably be treated as a {@link Point}.  This specification is permissive -- there can be
+     * other, non-{@code Point}, fields present.  In that case, it can be considered that the object
+     * <em>extends</em> {@code Point}.
+     *
+     * @param json {@code JSONObject} to check
+     * @param e {@link Enum} labeling the data to check
+     * @return {@code True} if the mapping exists and meets the conditions above; {@code false}
+     * otherwise.
+     */
+    public static <P extends Enum<P>> boolean hasPoint(final JSONObject json, P e) {
+        Object o = opt(json, e);
+        return o != null && o != JSONObject.NULL && o instanceof JSONObject &&
+                isPoint((JSONObject) o);
+    }
+
+    public static boolean isPoint(JSONObject jo) {
+        Object x = jo.opt("x");
+        Object y = jo.opt("y");
+        Log.d(TAG, "isPoint(): x: %s, y: %s", x, y);
+        if (x == null && y == null) return false;
+        if (x != null && !(x instanceof Number)) return false;
+        if (y != null && !(y instanceof Number)) return false;
+
+        return true;
     }
 
     public static <P extends Enum<P>> boolean has(final JSONObject json, P e) {
@@ -234,6 +430,13 @@ abstract public class JSONHelpers {
      */
     public static boolean isDouble(final JSONObject json, final String key) {
         return isInstanceOf(json, key, Double.class);
+    }
+
+    /**
+     * Alias for {@link #isDouble(JSONObject, String)}.
+     */
+    public static boolean isFloat(final JSONObject json, final String key) {
+        return isDouble(json, key);
     }
 
     /**
@@ -473,7 +676,7 @@ abstract public class JSONHelpers {
         if (dir.exists()) {
             final File f = new File(dir, file);
             if (f.exists()) {
-                rawJson = Utility.readTextFile(f);
+            rawJson = Utility.readTextFile(f);
                 Log.d(TAG, "loadJSONFile(): %s", f.getPath());
             } else {
                 Log.w(TAG, "loadJSONFile(): file %s doesn't exists", f.getPath());
