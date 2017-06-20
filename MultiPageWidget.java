@@ -4,6 +4,7 @@ import android.database.DataSetObserver;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.vr.gvrf_launcher.wonderwall.ui.MultiPageStack;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
@@ -44,7 +45,7 @@ public class MultiPageWidget extends ListWidget {
     /**
      * Adapter associated with the items in the pages
      */
-    private Adapter mItemAdapter;
+    protected Adapter mItemAdapter;
     private int mItemsPerPage = -1;
 
     /**
@@ -190,6 +191,29 @@ public class MultiPageWidget extends ListWidget {
         super.onRecycle(view, dataIndex);
     }
 
+    @Override
+    protected void notifyOnInvalidated() {
+        super.notifyOnInvalidated();
+        if (mOnItemInvalidated) {
+            for (DataSetObserver observer : mItemObservers) {
+                observer.onInvalidated();
+            }
+            mOnItemInvalidated = false;
+            mOnItemChanged = false;
+        }
+    }
+
+    @Override
+    protected void notifyOnChanged() {
+        super.notifyOnChanged();
+        if (mOnItemChanged) {
+            for(DataSetObserver observer: mItemObservers) {
+                observer.onChanged();
+            }
+            mOnItemChanged = false;
+        }
+    }
+
     protected static class SelectingAdapter implements Adapter {
         private final static String TAG = Utility.tag(SelectingAdapter.class);
 
@@ -320,35 +344,21 @@ public class MultiPageWidget extends ListWidget {
         }
     }
 
+    private boolean mOnItemChanged;
+    private boolean mOnItemInvalidated;
+
     protected DataSetObserver mInternalItemsObserver = new DataSetObserver() {
         @Override
         public void onChanged() {
+            mOnItemChanged = true;
             MultiPageWidget.this.onItemChanged(mItemAdapter);
-            // make sure it is executed after finishing onChanged()
-            runOnGlThread(new Runnable() {
-                @Override
-                public void run() {
-
-                    for(DataSetObserver observer: mItemObservers) {
-                        observer.onChanged();
-                    }
-                }
-            });
         }
 
         @Override
         public void onInvalidated() {
-            mItemsPerPage = -1;
+            setItemsPerPage(-1);
+            mOnItemInvalidated = true;
             MultiPageWidget.this.onItemChanged(mItemAdapter);
-            // make sure it is executed after finishing onChanged()
-            runOnGlThread(new Runnable() {
-                @Override
-                public void run() {
-                    for(DataSetObserver observer: mItemObservers) {
-                        observer.onInvalidated();
-                    }
-                }
-            });
         }
     };
 
@@ -409,15 +419,14 @@ public class MultiPageWidget extends ListWidget {
                             Log.w(TAG, "onItemChanged(%s): internal observer not registered on adapter!", getName());
                         }
                         clear();
+                        mOnItemInvalidated = true;
+                        notifyOnInvalidated();
                     }
                     mItemAdapter = adapter;
                     if (mItemAdapter != null) {
                         mItemAdapter.registerDataSetObserver(mInternalItemsObserver);
                     }
 
-                    for (DataSetObserver observer : mItemObservers) {
-                        observer.onInvalidated();
-                    }
                 }
                 MultiPageWidget.this.onChanged();
             }
@@ -474,7 +483,7 @@ public class MultiPageWidget extends ListWidget {
                 pageCount, mLayouts.size());
         if (mMaxVisiblePageCount != pageCount) {
             mMaxVisiblePageCount = pageCount;
-//            recalculateViewPort(mAdapter);
+            recalculateViewPort(mAdapter);
             requestLayout();
         }
     }
@@ -577,13 +586,6 @@ public class MultiPageWidget extends ListWidget {
         return super.removeLayout(listLayout);
     }
 
-    // TODO: remove this workaround as soon as 21650 is resolved
-    @Override
-    protected void recycleChildren() {
-        super.recycleChildren();
-//        recalculateViewPort(mAdapter);
-    }
-
     private Map<ListWidget, ListOnChangedListener> mPagesListOnChangedListeners = new HashMap<>();
 
     class PageOnChangedListener implements ListOnChangedListener {
@@ -613,7 +615,7 @@ public class MultiPageWidget extends ListWidget {
 
         @Override
         public void onChangedFinished(ListWidget list, int numOfMeasuredViews) {
-            if (list.mAdapter != null) {
+            if (list.mAdapter != null && numOfMeasuredViews > 0) {
                 SelectingAdapter adapter = ((SelectingAdapter) list.mAdapter);
 
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedFinished list = %s , index = %d end = %d",
@@ -622,7 +624,7 @@ public class MultiPageWidget extends ListWidget {
                 selectItems(list, getLocalSelectedItemsList(adapter), true);
 
                 if (adapter.hasUniformViewSize() && mAdapter.hasUniformViewSize()) {
-                    mItemsPerPage = numOfMeasuredViews;
+                    setItemsPerPage(numOfMeasuredViews);
                     Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedFinished mItemsPerPage = %d", mItemsPerPage);
                 }
             } else {
@@ -630,6 +632,10 @@ public class MultiPageWidget extends ListWidget {
                         list, mPageIndex);
             }
         }
+    }
+
+    protected void setItemsPerPage(int itemNum) {
+        mItemsPerPage = itemNum;
     }
 
     @Override

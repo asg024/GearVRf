@@ -3,10 +3,7 @@ package com.samsung.smcl.vr.widgets;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.RuntimeAssertion;
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Widget.ViewPortVisibility;
-
-import org.joml.Vector3f;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -49,8 +46,9 @@ abstract public class Layout {
         return result;
     }
 
-    interface WidgetContainer {
+    public interface WidgetContainer {
         Widget get(final int dataIndex);
+        int getDataIndex(Widget widget);
         int size();
 
         float getBoundsWidth();
@@ -65,6 +63,8 @@ abstract public class Layout {
          * This method must be overridden for the dynamic data set like a List.
          */
         boolean isDynamic();
+        void onLayoutChanged(Layout layout);
+
     }
 
     protected Vector3Axis mViewPort = new Vector3Axis();
@@ -110,7 +110,9 @@ abstract public class Layout {
     public void enableClipping(boolean enable) {
         if (mClippingEnabled != enable) {
             mClippingEnabled = enable;
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
     }
 
@@ -130,7 +132,9 @@ abstract public class Layout {
     void onLayoutApplied(final WidgetContainer container, final Vector3Axis viewPort) {
         mContainer = container;
         mViewPort = viewPort;
-        invalidate();
+        if (mContainer != null) {
+            mContainer.onLayoutChanged(this);
+        }
     }
 
     /**
@@ -155,10 +159,6 @@ abstract public class Layout {
     void invalidate(final int dataIndex) {
         Log.d(TAG, "invalidate [%d]", dataIndex);
         mMeasuredChildren.remove(dataIndex);
-    }
-
-    boolean isInvalidated() {
-        return mMeasuredChildren.isEmpty();
     }
 
     public String getName() {
@@ -281,7 +281,9 @@ abstract public class Layout {
     public void setDividerPadding(float padding, final Axis axis) {
         if (!Utility.equal(mDividerPadding.get(axis), padding)) {
             mDividerPadding.set(padding, axis);
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
     }
 
@@ -293,7 +295,9 @@ abstract public class Layout {
     public void setOffset(float offset, final Axis axis) {
         if (!Utility.equal(mOffset.get(axis), offset)) {
             mOffset.set(offset, axis);
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
     }
 
@@ -366,18 +370,26 @@ abstract public class Layout {
      * @param measuredChildren the list of measured children
      * measuredChildren list can be passed as null if it's not needed to
      * create the list of the measured items
+     * @return true if the layout was recalculated, otherwise - false
      */
-    protected void measureAll(List<Widget> measuredChildren) {
-        if (isInvalidated() || mContainer.size() != mMeasuredChildren.size()) {
-            invalidate();
-            for (int i = 0; i < mContainer.size(); ++i) {
+    protected boolean measureAll(List<Widget> measuredChildren) {
+        boolean changed = false;
+        for (int i = 0; i < mContainer.size(); ++i) {
+
+            if (!isChildMeasured(i)) {
                 Widget child = measureChild(i, false);
-                if (measuredChildren != null  && child != null) {
-                    measuredChildren.add(child);
+                if (child != null) {
+                    if (measuredChildren != null) {
+                        measuredChildren.add(child);
+                    }
+                    changed = true;
                 }
             }
+        }
+        if (changed) {
             postMeasurement();
         }
+        return changed;
     }
 
     /**
@@ -396,25 +408,36 @@ abstract public class Layout {
      * measuredChildren list can be passed as null if it's not needed to
      * create the list of the measured items
      */
-    protected void measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
+    protected boolean measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
         boolean inBounds = true;
+        boolean changed = false;
         for (int i = centerDataIndex; i < mContainer.size() && inBounds; ++i) {
-            Widget view = measureChild(i);
-            inBounds = inViewPort(i);
-            if (!inBounds) {
-                invalidate(i);
-            } else {
-                inBounds = postMeasurement() || !mClippingEnabled;
-            }
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
-                            "isBounds = %b isViewPortEnabled=%b dataIndex = %d layout = %s",
-                    view == null ? "<null>" : view.getName(), inBounds, mClippingEnabled,
-                    i, this);
+            if (!isChildMeasured(i)) {
+                Widget view = measureChild(i);
+                if (!mClippingEnabled) {
+                    postMeasurement();
+                } else {
+                    inBounds = inViewPort(i);
+                    if (!inBounds) {
+                        invalidate(i);
+                    } else {
+                        inBounds = postMeasurement();
+                    }
+                }
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
+                                "isBounds = %b isViewPortEnabled=%b dataIndex = %d layout = %s",
+                        view == null ? "<null>" : view.getName(), inBounds, mClippingEnabled,
+                        i, this);
 
-            if (measuredChildren != null && view != null && inBounds) {
-                measuredChildren.add(view);
+                if (view != null && inBounds) {
+                    if (measuredChildren != null) {
+                        measuredChildren.add(view);
+                    }
+                    changed = true;
+                }
             }
         }
+        return changed;
     }
 
     /**
@@ -431,9 +454,20 @@ abstract public class Layout {
     protected void layoutChild(final int dataIndex) {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
-            updateTransform(child, Axis.X, mOffset.get(Axis.X));
-            updateTransform(child, Axis.Y, mOffset.get(Axis.Y));
-            updateTransform(child, Axis.Z, mOffset.get(Axis.Z));
+            float offset = mOffset.get(Axis.X);
+            if (!Utility.equal(offset, 0)) {
+                updateTransform(child, Axis.X, offset);
+            }
+
+            offset = mOffset.get(Axis.Y);
+            if (!Utility.equal(offset, 0)) {
+                updateTransform(child, Axis.Y, offset);
+            }
+
+            offset = mOffset.get(Axis.Z);
+            if (!Utility.equal(offset, 0)) {
+                updateTransform(child, Axis.Z, offset);
+            }
        }
     }
 
@@ -476,8 +510,8 @@ abstract public class Layout {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateTransform [%s], offset = [%f], axis = [%s]",
                 child.getName(), offset, axis);
 
-        if (Float.isNaN(offset) || Utility.equal(offset, 0)) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Position is NaN or 0 for axis " + axis);
+        if (Float.isNaN(offset)) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Position is NaN" + axis);
         } else {
             offset *= getFactor(axis);
             switch (axis) {
@@ -516,73 +550,5 @@ abstract public class Layout {
             layoutChild(nextMeasured);
             postLayoutChild(nextMeasured);
         }
-    }
-}
-
-/**
- * ViewPort class basically define the layout container dimensions.
- */
-class Vector3Axis extends Vector3f {
-    Vector3Axis(final float x, final float y, final float z) {
-        super(x, y, z);
-    }
-
-    Vector3Axis(Vector3f v) {
-        super(v.x, v.y, v.z);
-    }
-
-    Vector3Axis() {
-        super();
-    }
-
-    public float get(Axis axis) {
-        switch (axis) {
-            case X:
-                return x;
-            case Y:
-                return y;
-            case Z:
-                return z;
-            default:
-                throw new RuntimeAssertion("Bad axis specified: %s", axis);
-        }
-    }
-
-    public void set(float val, Axis axis) {
-        switch (axis) {
-            case X:
-                x = val;
-                break;
-            case Y:
-                y = val;
-                break;
-            case Z:
-                z = val;
-                break;
-            default:
-                throw new RuntimeAssertion("Bad axis specified: %s", axis);
-        }
-    }
-
-    public boolean isNaN() {
-        return Float.isNaN(x) && Float.isNaN(y) && Float.isNaN(z);
-    }
-
-    public boolean isInfinite() {
-        return Float.isInfinite(x) && Float.isInfinite(y) && Float.isInfinite(z);
-    }
-
-    public Vector3Axis delta(Vector3f v) {
-        Vector3Axis ret = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
-        if (x != Float.NaN && v.x != Float.NaN && !Utility.equal(x, v.x)) {
-            ret.set(x - v.x, Axis.X);
-        }
-        if (y != Float.NaN && v.y != Float.NaN && !Utility.equal(y, v.y)) {
-            ret.set(y - v.y, Axis.Y);
-        }
-        if (z != Float.NaN && v.z != Float.NaN && !Utility.equal(z, v.z)) {
-            ret.set(z - v.z, Axis.Z);
-        }
-        return ret;
     }
 }

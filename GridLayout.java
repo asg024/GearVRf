@@ -118,7 +118,9 @@ public class GridLayout extends OrientedLayout {
 
         protected void setChunkBreaker(final ChunkBreaker chunkBreaker) {
             mChunkBreaker = chunkBreaker;
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
 
         @Override
@@ -236,7 +238,9 @@ public class GridLayout extends OrientedLayout {
         protected void setSize(final float size) {
             if (mSize != size) {
                 mSize = size;
-                invalidate();
+                if (mContainer != null) {
+                    mContainer.onLayoutChanged(this);
+                }
             }
         }
 
@@ -555,10 +559,10 @@ public class GridLayout extends OrientedLayout {
     }
 
     @Override
-    protected void measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
+    protected boolean  measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
 // TODO: only left & top centralization is supported for now. Need to support center and right as well
         // no preferred position, just feed all data starting from beginning.
-        super.measureUntilFull(centerDataIndex == -1 ? 0 : centerDataIndex, measuredChildren);
+        return super.measureUntilFull(centerDataIndex == -1 ? 0 : centerDataIndex, measuredChildren);
     }
 
     @Override

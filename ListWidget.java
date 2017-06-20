@@ -6,6 +6,7 @@ import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 import com.samsung.smcl.vr.widgets.Layout.Axis;
+import com.samsung.smcl.vr.widgets.Vector3Axis;
 import com.samsung.smcl.vr.widgets.Layout.Direction;
 import com.samsung.smcl.vr.widgets.LayoutScroller.ScrollableList;
 
@@ -370,7 +371,12 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     private Set<DataSetObserver> mObservers = new HashSet<>();
 
-    @Override
+    /**
+     * The callback is called *after* the list relayout (affected by adapter change) has been done.
+     * Add DataSetObserver listener directly to the adapter if you rae interested in the callback
+     * immediately after adapter onCahnged().
+     * @param observer
+     */
     public void registerDataSetObserver(final DataSetObserver observer) {
         mObservers.add(observer);
     }
@@ -404,6 +410,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             @Override
             public void run() {
                 if (adapter != mAdapter) {
+                    mOnInvalidated = true;
                     if (mAdapter != null) {
                         try {
                             mAdapter.unregisterDataSetObserver(mInternalObserver);
@@ -411,15 +418,13 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                             Log.w(TAG, "onChanged(%s): internal observer not registered on adapter!", getName());
                         }
                         clear();
+                        notifyOnInvalidated();
                     }
                     mAdapter = adapter;
                     if (mAdapter != null) {
                         mAdapter.registerDataSetObserver(mInternalObserver);
                     }
 
-                    for (DataSetObserver observer : mObservers) {
-                        observer.onInvalidated();
-                    }
                 }
                 onChangedImpl(-1);
             }
@@ -460,45 +465,60 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             listener.onChangedStart(this);
         }
 
-        int dataCount = getDataCount();
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedImpl(%s): items [%d] views [%d] mLayouts.size() = %d " +
               "preferableCenterPosition = %d",
-              getName(), dataCount, getViewCount(), mLayouts.size(), preferableCenterPosition);
-
+              getName(), getDataCount(), getViewCount(), mLayouts.size(), preferableCenterPosition);
 
         // TODO: selectively recycle data based on the changes in the data set
         recycleChildren();
+        onTransformChanged();
+        mPreferableCenterPosition = preferableCenterPosition;
+        requestLayout();
+    }
 
+
+    private int mPreferableCenterPosition = -1;
+
+    @Override
+    protected boolean measureLayout(Layout layout) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] measure layout = %s", this, layout);
+        int centerPosition = mPreferableCenterPosition;
+        boolean relaidout = true;
+        // scrolling is in progress, do not remeasure the layout!
+        if (isScrolling()) {
+ //           centerPosition = layout.getCenterChild();
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: scrolling in progress, centerPosition = %d",
+                    centerPosition);
+        } else {
         Collection<Widget> measuredChildren = new LinkedHashSet<>();
-        for (Layout layout: mLayouts) {
-            layout.measureUntilFull(preferableCenterPosition, measuredChildren);
-        }
-
-        for (Widget child: measuredChildren) {
-            ((ListItemHostWidget)child).setInLayout();
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedImpl: item [%s][%s] is set to the layout", child.getName(), child);
-        }
+            relaidout = layout.measureUntilFull(centerPosition, measuredChildren);
+            centerPosition = layout.getCenterChild();
 
         List<ListItemHostWidget>  views = getAllHosts();
         int count = 0;
         for (ListItemHostWidget host: views) {
-            if (!host.isSetInLayout()) {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedImpl: item [%s] recycling", host.getName());
+                if (!measuredChildren.contains(host)) {
+                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] recycling", host.getName());
                 recycle(host);
             } else {
                 count++;
             }
         }
 
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedImpl with views = %d", count);
-
         for (ListOnChangedListener listener: mOnChangedListeners) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mOnChangedListeners listener[%s] count[%d]", listener, count);
             listener.onChangedFinished(this, count);
         }
+        }
 
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measure layout mPreferableCenterPosition = %d, newPosition = %d",
+                mPreferableCenterPosition, centerPosition);
+
+        mPreferableCenterPosition = centerPosition;
         mTrimRequest = true;
-        requestLayout();
+        return relaidout;
     }
+
 
     private List<ListItemHostWidget> getAllHosts() {
         List<ListItemHostWidget> hosts = new ArrayList<>();
@@ -544,9 +564,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
 
     public void clear() {
-        for (Layout layout : mLayouts) {
-            layout.invalidate();
-        }
         clearSelection(false);
         super.clear();
     }
@@ -558,7 +575,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     protected void onRecycle(Widget view, int dataIndex) {
-
     }
 
     private void recycle(ListItemHostWidget host) {
@@ -568,9 +584,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             Widget view = host.getGuest();
             onRecycle(view, host.getDataIndex());
 
-            for (Layout layout : mLayouts) {
-                layout.invalidate(host.getDataIndex());
-            }
+            invalidateAllLayouts(host);
 
             host.recycle();
             if (!mRecycledViews.contains(host)) {
@@ -579,12 +593,19 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
     }
 
+
+    public boolean isScrolling() {
+        return mScroller == null ? false : mScroller.doScrolling();
+    }
+
     /**
      * This method is called if the data set has been scrolled.
      */
     protected void onScrollImpl(final Vector3Axis offset) {
-        ScrollingProcessor scroller = new ScrollingProcessor(offset);
-        scroller.scroll();
+        if (!isScrolling()) {
+            mScroller = new ScrollingProcessor(offset);
+            mScroller.scroll();
+        }
     }
 
     ScrollingProcessor mScroller = null;
@@ -593,18 +614,18 @@ public class ListWidget extends GroupWidget implements ScrollableList {
               scrollToPosition, isTransitionAnimationEnabled());
 
         if (isTransitionAnimationEnabled()) {
-            if (mScroller != null) {
-                return;
-            }
+            if (!isScrolling()) {
             mScroller = new ScrollingProcessor(scrollToPosition);
             mScroller.scroll();
+            }
         } else {
             onChangedImpl(scrollToPosition);
         }
     }
 
-    public boolean isScrolling() {
-        return mScroller == null ? false : mScroller.scrolling;
+    @Override
+    public boolean isChanged() {
+        return isScrolling() ? true : super.isChanged();
     }
 
     //  Scrolling processor
@@ -612,7 +633,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         private int mScrollToPosition = -1;
         private Vector3Axis mScrollByOffset = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
         private SimpleAnimationTracker animationTracker = SimpleAnimationTracker.get(getGVRContext());
-        private boolean scrolling = false;
+        private boolean mScrolling = false;
 
         private class ScrollAnimation extends Animation {
             private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
@@ -633,8 +654,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 float shifted  = mShiftedBy;
                 mShiftedBy = ratio * mShiftBy;
                 mLayout.shiftBy(mShiftedBy - shifted, mAxis);
-                requestLayout();
             }
+        }
+
+        boolean doScrolling() {
+            return mScrolling;
         }
 
         ScrollingProcessor(final int pos) {
@@ -715,7 +739,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scroll() mScrollToPosition = %d mScrollByOffset = %s",
                   mScrollToPosition, mScrollByOffset);
             AnimationSet.Builder builder = new AnimationSet.Builder(ListWidget.this);
-            scrolling = true;
+            mScrolling = true;
 
             for (Layout layout: mLayouts) {
                 // measure all directions. Finally measuredChildren has to contain all
@@ -730,7 +754,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 }
 
                 for (Widget view: measuredChildren) {
-                    ((ListItemHostWidget)view).setInLayout();
                     Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measured item: %s set in layout xOffset= %f yOffset= %f zOffset= %f",
                           view.getName(), xOffset, yOffset, zOffset);
                 }
@@ -779,7 +802,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             if (force) {
                 mTrimRequest = true;
                 mScroller = null;
-                scrolling = false;
+                mScrolling = false;
                 requestLayout();
             } else {
                 scroll();
@@ -845,10 +868,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return view;
     }
 
-    /**
-     * Trim unused views in the list
-     */
-    private void trim() {
+    @Override
+    protected boolean onLayout() {
+        boolean changed = super.onLayout();
+        if (mTrimRequest) {
         // TODO: check why some items stay INVISIBLE after the scrolling is completed.
         // Basically the layout has to be shifted by amount big enough to make the new
         // added items visible
@@ -861,12 +884,28 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         mRecycledViews.clear();
         mTrimRequest = false;
     }
+        notifyOnInvalidated();
+        notifyOnChanged();
 
-    @Override
-    protected void onLayout() {
-        super.onLayout();
-        if (mTrimRequest) {
-            trim();
+        return changed;
+    }
+
+    protected void notifyOnInvalidated() {
+        if (mOnInvalidated) {
+            for (DataSetObserver observer : mObservers) {
+                observer.onInvalidated();
+            }
+            mOnInvalidated = false;
+            mOnChanged = false;
+        }
+    }
+
+    protected void notifyOnChanged() {
+        if (mOnChanged) {
+            for (DataSetObserver observer : mObservers) {
+                observer.onChanged();
+            }
+            mOnChanged = false;
         }
     }
 
@@ -940,7 +979,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 }
                 mGuestWidget = guest;
                 if (mGuestWidget != null) {
-                    addChildInner(mGuestWidget, mGuestWidget.getSceneObject(), -1);
+                    addChild(mGuestWidget, true);
                     hostWidth = mGuestWidget.getWidth();
                     hostHeight = mGuestWidget.getHeight();
                     hostDepth = mGuestWidget.getDepth();
@@ -982,7 +1021,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             setSelected(false);
             setGuest(null, -1);
             setViewPortVisibility(ViewPortVisibility.INVISIBLE);
-            mSetInLayout = false;
             hostWidth = hostHeight = hostDepth = 0;
         }
 
@@ -1048,22 +1086,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             return mDataIndex;
         }
 
-        public boolean isSetInLayout() {
-            return mSetInLayout;
-        }
-
-        public void setInLayout() {
-            mSetInLayout = true;
-        }
-
-        public void removeFromLayout() {
-            mSetInLayout = false;
-        }
-
         private float hostWidth, hostHeight, hostDepth;
         private Widget mGuestWidget;
         private int mDataIndex = -1;
-        private boolean mSetInLayout;
     }
 
     private boolean mMultiSelectionSupported;
@@ -1390,36 +1415,31 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     protected Adapter mAdapter;
-    protected DataSetObserver mInternalObserver = new DataSetObserver() {
+    private boolean mOnChanged;
+    private boolean mOnInvalidated;
+
+    private DataSetObserver mInternalObserver = new DataSetObserver() {
         @Override
         public void onChanged() {
-            ListWidget.this.onChanged();
-            // make sure it is executed after finishing onChanged()
-            runOnGlThread(new Runnable() {
-                @Override
-                public void run() {
-                    for(DataSetObserver observer: mObservers) {
-                        observer.onChanged();
-                    }
-                }
-            });
+            mInternalObserverChangedImpl();
         }
 
-        @Override
-        public void onInvalidated() {
-            clear();
-            ListWidget.this.onChanged();
-            // make sure it is executed after finishing onChanged()
-            runOnGlThread(new Runnable() {
                 @Override
-                public void run() {
-                    for(DataSetObserver observer: mObservers) {
-                        observer.onInvalidated();
+        public void onInvalidated() {
+            mInternalObserverInvalidatedImpl();
                     }
-                }
-            });
-        }
     };
+
+    protected void mInternalObserverChangedImpl() {
+        mOnChanged = true;
+        ListWidget.this.onChanged();
+        }
+
+    protected void mInternalObserverInvalidatedImpl() {
+            clear();
+        mOnInvalidated = true;
+            ListWidget.this.onChanged();
+                    }
 
     private static final String TAG = ListWidget.class.getSimpleName();
 
@@ -1437,8 +1457,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     @Override
-    public boolean isEmpty() {
-        return size() == 0;
+    public int getDataIndex(Widget widget) {
+        return widget instanceof ListItemHostWidget ?
+                ((ListItemHostWidget) widget).getDataIndex() :
+                super.getDataIndex(widget);
     }
 
     @Override

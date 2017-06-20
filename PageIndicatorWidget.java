@@ -38,18 +38,18 @@ public class PageIndicatorWidget extends CheckableGroup {
         while (numIndicators-- > 0) {
             PageIndicatorButton buttonWidget = new PageIndicatorButton(getGVRContext(),
                     mPageIndicatorButtonWidth, mPageIndicatorButtonHeight);
-            addChild(buttonWidget, true);
+            addChild(buttonWidget);
         }
-        requestLayout();
     }
 
     private void removeIndicatorChildren(int numIndicators) {
         List<PageIndicatorButton> children = getCheckableChildren();
-        int id = children.size();
-        while (numIndicators-- > 0 && id-- > 0) {
-            removeChild(children.get(id), true);
+        for (Widget child: children) {
+            if (numIndicators-- <= 0) {
+                break;
+            }
+            removeChild(child);
         }
-        requestLayout();
     }
 
     @Override
@@ -92,6 +92,7 @@ public class PageIndicatorWidget extends CheckableGroup {
 
     public int setPageCount(final int num) {
         int diff = num - getCheckableCount();
+
         if (diff > 0) {
             addIndicatorChildren(diff);
         } else if (diff < 0) {
@@ -101,7 +102,6 @@ public class PageIndicatorWidget extends CheckableGroup {
             mCurrentPage = 0;
         }
         setCurrentPage(mCurrentPage);
-
         return diff;
     }
 

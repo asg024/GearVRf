@@ -85,7 +85,9 @@ public class LinearLayout extends OrientedLayout {
     public void enableUniformSize(final boolean enable) {
         if (mUniformSize != enable) {
             mUniformSize = enable;
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
     }
 
@@ -113,7 +115,9 @@ public class LinearLayout extends OrientedLayout {
     public void setGravity(final Gravity gravity) {
         if (gravity != mGravity && isValidLayout(gravity, mOrientation)) {
             mGravity = gravity;
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
     }
 
@@ -239,13 +243,6 @@ public class LinearLayout extends OrientedLayout {
         return mCache.getDataOffset(dataIndex);
     }
 
-
-    @Override
-    protected boolean isInvalidated() {
-        return !mContainer.isDynamic() ? mCache.count() != mContainer.size() :
-            false;
-    }
-
     protected void dumpCaches() {
         if (mCache != null) {
             mCache.dump();
@@ -255,7 +252,6 @@ public class LinearLayout extends OrientedLayout {
     @Override
     protected void layoutChildren() {
         dumpCaches();
-
         super.layoutChildren();
     }
 
@@ -402,11 +398,10 @@ public class LinearLayout extends OrientedLayout {
     }
 
     @Override
-    protected void measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
+    protected boolean measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
         // no preferred position, just feed all data starting from beginning.
         if (centerDataIndex == -1) {
-            super.measureUntilFull(0, measuredChildren);
-            return;
+            return super.measureUntilFull(0, measuredChildren);
         }
 
         boolean inBounds = true;
@@ -428,21 +423,26 @@ public class LinearLayout extends OrientedLayout {
             default:
                 break;
         }
+        boolean changed = false;
         for (int i = centerDataIndex; i < mContainer.size() && i >= 0 && inBounds;) {
-            Widget view = measureChild(i);
+            if (!isChildMeasured(i)) {
+                Widget view = measureChild(i);
 
-            inBounds = !isClippingEnabled() || inViewPort(i);
+                inBounds = !isClippingEnabled() || inViewPort(i);
 
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
-                    "isBounds = %b index = %d isViewPortEnabled() = %b layout = %s",
-                    view == null ? "null" : view.getName(), inBounds, i, isClippingEnabled(), this);
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
+                                "isBounds = %b index = %d isViewPortEnabled() = %b layout = %s",
+                        view == null ? "null" : view.getName(), inBounds, i, isClippingEnabled(), this);
 
-            if (!inBounds) {
-                invalidate(i);
-            } else if (measuredChildren != null && view != null) {
-                measuredChildren.add(view);
+                if (!inBounds) {
+                    invalidate(i);
+                } else if (view != null) {
+                    changed = true;
+                    if (measuredChildren != null) {
+                        measuredChildren.add(view);
+                    }
+                }
             }
-
             // finished left part, start to feed right part
             if (mGravity == Gravity.CENTER &&
                     leftPart &&
@@ -454,6 +454,7 @@ public class LinearLayout extends OrientedLayout {
 
             i += leftPart ? -1 : 1;
         }
+        return changed;
     }
 
     protected int getCenterChild(CacheDataSet cache) {

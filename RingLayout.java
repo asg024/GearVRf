@@ -170,8 +170,8 @@ public class RingLayout extends LinearLayout {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateTransform [%s], offset = [%f], axis = [%s]",
                 child.getName(), offset, axis);
 
-        if (Float.isNaN(offset) || Utility.equal(offset, 0)) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Position is NaN or 0 for axis " + axis);
+        if (Float.isNaN(offset)) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Position is NaN for axis " + axis);
         } else {
             float factor = getFactor(axis);
             switch (axis) {

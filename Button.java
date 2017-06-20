@@ -227,32 +227,6 @@ public class Button extends Widget implements TextContainer {
     }
 
     @Override
-    protected void onLayout() {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout() called (%s)", getName());
-        List<Widget> children = getChildren();
-        if (children.isEmpty()) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout: no items to layout! %s", getName());
-            return;
-        }
-
-        for (Widget child : children) {
-            child.layout();
-        }
-
-        super.onLayout();
-    }
-
-    @Override
-    public Widget get(final int dataIndex) {
-        return getChildren().get(dataIndex);
-    }
-
-    @Override
-    public int size() {
-        return getChildren().size();
-    }
-
-    @Override
     protected void onCreate() {
         mGraphic = findChildByName(".graphic");
         if (mGraphic == null) {
@@ -262,10 +236,6 @@ public class Button extends Widget implements TextContainer {
             if (mGraphic != null) {
                 mGraphic.setName(".graphic");
                 addChild(mGraphic, 0);
-                for (Layout layout: mLayouts) {
-                    layout.invalidate();
-                }
-                requestLayout();
             }
         }
     }
@@ -307,11 +277,6 @@ public class Button extends Widget implements TextContainer {
                 mTextContainer = textWidget;
                 addChild(textWidget);
                 Log.d(TAG, "createTextWidget(%s): requesting layout", getName());
-
-                for (Layout layout: mLayouts) {
-                    layout.invalidate();
-                }
-                requestLayout();
             }
         });
     }

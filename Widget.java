@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
@@ -47,7 +48,6 @@ public class Widget  implements Layout.WidgetContainer {
      * Call to initialize the Widget infrastructure. Parses {@code objects.json}
      * to load metadata for {@code Widgets}, as well as animation and material
      * specs.
-     *
      * @param context
      *            A valid Android {@link Context}.
      * @throws JSONException
@@ -1006,7 +1006,7 @@ public class Widget  implements Layout.WidgetContainer {
         return getBoundingBoxInternal().getDepth();
     }
 
-    private float getLayoutSize(final Layout.Axis axis) {
+    public float getLayoutSize(final Layout.Axis axis) {
         float size = 0;
         for (Layout layout : mLayouts) {
             size = Math.max(size, layout.getSize(axis));
@@ -1081,7 +1081,6 @@ public class Widget  implements Layout.WidgetContainer {
             for (Layout layout : mLayouts) {
                 layout.onLayoutApplied(this, mViewPort);
             }
-            requestLayout();
         }
     }
 
@@ -1741,36 +1740,38 @@ public class Widget  implements Layout.WidgetContainer {
     private void updateVisibility(final Visibility visibility) {
         Log.d(TAG, "change visibility for widget<%s> to visibility = %s",
                 getName(), visibility);
-            if (mParent != null) {
-                final GVRSceneObject parentSceneObject = mParent
-                        .getSceneObject();
-                switch (visibility) {
-                    case VISIBLE:
-                        final GVRSceneObject sceneObjectParent = mSceneObject.getParent();
-                        if (sceneObjectParent != parentSceneObject &&
+        if (mParent != null) {
+            final GVRSceneObject parentSceneObject = mParent
+                    .getSceneObject();
+            switch (visibility) {
+                case VISIBLE:
+                    final GVRSceneObject sceneObjectParent = mSceneObject.getParent();
+                    if (sceneObjectParent != parentSceneObject &&
                             mIsVisibleInViewPort != ViewPortVisibility.INVISIBLE ) {
-                            if (null != sceneObjectParent) {
-                                sceneObjectParent.removeChildObject(mSceneObject);
-                            }
-                            parentSceneObject.addChildObject(mSceneObject);
-                            getGVRContext().getMainScene().bindShaders(parentSceneObject);
+                        if (null != sceneObjectParent) {
+                            sceneObjectParent.removeChildObject(mSceneObject);
                         }
-                        break;
-                    case HIDDEN:
-                    case GONE:
-                        if (mVisibility == Visibility.VISIBLE) {
-                            parentSceneObject.removeChildObject(mSceneObject);
-                        }
-                        break;
-                    case PLACEHOLDER:
-                        getSceneObject().detachRenderData();
-                        break;
-                }
-                if (mVisibility == Visibility.GONE
-                        || visibility == Visibility.GONE) {
-                    mParent.requestLayout();
-                }
+                        parentSceneObject.addChildObject(mSceneObject);
+                        getGVRContext().getMainScene().bindShaders(parentSceneObject);
+                    }
+                    break;
+                case HIDDEN:
+                case GONE:
+                    if (mVisibility == Visibility.VISIBLE) {
+                        parentSceneObject.removeChildObject(mSceneObject);
+                    }
+                    break;
+                case PLACEHOLDER:
+                    getSceneObject().detachRenderData();
+                    break;
             }
+            if (mVisibility == Visibility.GONE
+                    || visibility == Visibility.GONE) {
+                mParent.onTransformChanged();
+                mParent.invalidateAllLayouts();
+                mParent.requestLayout();
+            }
+        }
     }
 
     /**
@@ -1925,7 +1926,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (!mIsCreated) {
             // Set the default layout if necessary
             if (mLayouts.isEmpty()) {
-                applyLayout(getDefaultLayout(), true);
+                applyLayout(getDefaultLayout());
             }
 
             runOnGlThread(new Runnable() {
@@ -1966,19 +1967,22 @@ public class Widget  implements Layout.WidgetContainer {
     /**
      * Does layout on the {@link Widget}. If you override this method and don't
      * call {@code super}, bad things will almost certainly happen.
+     * @return true if the widget has been relaidout, otherwise - false
      */
     @SuppressLint("WrongCall")
-    protected void layout() {
+    protected boolean layout() {
+        boolean relaidout = false;
         Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): changed: %b, requested: %b", getName(),
-                mChanged, mLayoutRequested);
+                isChanged(), mLayoutRequested);
 
-        if (mChanged || mLayoutRequested) {
+        if (isChanged() || mLayoutRequested) {
             Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): calling onLayout", getName());
-            onLayout();
+            relaidout = onLayout();
         }
 
         mLayoutRequested = false;
         mChanged = false;
+        return relaidout;
     }
 
     /**
@@ -2144,41 +2148,54 @@ public class Widget  implements Layout.WidgetContainer {
      * {@code GroupWidgets} should call {@link #layout()} on their children,
      * most likely before performing their own layout <em>of</em> their
      * children.
+     * @return true if the widget has been relaidout, otherwise - false
      */
-    protected void onLayout() {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout() called (%s)", getName());
-        List<Widget> children = getChildren();
-        if (children.isEmpty()) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout: no items to layout! %s", getName());
-            return;
-        }
+    protected boolean onLayout() {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout() called (%s) mChanged = %b ", getName(), mChanged);
+        boolean changed = isChanged();
+        boolean runLayout = false;
 
-        for (Widget child: children) {
-            child.layout();
-        }
+        float oldWidth = getLayoutWidth();
+        float oldHeight = getLayoutHeight();
+        float oldDepth = getLayoutDepth();
 
-        if (null == mLayouts) {
-            //see RootWidget's hierarchy and ctor; onLayout gets called before the GroupWidget is
-            //fully constructed; this is not the correct fix; should be refactored so this never
-            //can happen
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layout: no layouts applied %s!", getName());
-            return;
-        }
-        if (mLayouts.isEmpty()) {
-            Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "No any layout has been applied! %s", getName());
-            return;
-        }
-
-        for (Layout layout: mLayouts) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] apply layout = %s", this, layout);
-            if (!isDynamic()) {
-                layout.measureAll(null);
-            } else {
-                // don't need to measure the items for Dynamic data set. The items are measured
-                // before onLayout call
+        for (Widget child : getChildren()) {
+            if (child.layout()) {
+                invalidateAllLayouts();
+                runLayout = true;
             }
-            layout.layoutChildren();
         }
+
+        if (mLayouts == null || mLayouts.isEmpty()) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: no layouts applied %s!", getName());
+        } else if (runLayout || changed) {
+
+            for (Layout layout : mLayouts) {
+                measureLayout(layout);
+                layout.layoutChildren();
+            }
+
+            float newWidth = getLayoutWidth();
+            float newHeight = getLayoutHeight();
+            float newDepth = getLayoutDepth();
+
+            changed = changed ||
+                    !Utility.equal(oldWidth, newWidth) ||
+                    !Utility.equal(oldHeight, newHeight) ||
+                    !Utility.equal(oldDepth, newDepth);
+
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout changed %s " +
+                    "old = [%f, %f, %f] new [%f, %f, %f]!",
+                    getName(), oldWidth, oldHeight, oldDepth, newWidth, newHeight, newDepth);
+        } else {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout is not changed %s!", getName());
+        }
+        return changed;
+    }
+
+    protected boolean measureLayout(Layout layout) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] measure layout = %s", this, layout);
+        return layout.measureAll(null);
     }
 
     /**
@@ -2232,11 +2249,13 @@ public class Widget  implements Layout.WidgetContainer {
         // Even if the calling code that altered the transform doesn't request a
         // layout, we'll do a layout the next time a layout is requested on our
         // part of the scene graph.
-        mChanged = true;
+        if (!isInLayout()) {
+            mChanged = true;
 
-        // Clear this to indicate that the bounding box has been invalidated and
-        // needs to be constructed and transformed anew.
-        mBoundingBox = null;
+            // Clear this to indicate that the bounding box has been invalidated and
+            // needs to be constructed and transformed anew.
+            mBoundingBox = null;
+        }
     }
 
     /* package */
@@ -2488,8 +2507,12 @@ public class Widget  implements Layout.WidgetContainer {
                                final GVRSceneObject childRootSceneObject, final int index,
                                boolean preventLayout) {
         final boolean added = addChildInner(child, childRootSceneObject, index);
-        if (added && !preventLayout) {
-            requestLayout();
+        if (added) {
+            onTransformChanged();
+            if (!preventLayout) {
+                invalidateAllLayouts();
+                requestLayout();
+            }
         }
         return added;
     }
@@ -2585,7 +2608,9 @@ public class Widget  implements Layout.WidgetContainer {
                 listener.onChildWidgetRemoved(this, child);
             }
 
+            onTransformChanged();
             if (!preventLayout) {
+                invalidateAllLayouts();
                 requestLayout();
             }
         } else {
@@ -3184,31 +3209,17 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Apply {@link Layout}
-     * @param layout {@link Layout}
-     * @return true if layout has been applied successfully , false - otherwise
-     */
-    public boolean applyLayout(final Layout layout) {
-        return applyLayout(layout, false);
-    }
-
-    /**
      * Apply the specified {@link Layout}. Optionally, a call to {@link #requestLayout()} can be
      * prevented.
      *
      * @param layout
      *          The {@code Layout} to apply
-     * @param preventLayout
-     *          {@code True} to prevent {@link #requestLayout()} from being called automatically.
      * @return {@code True} if the layout has been applied successfully, {@code false} otherwise.
      */
-    public boolean applyLayout(Layout layout, boolean preventLayout) {
+    public boolean applyLayout(Layout layout) {
         boolean applied = false;
         if (layout != null && isValidLayout(layout) && mLayouts.add(layout)) {
             layout.onLayoutApplied(this, mViewPort);
-            if (!preventLayout) {
-                requestLayout();
-            }
             applied = true;
         }
         return applied;
@@ -3232,8 +3243,7 @@ public class Widget  implements Layout.WidgetContainer {
     public boolean removeLayout(final Layout layout) {
         boolean removed = mLayouts.remove(layout);
         if (layout != null && removed) {
-            layout.onLayoutApplied(this, new Vector3Axis());
-            requestLayout();
+            layout.onLayoutApplied(null, new Vector3Axis());
         }
         return removed;
     }
@@ -3251,7 +3261,7 @@ public class Widget  implements Layout.WidgetContainer {
      * WidgetContainer default implementation
      */
     public Widget get(final int dataIndex) {
-        return getChildren().get(dataIndex);
+        return dataIndex >= size() ? null : getChildren().get(dataIndex);
     }
 
     public int size() {
@@ -3263,9 +3273,67 @@ public class Widget  implements Layout.WidgetContainer {
         return size() == 0;
     }
 
+    public int getDataIndex(Widget widget) {
+        int id = -1;
+        if (!isEmpty()) {
+            id = indexOfChild(widget);
+        }
+        return id;
+    }
+
     @Override
     public boolean isDynamic() {
         return false;
+    }
+
+    @Override
+    public void onLayoutChanged(final Layout layout) {
+        invalidateLayout(layout);
+        onTransformChanged();
+        requestLayout();
+    }
+
+    protected void invalidateLayout(final Layout layout) {
+        // temporary  fix for the most common synchronisation issue
+        // of changing layout while layout() is in progress
+        // ticket #21859 is filed for complete solution
+        runOnGlThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mLayouts.contains(layout)) {
+                    layout.invalidate();
+                }
+            }
+        });
+    }
+
+    protected void invalidateLayout(final Layout layout, final Widget child) {
+        // temporary  fix for the most common synchronisation issue
+        // of changing layout while layout() is in progress
+        // ticket #21859 is filed for complete solution
+        runOnGlThread(new Runnable() {
+            @Override
+            public void run() {
+                int dataIndex = getDataIndex(child);
+                if (dataIndex != -1) {
+                    if (mLayouts.contains(layout)) {
+                        layout.invalidate(dataIndex);
+                    }
+                }
+            }
+        });
+    }
+
+    protected void invalidateAllLayouts() {
+        for (Layout layout: mLayouts) {
+            invalidateLayout(layout);
+        }
+    }
+
+    protected void invalidateAllLayouts(Widget child) {
+        for (Layout layout : mLayouts) {
+            invalidateLayout(layout, child);
+        }
     }
 
     private final GVRSceneObject mSceneObject;
@@ -3275,7 +3343,7 @@ public class Widget  implements Layout.WidgetContainer {
     private final TransformCache mTransformCache;
     private BoundingBox mBoundingBox;
     private boolean mLayoutRequested;
-    private boolean mChanged;
+    private boolean mChanged = true;
     private boolean mIsCreated;
 
     private boolean mFocusEnabled = true;

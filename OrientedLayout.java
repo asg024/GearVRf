@@ -51,7 +51,9 @@ public abstract class OrientedLayout extends AbsoluteLayout {
     public void setOrientation(final Orientation orientation) {
         if (orientation != mOrientation) {
             mOrientation = orientation;
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
     }
 
@@ -86,7 +88,9 @@ public abstract class OrientedLayout extends AbsoluteLayout {
     public void enableOuterPadding(final boolean enable) {
         if (mOuterPaddingEnabled != enable) {
             mOuterPaddingEnabled = enable;
-            invalidate();
+            if (mContainer != null) {
+                mContainer.onLayoutChanged(this);
+            }
         }
     }
 
