@@ -18,13 +18,9 @@ import org.gearvrf.asynchronous.GVRCompressedTexture;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
-import android.content.res.Resources;
-
 import com.samsung.smcl.utility.Exceptions;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 import com.samsung.smcl.vr.widgets.Widget.Visibility;
 
@@ -203,24 +199,6 @@ class WidgetStateInfo {
         return material;
     }
 
-    static private int getId(Context context, String id, String defType) {
-        String type = "R." + defType + ".";
-        if (id.startsWith(type)) {
-            id = id.substring(type.length());
-        }
-
-        Resources r = context.getResources();
-        int resId = r.getIdentifier(id, defType,
-                context.getPackageName());
-        if (resId > 0) {
-            return resId;
-        } else {
-            throw Exceptions
-                    .RuntimeAssertion("Specified resource '%s' could not be found",
-                            id);
-        }
-    }
-
     private Widget getWidget(Widget parent, JSONObject stateSpec)
             throws JSONException {
         Widget levelWidget;
@@ -316,10 +294,10 @@ class WidgetStateInfo {
                 int resId = -1;
                 switch (BitmapType.valueOf(type)) {
                     case uncompressed:
-                        resId = getId(context.getContext(), id, "drawable");
+                        resId = Helpers.getId(context.getContext(), id, "drawable");
                         break;
                     case compressed:
-                        resId = getId(context.getContext(), id, "raw");
+                        resId = Helpers.getId(context.getContext(), id, "raw");
                         Log.d(TAG, "loadBitmapTextureFromJSON compressed id = %s resId = %d", id, resId);
                         break;
                     default:
