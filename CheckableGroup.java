@@ -63,7 +63,8 @@ public class CheckableGroup extends GroupWidget {
         return removed;
     }
 
-    public <T extends Widget & Checkable> boolean addOnCheckChangedListener(OnCheckChangedListener listener) {
+    public <T extends Widget & Checkable> boolean addOnCheckChangedListener
+            (OnCheckChangedListener listener) {
         final boolean added;
         synchronized (mListeners) {
             added = mListeners.add(listener);
@@ -87,7 +88,8 @@ public class CheckableGroup extends GroupWidget {
      * Set the specified {@link Checkable} {@link Widget} as checked, if it is a child of this
      * {@link CheckableGroup} and not already checked.
      *
-     * @param checkableWidget The {@code Checkable Widget} to {@linkplain Checkable#setChecked(boolean) set checked}.
+     * @param checkableWidget The {@code Checkable Widget} to
+     *                        {@linkplain Checkable#setChecked(boolean) set checked}.
      * @return {@code True} if {@code checkableWidget} is a child of this {@code CheckableGroup} and
      * was not already checked; {@code false} otherwise.
      */
@@ -201,12 +203,18 @@ public class CheckableGroup extends GroupWidget {
         }
 
         mProtectFromCheckChanged = true;
-        if (!mAllowMultiCheck && checkable.isChecked()) {
-            List<T> children = getCheckableChildren();
-            for (Widget w : children) {
-                Checkable c = (Checkable) w;
-                if (c != checkable) {
-                    c.setChecked(false);
+        if (!mAllowMultiCheck) {
+            if (!checkable.isChecked()) {
+                if (getCheckedWidgetIndexes().size() == 0) {
+                    checkable.setChecked(true);
+                }
+            } else {
+                List<T> children = getCheckableChildren();
+                for (Widget w : children) {
+                    Checkable c = (Checkable) w;
+                    if (c != checkable) {
+                        c.setChecked(false);
+                    }
                 }
             }
         }
@@ -235,7 +243,8 @@ public class CheckableGroup extends GroupWidget {
     private boolean mProtectFromCheckChanged;
     private LinearLayout mDefaultLayout = new LinearLayout();
 
-    private Checkable.OnCheckChangedListener mCheckChangedListener = new Checkable.OnCheckChangedListener() {
+    private Checkable.OnCheckChangedListener mCheckChangedListener = new Checkable
+            .OnCheckChangedListener() {
         @Override
         public void onCheckChanged(Checkable checkable, boolean checked) {
             CheckableGroup.this.onCheckChanged(checkable);
