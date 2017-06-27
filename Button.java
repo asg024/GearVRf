@@ -7,6 +7,7 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONObject;
 
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 
@@ -125,7 +126,7 @@ public class Button extends Widget implements TextContainer {
     @Override
     public void setText(CharSequence text) {
         if (text != null && text.length() > 0) {
-            if (!(mTextContainer instanceof TextWidget)) {
+            if (!(mTextContainer instanceof Widget)) {
                 // Text was previously empty or null; swap our cached TextParams
                 // for a new TextWidget to display the text
                 createText();
@@ -134,16 +135,16 @@ public class Button extends Widget implements TextContainer {
                 ((Widget) mTextContainer).setVisibility(Visibility.VISIBLE);
             }
         } else {
-            if (mTextContainer instanceof TextWidget) {
+            if (mTextContainer instanceof Widget) {
                 // TODO: Figure out why adding the 2nd+ TextWidget doesn't work
                 /*
                  * // If the text has been cleared, swap our TextWidget for the
                  * // TextParams so we don't hang on to the resources final
-                 * TextWidget textWidget = (TextWidget) mTextContainer;
+                 * LightTextWidget textWidget = (LightTextWidget) mTextContainer;
                  * removeChild(textWidget, textWidget.getSceneObject(), false);
                  * mTextContainer = textWidget.getTextParams();
                  */
-                ((TextWidget) mTextContainer).setVisibility(Visibility.HIDDEN);
+                ((Widget) mTextContainer).setVisibility(Visibility.HIDDEN);
             }
         }
         mTextContainer.setText(text);
@@ -167,6 +168,17 @@ public class Button extends Widget implements TextContainer {
     @Override
     public void setTextSize(float size) {
         mTextContainer.setTextSize(size);
+    }
+
+    @Override
+    public void setTypeface(Typeface typeface) {
+        Log.d(TAG, "setTypeface(%s): setting typeface: %s", getName(), typeface);
+        mTextContainer.setTypeface(typeface);
+    }
+
+    @Override
+    public Typeface getTypeface() {
+        return mTextContainer.getTypeface();
     }
 
     @Override
@@ -272,9 +284,9 @@ public class Button extends Widget implements TextContainer {
         return mTextWidgetHeight;
     }
 
-    protected TextWidget createTextWidget() {
+    protected LightTextWidget createTextWidget() {
         Log.d(TAG, "createTextWidget(%s) [%f, %f]", getName(), getTextWidgetWidth(), getTextWidgetHeight());
-        final TextWidget textWidget = new TextWidget(getGVRContext(),
+        final LightTextWidget textWidget = new LightTextWidget(getGVRContext(),
                 getTextWidgetWidth(), getTextWidgetHeight());
         Log.d(TAG, "createTextWidget(%s): setting rendering order",
                 getName());
@@ -291,7 +303,7 @@ public class Button extends Widget implements TextContainer {
         runOnGlThread(new Runnable() {
             @Override
             public void run() {
-                TextWidget textWidget = createTextWidget();
+                LightTextWidget textWidget = createTextWidget();
                 mTextContainer = textWidget;
                 addChild(textWidget);
                 Log.d(TAG, "createTextWidget(%s): requesting layout", getName());

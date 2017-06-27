@@ -24,8 +24,8 @@ public class Checkbox extends CheckableButton {
         super(context, mesh);
     }
 
-    protected TextWidget createTextWidget() {
-        TextWidget textWidget = super.createTextWidget();
+    protected LightTextWidget createTextWidget() {
+        LightTextWidget textWidget = super.createTextWidget();
         textWidget.setPositionZ(PADDING_Z);
         return textWidget;
     }

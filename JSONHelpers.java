@@ -118,6 +118,14 @@ abstract public class JSONHelpers {
         return json.getString(e.name());
     }
 
+    /**
+     * Returns {@link String} value mapped to {@code e}, or the empty string if the mapping doesn't
+     * exist.
+     *
+     * @param json
+     * @param e
+     * @return
+     */
     public static <P extends Enum<P>> String optString(final JSONObject json,
             P e) {
         return json.optString(e.name());
@@ -538,6 +546,10 @@ abstract public class JSONHelpers {
         return isInstanceOf(json, key, String.class);
     }
 
+    public static <P extends Enum<P>> boolean isString(final JSONObject json, P e) {
+        return isInstanceOf(json, e.toString(), String.class);
+    }
+
     /**
      * Check if the specified {@link JSONObject} has an {@link Enum} at {@code key}.
      * <p>
@@ -676,7 +688,7 @@ abstract public class JSONHelpers {
         if (dir.exists()) {
             final File f = new File(dir, file);
             if (f.exists()) {
-            rawJson = Utility.readTextFile(f);
+                rawJson = Utility.readTextFile(f);
                 Log.d(TAG, "loadJSONFile(): %s", f.getPath());
             } else {
                 Log.w(TAG, "loadJSONFile(): file %s doesn't exists", f.getPath());

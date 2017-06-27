@@ -3,11 +3,13 @@ package com.samsung.smcl.vr.widgets;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
+import org.json.JSONObject;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
@@ -15,6 +17,8 @@ import android.widget.TextView;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
+
+import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
 
 @SuppressWarnings("deprecation")
 public class LightTextWidget extends Widget implements TextContainer {
@@ -33,6 +37,7 @@ public class LightTextWidget extends Widget implements TextContainer {
      */
     public LightTextWidget(final GVRContext context, final GVRSceneObject sceneObject) {
         super(context, sceneObject);
+        init((CharSequence) null);
     }
 
     /**
@@ -84,6 +89,7 @@ public class LightTextWidget extends Widget implements TextContainer {
         if (attribute != null) {
             setTextColor(Integer.parseInt(attribute));
         }
+        init((CharSequence) null);
     }
 
     /**
@@ -101,6 +107,7 @@ public class LightTextWidget extends Widget implements TextContainer {
      */
     public LightTextWidget(GVRContext context, float width, float height) {
         super(context, width, height);
+        init((CharSequence) null);
     }
 
     /**
@@ -120,13 +127,57 @@ public class LightTextWidget extends Widget implements TextContainer {
     public LightTextWidget(GVRContext context, float width, float height,
                            CharSequence text) {
         super(context, width, height);
-        setText(text);
+        init(text);
     }
 
     public LightTextWidget(GVRContext context, GVRSceneObject sceneObject, CharSequence text) {
         super(context, sceneObject);
-        setText(text);
+        init(text);
     }
+
+    private enum Attributes {
+        text, text_size, background, background_color, gravity, refresh_freq, text_color, typeface
+    }
+
+    private void init(CharSequence text) {
+        final JSONObject metadata = getObjectMetadata();
+        text = optString(metadata, Attributes.text, text != null ? text.toString() : "");
+        final float textSize = optFloat(metadata, Attributes.text_size, params.getTextSize());
+        String backgroundResStr = optString(metadata, Attributes.background);
+        final int backgroundResId;
+        if (backgroundResStr != null && !backgroundResStr.isEmpty()) {
+            backgroundResId = Helpers.getId(getContext(), backgroundResStr, "drawable");
+        } else {
+            backgroundResId = -1;
+        }
+        final int backgroundColor = Helpers.getJSONColor(metadata, Attributes.background_color, params.getBackgroundColor());
+        final IntervalFrequency refresh = optEnum(metadata, Attributes.refresh_freq, params.getRefreshFrequency());
+        final int textColor = Helpers.getJSONColor(metadata, Attributes.text_color, params.getTextColor());
+        final JSONObject typefaceJson = optJSONObject(metadata, Attributes.typeface);
+
+        mNoApply = true;
+        try {
+            if (typefaceJson != null) {
+                Typeface typeface = TypefaceManager.get(this).getTypeface(typefaceJson);
+                setTypeface(typeface);
+            }
+
+            setTextSize(textSize);
+            if (backgroundResId != -1) {
+                setBackGround(getContext().getResources()
+                            .getDrawable(backgroundResId));
+            }
+            setBackgroundColor(backgroundColor);
+            setRefreshFrequency(refresh);
+            setTextColor(textColor);
+            setText(text);
+        } finally {
+            mNoApply = false;
+        }
+        apply();
+    }
+
+    private boolean mNoApply = false;
 
     private final Paint mTextPaint = new Paint(Paint.LINEAR_TEXT_FLAG
             | Paint.SUBPIXEL_TEXT_FLAG);
@@ -136,11 +187,15 @@ public class LightTextWidget extends Widget implements TextContainer {
     public static final float TEXT_SCALE = 5;
 
     private void apply() {
-        Log.d(TAG, "text widget apply...");
+        Log.d(TAG, "apply(%s): apply...", getName());
+        if (mNoApply) {
+            Log.d(TAG, "apply(%s): apply is blocked", getName());
+            return;
+        }
 
         int bWidth = (int) (getWidth() * 100);
         int bHeight = (int) (getHeight() * 100);
-        Log.d(TAG, "text widget apply size [%d, %d]", bWidth, bHeight);
+        Log.d(TAG, "apply(%s): size [%d, %d]", getName(), bWidth, bHeight);
 
         Bitmap bitmap = Bitmap.createBitmap(bWidth, bHeight
                 , Bitmap.Config.ARGB_8888);
@@ -148,14 +203,14 @@ public class LightTextWidget extends Widget implements TextContainer {
 
         // draw bg color
         int bgColor = params.getBackgroundColor();
-        Log.d(TAG, "text widget apply bgColor = %d", bgColor);
+        Log.d(TAG, "apply(%s): bgColor = %d", getName(), bgColor);
 
         canvas.drawColor(bgColor);
 
         // draw bg bitmap
         Drawable bg = params.getBackGround();
         if (bg != null) {
-            Log.d(TAG, "text widget apply bg = %s", bg);
+            Log.d(TAG, "apply(%s): bg = %s", getName(), bg);
             Bitmap bgBitmap = null;
             if (bg instanceof BitmapDrawable) {
                 BitmapDrawable bitmapDrawable = (BitmapDrawable) bg;
@@ -182,21 +237,29 @@ public class LightTextWidget extends Widget implements TextContainer {
 
         // apply text color
         int textColor = getTextColor();
-        Log.d(TAG, "text widget apply textColor = %d", textColor);
+        Log.d(TAG, "apply(%s): textColor = %d", getName(), textColor);
 
         mTextPaint.setColor(textColor);
 
         // apply text size
         float textSize = getTextSize();
-        Log.d(TAG, "text widget apply textSize = %f scaledTextSixe = %f",
+        Log.d(TAG, "apply(%s): textSize = %f scaledTextSize = %f", getName(),
                 textSize, TEXT_SCALE * textSize);
 
         mTextPaint.setTextSize(TEXT_SCALE * textSize);
 
+        Typeface typeface = params.getTypeface();
+        if (typeface != null) {
+            Log.d(TAG, "apply(%s): setting text paint typeface to %s", getName(), typeface);
+            mTextPaint.setTypeface(typeface);
+        } else {
+            Log.w(TAG, "apply(%s): typeface is null!", getName());
+        }
+
         // draw text
         String text = getTextString();
         if (text != null) {
-            Log.d(TAG, "text widget apply text = %s", text);
+            Log.d(TAG, "apply(%s): text = %s", getName(), text);
 
             Rect textBounds = new Rect();
             mTextPaint.getTextBounds(text, 0, text.length(), textBounds);
@@ -305,6 +368,18 @@ public class LightTextWidget extends Widget implements TextContainer {
     public void setTextSize(float size) {
         params.setTextSize(size);
         apply();
+    }
+
+    @Override
+    public void setTypeface(Typeface typeface) {
+        Log.d(TAG, "setTypeface(%s): setting typeface: %s", getName(), typeface);
+        params.setTypeface(typeface);
+        apply();
+    }
+
+    @Override
+    public Typeface getTypeface() {
+        return params.getTypeface();
     }
 
     public TextWidget.TextParams getTextParams() {

@@ -6,6 +6,7 @@ import org.gearvrf.scene_objects.GVRTextViewSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.widget.TextView;
@@ -86,6 +87,16 @@ public class TextWidget extends Widget implements TextContainer {
         }
 
         @Override
+        public void setTypeface(Typeface typeface) {
+            mTypeface = typeface;
+        }
+
+        @Override
+        public Typeface getTypeface() {
+            return mTypeface;
+        }
+
+        @Override
         public String getTextString() {
             return mText != null ? mText.toString() : null;
         }
@@ -97,6 +108,7 @@ public class TextWidget extends Widget implements TextContainer {
         private CharSequence mText;
         private int mTextColor = Color.BLACK;
         private float mTextSize = 15; // Android's default text size
+        private Typeface mTypeface;
 
         private static final String STRING_FORMAT = "background [%s], backgroundColor [%d], " +
                 "gravity [%d], textColor [%d], textSize [%f], text [%s]";
@@ -121,6 +133,8 @@ public class TextWidget extends Widget implements TextContainer {
             dest.setTextSize(src.getTextSize());
 
             dest.setTextColor(src.getTextColor());
+
+            dest.setTypeface(src.getTypeface());
 
             return dest;
         }
@@ -305,6 +319,16 @@ public class TextWidget extends Widget implements TextContainer {
 
     public void setTextSize(float size) {
         mTextViewSceneObject.setTextSize(size);
+    }
+
+    @Override
+    public void setTypeface(Typeface typeface) {
+        throw new UnsupportedOperationException("setTypeface() is not supported by TextWidget.TextParams; use LightTextWidget instead");
+    }
+
+    @Override
+    public Typeface getTypeface() {
+        return null;
     }
 
     public TextParams getTextParams() {

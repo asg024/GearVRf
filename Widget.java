@@ -2340,7 +2340,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     public Widget findChildByName(final String name) {
-        final List<Widget> groups = new ArrayList<Widget>();
+        final List<Widget> groups = new ArrayList<>();
         groups.add(this);
 
         return findChildByNameInAllGroups(name, groups);
@@ -2348,7 +2348,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     /* package */
     List<Widget> getChildren() {
-        return new ArrayList<Widget>(mChildren);
+        return new ArrayList<>(mChildren);
     }
 
     /* package */
