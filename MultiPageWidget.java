@@ -472,7 +472,7 @@ public class MultiPageWidget extends ListWidget {
                 pageCount, mLayouts.size());
         if (mMaxVisiblePageCount != pageCount) {
             mMaxVisiblePageCount = pageCount;
-            recalculateViewPort(mAdapter);
+//            recalculateViewPort(mAdapter);
             requestLayout();
         }
     }
@@ -538,8 +538,9 @@ public class MultiPageWidget extends ListWidget {
                     depth = Math.max(d, depth);
                 }
             }
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "recalculateViewPort mMaxVisiblePageCount = %d [%f, %f, %f]",
-                    mMaxVisiblePageCount, width, height, depth);
+//            Log.d(Log.SUBSYSTEM.LAYOUT,
+                    Log.d(TAG, "recalculateViewPort(%s) mMaxVisiblePageCount = %d [%f, %f, %f]",
+                    getName(), mMaxVisiblePageCount, width, height, depth);
 
             setViewPortWidth(width);
             setViewPortHeight(height);
@@ -578,7 +579,7 @@ public class MultiPageWidget extends ListWidget {
     @Override
     protected void recycleChildren() {
         super.recycleChildren();
-        recalculateViewPort(mAdapter);
+//        recalculateViewPort(mAdapter);
     }
 
     private Map<ListWidget, ListOnChangedListener> mPagesListOnChangedListeners = new HashMap<>();
