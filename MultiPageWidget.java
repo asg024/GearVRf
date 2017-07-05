@@ -363,10 +363,12 @@ public class MultiPageWidget extends ListWidget {
 
             Set<OnItemTouchListener> copyList = new HashSet<>(mOnItemTouchListeners);
             SelectingAdapter adapter = ((SelectingAdapter) list.mAdapter);
-            int globalPosition = adapter.getGlobalPosition(dataIndex);
+            if (adapter != null) {
+                int globalPosition = adapter.getGlobalPosition(dataIndex);
 
-            for (OnItemTouchListener listener: copyList) {
-                listener.onTouch(MultiPageWidget.this, globalPosition);
+                for (OnItemTouchListener listener : copyList) {
+                    listener.onTouch(MultiPageWidget.this, globalPosition);
+                }
             }
             return true;
         };
