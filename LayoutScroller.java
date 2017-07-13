@@ -207,7 +207,8 @@ public class LayoutScroller {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPage pageNumber = %d mPageCount = %d",
                 pageNumber, mPageCount);
 
-        if (mSupportScrollByPage) {
+        if (mSupportScrollByPage &&
+                (mScrollOver || (pageNumber >= 1 && pageNumber <= mPageCount))) {
             scrollToItem(getFirstItemIndexOnPage(pageNumber));
         } else {
             Log.w(TAG, "Pagination is not enabled!");
