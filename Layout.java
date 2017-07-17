@@ -1,18 +1,18 @@
 package com.samsung.smcl.vr.widgets;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.joml.Vector3f;
-
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.RuntimeAssertion;
 import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Widget.ViewPortVisibility;
+
+import org.joml.Vector3f;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 abstract public class Layout {
     /**
@@ -36,14 +36,16 @@ abstract public class Layout {
 
         Layout layout = (Layout) o;
 
-        if (mClippingEnabled != layout.mClippingEnabled) return false;
-        return mDividerPadding.equals(layout.mDividerPadding);
+        return mClippingEnabled == layout.mClippingEnabled
+                && Utility.equal(mDividerPadding, layout.mDividerPadding)
+                && Utility.equal(mOffset, layout.mOffset);
     }
 
     @Override
     public int hashCode() {
         int result = (mClippingEnabled ? 1 : 0);
         result = 31 * result + mDividerPadding.hashCode();
+        result = 31 * result + mOffset.hashCode();
         return result;
     }
 
@@ -68,10 +70,19 @@ abstract public class Layout {
     protected Vector3Axis mViewPort = new Vector3Axis();
     protected boolean mClippingEnabled;
     protected Vector3Axis mDividerPadding = new Vector3Axis();
+    protected Vector3Axis mOffset = new Vector3Axis();
     protected WidgetContainer mContainer;
     protected Set<Integer> mMeasuredChildren = new LinkedHashSet<>();
 
     protected static final String TAG = Layout.class.getSimpleName();
+
+    private static final String pattern = "\nLayout attributes====== divider_padding = %s " +
+            "offset = %s size [%s] mClippingEnabled = %b";
+
+    public String toString() {
+        return super.toString() + String.format(pattern,
+                mDividerPadding, mOffset, mViewPort, mClippingEnabled);
+    }
 
     Layout() {
     }
@@ -80,6 +91,7 @@ abstract public class Layout {
         this();
         mClippingEnabled = rhs.mClippingEnabled;
         mDividerPadding = rhs.mDividerPadding;
+        mOffset = rhs.mOffset;
     }
 
     abstract protected Layout clone();
@@ -245,12 +257,20 @@ abstract public class Layout {
      * /
     protected abstract float getTotalSizeWithPadding(final Axis axis);
 
-        /**
-         * @param axis {@link Axis}
-         * @return The padding between child objects that is set by {@link Layout#setDividerPadding }.
-         */
+    /**
+     * @param axis {@link Axis}
+     * @return The padding between child objects that is set by {@link Layout#setDividerPadding }.
+     */
     public float getDividerPadding(final Axis axis) {
         return mDividerPadding.get(axis);
+    }
+
+    /**
+     * @param axis {@link Axis}
+     * @return The offset between child objects and parent that is set by {@link Layout#setOffset }.
+     */
+    public float getOffset(final Axis axis) {
+        return mOffset.get(axis);
     }
 
     /**
@@ -261,6 +281,18 @@ abstract public class Layout {
     public void setDividerPadding(float padding, final Axis axis) {
         if (!Utility.equal(mDividerPadding.get(axis), padding)) {
             mDividerPadding.set(padding, axis);
+            invalidate();
+        }
+    }
+
+    /**
+     * Set the amount of offset between child objects and parent.
+     * @param axis {@link Axis}
+     * @param offset
+     */
+    public void setOffset(float offset, final Axis axis) {
+        if (!Utility.equal(mOffset.get(axis), offset)) {
+            mOffset.set(offset, axis);
             invalidate();
         }
     }
@@ -395,19 +427,73 @@ abstract public class Layout {
     /**
      * Position the child inside the layout based on the offset and axis-s factors
      * @param dataIndex data index
-     * false - otherwise
      */
     protected void layoutChild(final int dataIndex) {
+        Widget child = mContainer.get(dataIndex);
+        if (child != null) {
+            updateTransform(child, Axis.X, mOffset.get(Axis.X));
+            updateTransform(child, Axis.Y, mOffset.get(Axis.Y));
+            updateTransform(child, Axis.Z, mOffset.get(Axis.Z));
+       }
+    }
+
+    /**
+     * Do post exam of child inside the layout after it has been positioned in parent
+     * @param dataIndex data index
+     */
+    protected void postLayoutChild(final int dataIndex) {
         if (!mContainer.isDynamic()) {
             boolean visibleInLayout = !mClippingEnabled || inViewPort(dataIndex);
             ViewPortVisibility visibility = visibleInLayout ?
                     ViewPortVisibility.FULLY_VISIBLE : ViewPortVisibility.INVISIBLE;
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: child with dataId [%d] viewportVisibility = %s",
                     dataIndex, visibility);
+
             Widget childWidget = mContainer.get(dataIndex);
             if (childWidget != null) {
                 childWidget.setViewPortVisibility(visibility);
             }
+        }
+    }
+
+    protected float getFactor(Axis axis) {
+        float factor = 0;
+        switch(axis) {
+            case X:
+                factor = 1;
+                break;
+            case Y:
+                factor = -1;
+                break;
+            case Z:
+                factor = -1;
+                break;
+        }
+        return factor;
+    }
+
+    protected void updateTransform(Widget child, Axis axis, float offset) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateTransform [%s], offset = [%f], axis = [%s]",
+                child.getName(), offset, axis);
+
+        if (Float.isNaN(offset) || Utility.equal(offset, 0)) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Position is NaN or 0 for axis " + axis);
+        } else {
+            offset *= getFactor(axis);
+            switch (axis) {
+                case X:
+                    child.setPositionX(offset);
+                    break;
+                case Y:
+                    child.setPositionY(offset);
+                    break;
+                case Z:
+                    child.setPositionZ(offset);
+                    break;
+                default:
+                    throw new RuntimeAssertion("Bad axis specified: %s", axis);
+            }
+            child.onTransformChanged();
         }
     }
 
@@ -428,6 +514,7 @@ abstract public class Layout {
         Set<Integer> copySet = new HashSet<>(mMeasuredChildren);
         for (int nextMeasured: copySet) {
             layoutChild(nextMeasured);
+            postLayoutChild(nextMeasured);
         }
     }
 }

@@ -61,15 +61,15 @@ public class LinearLayout extends OrientedLayout {
         FILL
     }
 
-    private static final String pattern = "\nLL attributes====== orientation = %s gravity = %s " +
-            "divider_padding = %s uniformSize = %b size [%s] viewPortEnabled [%b]";
+    private static final String pattern = "\nLL attributes====== gravity = %s " +
+            "uniformSize = %b";
 
     /**
      * Return the string representation of the LinearLayout
      */
+    @Override
     public String toString() {
-        return super.toString() + String.format(pattern, mOrientation, mGravity, mDividerPadding,
-                mUniformSize, mViewPort, mClippingEnabled);
+        return super.toString() + String.format(pattern, mGravity, mUniformSize);
     }
 
     public LinearLayout() {
@@ -220,7 +220,7 @@ public class LinearLayout extends OrientedLayout {
 
         }
 
-        Log.d(TAG, "getStartingOffset(): totalSize: %5.2f, dimension: %5.2f, startingOffset: %5.2f",
+        Log.d(TAG, "getStartingOffset(): totalSize: %5.4f, dimension: %5.4f, startingOffset: %5.4f",
               totalSize, axisSize, startingOffset);
 
         return startingOffset;
@@ -234,6 +234,7 @@ public class LinearLayout extends OrientedLayout {
         return mCache.count();
     }
 
+    @Override
     protected float getDataOffset(final int dataIndex) {
         return mCache.getDataOffset(dataIndex);
     }
@@ -243,23 +244,6 @@ public class LinearLayout extends OrientedLayout {
     protected boolean isInvalidated() {
         return !mContainer.isDynamic() ? mCache.count() != mContainer.size() :
             false;
-    }
-
-    protected Vector3f getFactor() {
-        Vector3f factor = new Vector3f();
-        Axis axis = getOrientationAxis();
-        switch(axis) {
-            case X:
-                factor.x = 1;
-                break;
-            case Y:
-                factor.y = -1;
-                break;
-            case Z:
-                factor.z = -1;
-                break;
-        }
-        return factor;
     }
 
     protected void dumpCaches() {
@@ -701,51 +685,6 @@ public class LinearLayout extends OrientedLayout {
         Log.d(TAG, "invalidate item [%d]", dataIndex);
         invalidateCache(dataIndex);
         super.invalidate(dataIndex);
-    }
-
-    @Override
-    protected void layoutChild(final int dataIndex) {
-        Widget child = mContainer.get(dataIndex);
-        if (child != null) {
-            final Vector3f factor = getFactor();
-            final float childOffset = getDataOffset(dataIndex);
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "positionChild [%d] %s : childOffset = [%f] factor: [%s] layout: %s",
-                  dataIndex, child.getName(), childOffset, factor, this);
-
-            updateTransform(child, factor, childOffset);
-        } else {
-            Log.w(TAG, "positionChild: child with dataIndex [%d] was not found in layout: %s",
-                  dataIndex, this);
-        }
-
-        super.layoutChild(dataIndex);
-    }
-
-    protected void updateTransform(Widget child, final Vector3f factor, float childOffset) {
-        // keep it in front of the parent to avoid z-fighting
-        // TODO: use /setOffsetUnits/setOffsetFactor
-
-        float position = childOffset * factor.x +
-                childOffset * factor.y +
-                (childOffset + 0.025f) * factor.z;
-
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "setPosition [%s], position = [%f], factor = [%s]",
-                  child.getName(), position, factor);
-
-        if (Float.isNaN(position)) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Error: position is NaN for factor " + factor);
-            position = 0f;
-        }
-
-        if (!Utility.equal(factor.x, 0)) {
-            child.setPositionX(position);
-        } else if (!Utility.equal(factor.y, 0)) {
-            child.setPositionY(position);
-        } else if (!Utility.equal(factor.z, 0)) {
-            child.setPositionZ(position);
-        }
-
-        child.onTransformChanged();
     }
 
     @Override

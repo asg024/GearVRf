@@ -18,6 +18,18 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         HORIZONTAL, VERTICAL, STACK
     }
 
+
+    private static final String pattern = "\nOL attributes====== orientation = %s " +
+            "outerPaddingEnabled [%b]";
+
+    /**
+     * Return the string representation of the LinearLayout
+     */
+    public String toString() {
+        return super.toString() + String.format(pattern, mOrientation,
+                mOuterPaddingEnabled);
+    }
+
     public OrientedLayout() {
         super();
     }
@@ -132,6 +144,26 @@ public abstract class OrientedLayout extends AbsoluteLayout {
             }
         }
         return size;
+    }
+
+    protected float getDataOffset(final int dataIndex) {
+        return 0;
+    }
+
+    @Override
+    protected void layoutChild(final int dataIndex) {
+        super.layoutChild(dataIndex);
+        Widget child = mContainer.get(dataIndex);
+        if (child != null) {
+            final float childOffset = getDataOffset(dataIndex);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "positionChild [%d] %s : childOffset = [%f] factor: [%f] layout: %s",
+                    dataIndex, child.getName(), childOffset, getFactor(getOrientationAxis()), this);
+
+            updateTransform(child, getOrientationAxis(), childOffset + mOffset.get(getOrientationAxis()));
+        } else {
+            Log.w(TAG, "positionChild: child with dataIndex [%d] was not found in layout: %s",
+                    dataIndex, this);
+        }
     }
 
     @Override

@@ -281,8 +281,8 @@ class LinearCacheDataSet implements CacheDataSet {
             if (pos == count() - 1 && !mOuterPaddingEnabled) {
                 paddingSpace += mCacheDataSet.get(mIdsSet.get(pos - 1)).getEndPadding();
             }
-            mTotalPadding += (addPadding ? 1 : -1) * paddingSpace;
         }
+        mTotalPadding += (addPadding ? 1 : -1) * paddingSpace;
         return paddingSpace;
     }
 

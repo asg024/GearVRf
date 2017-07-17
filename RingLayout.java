@@ -3,6 +3,8 @@ package com.samsung.smcl.vr.widgets;
 import org.joml.Vector3f;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.RuntimeAssertion;
+import com.samsung.smcl.utility.Utility;
 
 /**
  * A specialized {@link LinearLayout} that lays its children out in an arc on
@@ -159,12 +161,39 @@ public class RingLayout extends LinearLayout {
     }
 
     @Override
-    protected void updateTransform(Widget child, final Vector3f factor, float childOffset) {
-        child.setRotation(1, 0, 0, 0);
-        child.setPosition(0, 0, -(float) mRadius);
-        child.rotateByAxisWithPivot(-childOffset, factor.y, factor.x,
-                                    factor.z, 0, 0, 0);
-        child.onTransformChanged();
+    protected void layoutChild(final int dataIndex) {
+        resetChildLayout(dataIndex);
+        super.layoutChild(dataIndex);
+    }
+
+    protected void updateTransform(Widget child, final Axis axis, float offset) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateTransform [%s], offset = [%f], axis = [%s]",
+                child.getName(), offset, axis);
+
+        if (Float.isNaN(offset) || Utility.equal(offset, 0)) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Position is NaN or 0 for axis " + axis);
+        } else {
+            float factor = getFactor(axis);
+            switch (axis) {
+                case X:
+                    child.rotateByAxisWithPivot(-offset, 0, factor, 0,
+                            0, 0, 0);
+                    break;
+                case Y:
+                    child.rotateByAxisWithPivot(-offset, factor, 0, 0,
+                            0, 0, 0);
+                    break;
+                case Z:
+                    super.updateTransform(child, axis, offset);
+                    break;
+            }
+            child.onTransformChanged();
+        }
+    }
+
+    @Override
+    public void setOffset(float offset, final Axis axis) {
+        Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Offset is not supported for RingLayout!");
     }
 
     @Override
@@ -174,7 +203,8 @@ public class RingLayout extends LinearLayout {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "clearChildPosition %s", child);
 
             child.setRotation(1, 0, 0, 0);
-            child.setPosition(0, 0, -(float) mRadius);
+            child.setPosition(0, 0, 0);
+            updateTransform(child, Axis.Z, mRadius);
         }
     }
 

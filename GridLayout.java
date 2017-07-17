@@ -355,17 +355,16 @@ public class GridLayout extends OrientedLayout {
         mColumnLayout = new ChunkedLinearLayout(rhs.mColumnLayout);
     }
 
-    private static final String pattern = "\nGL attributes====== orientation = %s " +
-            "divider_padding = %s outerPaddingEnabled [%b] size [%s]";
+    private static final String pattern = "\nGL attributes====== rowCount = %d " +
+            "columnCount = %d";
 
     /**
      * Return the string representation of the LinearLayout
      */
+    @Override
     public String toString() {
-        return super.toString() + String.format(pattern, mOrientation,
-                mDividerPadding, mOuterPaddingEnabled, mViewPort);
+        return super.toString() + String.format(pattern, mRowCount, mColumnCount);
     }
-
 
 
     private ChunkedLinearLayout mRowLayout;
@@ -533,7 +532,6 @@ public class GridLayout extends OrientedLayout {
     protected void layoutChild(final int dataIndex) {
         mRowLayout.layoutChild(dataIndex);
         mColumnLayout.layoutChild(dataIndex);
-        super.layoutChild(dataIndex);
     }
 
     @Override

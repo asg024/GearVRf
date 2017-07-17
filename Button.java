@@ -329,6 +329,10 @@ public class Button extends Widget implements TextContainer {
 
         // setup default layout
         mDefaultLayout.setOrientation(OrientedLayout.Orientation.STACK);
+
+        mDefaultLayout.enableOuterPadding(true);
+        ((LinearLayout) mDefaultLayout).setGravity(LinearLayout.Gravity.BACK);
+
         mDefaultLayout.setDividerPadding(0.025f, Layout.Axis.Z);
     }
 

@@ -3,6 +3,7 @@ package com.samsung.smcl.vr.widgets;
 import org.joml.Vector3f;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.Utility;
 
 /**
  * A specialized {@link Layout} that applies the arch curvature to the children on
@@ -107,58 +108,73 @@ public class ArchLayout extends OrientedLayout {
                                  getSizeAngle(viewPort.z)));
     }
 
-
-    protected Vector3f getFactor() {
-        Vector3f factor = new Vector3f();
-        Axis axis = getOrientationAxis();
-        switch(axis) {
-            case X:
-                factor.x = 1;
-                break;
-            case Y:
-                factor.y = -1;
-                break;
-            case Z:
-                factor.z = 1;
-                break;
+    @Override
+    protected float getDataOffset(final int dataIndex) {
+        float offset = 0;
+        Widget child = mContainer.get(dataIndex);
+        if (child != null) {
+            Axis axis = getOrientationAxis();
+            switch(axis) {
+                case X:
+                    offset = getSizeAngle(child.getPositionX());
+                    break;
+                case Y:
+                    offset = getSizeAngle(child.getPositionY());
+                    break;
+                case Z:
+                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Z not supported for Arch!");
+                    break;
+            }
         }
-        return factor;
+        return offset;
+    }
+
+    @Override
+    public void setOffset(float offset, final Axis axis) {
+        Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Offset is not supported for ArchLayout!");
     }
 
     @Override
     protected void layoutChild(final int dataIndex) {
-        Widget child = mContainer.get(dataIndex);
-        if (child != null) {
-            Vector3f factor = getFactor();
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "positionChild %s with radius = %f factor = %s",
-                  child.getName(), mRadius, factor);
-            child.setPositionZ(-(float) mRadius);
+        resetChildLayout(dataIndex);
+        super.layoutChild(dataIndex);
+    }
 
-            if (factor.x != 0) {
-                float x = getSizeAngle(child.getPositionX());
-                child.setPositionX(0);
-                child.rotateByAxisWithPivot(-x, 0, factor.x, 0,
-                                            0, 0, 0);
-            }
-            if (factor.y != 0) {
-                float y = getSizeAngle(child.getPositionY());
-                child.setPositionY(0);
-                child.rotateByAxisWithPivot(-y, factor.y, 0, 0,
-                                            0, 0, 0);
+    protected void updateTransform(Widget child, final Axis axis, float offset) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateTransform [%s], offset = [%f], axis = [%s]",
+                child.getName(), offset, axis);
+
+        if (Float.isNaN(offset) || Utility.equal(offset, 0)) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Position is NaN or 0 for axis " + axis);
+        } else {
+            float factor = getFactor(axis);
+            switch (axis) {
+                case X:
+                    child.setPositionX(0);
+                    child.rotateByAxisWithPivot(-offset, 0, factor, 0,
+                            0, 0, 0);
+                    break;
+                case Y:
+                    child.setPositionY(0);
+                    child.rotateByAxisWithPivot(-offset, factor, 0, 0,
+                            0, 0, 0);
+                    break;
+                case Z:
+                    super.updateTransform(child, axis, offset);
+                    break;
             }
             child.onTransformChanged();
-
-            super.layoutChild(dataIndex);
         }
     }
 
     @Override
     protected void resetChildLayout(final int dataIndex) {
-/*        Widget child = mContainer.get(dataIndex);
-        Log.d(TAG, "clearChildPosition %s", child);
-        child.setRotation(1, 0, 0, 0);
-        child.setPosition(0, 0, 0);
-        */
+        Widget child = mContainer.get(dataIndex);
+        if (child != null) {
+            child.setRotation(1, 0, 0, 0);
+//        child.setPosition(0, 0, 0);
+            updateTransform(child, Axis.Z, mRadius);
+        }
     }
 
     private float mRadius = 0;
