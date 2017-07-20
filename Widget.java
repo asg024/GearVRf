@@ -73,7 +73,12 @@ public class Widget  implements Layout.WidgetContainer {
         @Override
         public void onInit(GVRContext gvrContext, MainScene scene) {
             FocusManager.get(gvrContext).init(gvrContext);
-            sGLThread = new WeakReference<>(Thread.currentThread());
+            gvrContext.runOnGlThread(new Runnable() {
+                @Override
+                public void run() {
+                    sGLThread = new WeakReference<>(Thread.currentThread());
+                }
+            });
             GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
             sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
                     gvrContext, R.raw.default_bkgd));
