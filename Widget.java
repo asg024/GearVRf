@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.utility.UnmodifiableJSONObject;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
@@ -31,11 +30,9 @@ import org.json.JSONObject;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -61,7 +58,9 @@ public class Widget  implements Layout.WidgetContainer {
      */
     static public void init(Context context) throws JSONException,
             NoSuchMethodException {
-        loadMetadata(context);
+        PropertyManager.init(context);
+
+        loadAnimations(context);
     }
 
     /**
@@ -2063,27 +2062,9 @@ public class Widget  implements Layout.WidgetContainer {
 
     protected JSONObject getObjectMetadata() {
         if (mMetadata == null) {
-            mMetadata = new UnmodifiableJSONObject(buildObjectMetadata());
+            mMetadata = PropertyManager.get().getWidgetProperties(this);
         }
         return mMetadata;
-    }
-
-    private JSONObject buildObjectMetadata() {
-        final JSONObject metadata = sObjectMetadata.optJSONObject(getName());
-        final JSONObject defaultMetadata = getDefaultMetadata(getClass());
-
-        if (defaultMetadata == null) {
-            if (metadata == null) {
-                return new JSONObject();
-            }
-            return metadata;
-        } else if (metadata == null) {
-            return defaultMetadata;
-        }
-
-        // Overwrite default metadata for this widget type with scene-specific
-        // metadata for this widget instance
-        return JSONHelpers.merge(metadata, defaultMetadata);
     }
 
     /**
@@ -2862,8 +2843,8 @@ public class Widget  implements Layout.WidgetContainer {
             return null;
         }
 
-        ArrayList<Widget> groupChildren = new ArrayList<Widget>();
-        Widget result = null;
+        ArrayList<Widget> groupChildren = new ArrayList<>();
+        Widget result;
         for (Widget group : groups) {
             // Search the immediate children of 'groups' for a match, rathering
             // the children that are GroupWidgets themselves.
@@ -2882,58 +2863,6 @@ public class Widget  implements Layout.WidgetContainer {
             mBoundingBox = new BoundingBox(this);
         }
         return mBoundingBox;
-    }
-
-    private static final Map<Class<?>, String> sCanonicalNames = new HashMap<>();
-
-    /* package */
-    @SuppressWarnings("unchecked")
-    private JSONObject getDefaultMetadata(Class<? extends Widget> clazz) {
-        final String canonicalName = getCanonicalName(clazz);
-
-        // Recursively check for default metadata up the class hierarchy
-        final JSONObject superMetadata;
-        final Class<?> superclass = clazz.getSuperclass();
-        if (isWidgetClass(superclass)) {
-            superMetadata = getDefaultMetadata((Class<? extends Widget>) superclass);
-        } else {
-            superMetadata = new JSONObject();
-        }
-        Log.d(TAG,
-                "getDefaultMetadata(%s): getting super metadata for %s: %s",
-                getName(), canonicalName, superMetadata);
-
-        JSONObject defaultMetadata = sDefaultMetadata
-                .optJSONObject(canonicalName);
-        Log.d(TAG,
-                "getDefaultMetadata(%s): getting default metadata for %s: %s",
-                getName(), canonicalName, defaultMetadata);
-        if (defaultMetadata == null) {
-            defaultMetadata = new JSONObject();
-        } else {
-            Log.d(TAG, "getDefaultMetadata(%s): copy default metadata for %s ...", getName(),
-                    canonicalName);
-            defaultMetadata = JSONHelpers.copy(defaultMetadata);
-        }
-        Log.d(TAG,
-                "getDefaultMetadata(%s): getting default metadata for %s: %s",
-                getName(), canonicalName, defaultMetadata);
-
-        JSONObject mergedMetadata = JSONHelpers.merge(defaultMetadata, superMetadata);
-        Log.d(TAG,
-                "getDefaultMetadata(%s): getting merged metadata for %s: %s",
-                getName(), canonicalName, mergedMetadata);
-
-        return mergedMetadata;
-    }
-
-    private static String getCanonicalName(Class<? extends Widget> clazz) {
-        String canonicalName = sCanonicalNames.get(clazz);
-        if (canonicalName == null) {
-            canonicalName = clazz.getCanonicalName();
-            sCanonicalNames.put(clazz, canonicalName);
-        }
-        return canonicalName;
     }
 
     private interface HandlesEvent {
@@ -3077,45 +3006,16 @@ public class Widget  implements Layout.WidgetContainer {
         touchable, focusenabled, visibility, states, levels, level, selected
     }
 
-    private static JSONObject loadDefaultMetadata(Context context)
-            throws JSONException {
-        JSONObject json = JSONHelpers.loadJSONAsset(context,
-                                                    "default_metadata.json");
-        JSONObject publicJson = JSONHelpers.loadExternalJSONDocument(context, "user_default_metadata.json");
-        Log.d(TAG, "loadDefaultMetadata(): public: %s", publicJson);
-
-        JSONHelpers.merge(publicJson, json);
-
-        Log.d(TAG, "loadDefaultMetadata(): %s", json);
-        sDefaultMetadata = new UnmodifiableJSONObject(
-                json.optJSONObject("objects"));
-        return json;
-    }
-
-    private static boolean isWidgetClass(Class<?> clazz) {
-        return Widget.class.isAssignableFrom(clazz);
-    }
-
-    private static void loadMetadata(Context context) throws JSONException,
-            NoSuchMethodException {
-        loadDefaultMetadata(context);
-        final JSONObject json = loadSceneMetadata(context);
-
-        JSONObject animationMetadata = json.optJSONObject("animations");
-        AnimationFactory.init(animationMetadata);
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "init(): loaded animation metadata: %s",
-                animationMetadata);
-    }
-
-    private static JSONObject loadSceneMetadata(Context context)
-            throws JSONException {
-        final JSONObject json = JSONHelpers.loadJSONAsset(context,
-                                                          "objects.json");
-        sObjectMetadata = new UnmodifiableJSONObject(
-                json.optJSONObject("objects"));
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "init(): loaded object metadata: %s",
-                sObjectMetadata);
-        return json;
+    private static void loadAnimations(Context context) throws JSONException, NoSuchMethodException {
+        JSONObject json = JSONHelpers.loadJSONAsset(context, "animations.json");
+        if (json != null) {
+            JSONObject animationMetadata = json.optJSONObject("animations");
+            AnimationFactory.init(animationMetadata);
+            Log.v(Log.SUBSYSTEM.WIDGET, TAG, "loadAnimations(): loaded animation metadata: %s",
+                    animationMetadata);
+        } else {
+            Log.w(TAG, "loadAnimations(): no animations.json");
+        }
     }
 
     private void setupMetadata() throws JSONException, NoSuchMethodException {
@@ -3469,9 +3369,6 @@ public class Widget  implements Layout.WidgetContainer {
 
     private static WeakReference<Thread> sGLThread = new WeakReference<>(null);
     private static GVRTexture sDefaultTexture;
-
-    private static JSONObject sDefaultMetadata;
-    private static JSONObject sObjectMetadata;
 
     private static final String TAG = Widget.class.getSimpleName();
 }
