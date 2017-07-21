@@ -4,8 +4,6 @@ import android.database.DataSetObserver;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.R;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Layout.Direction;
@@ -605,11 +603,16 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
     }
 
+    public boolean isScrolling() {
+        return mScroller == null ? false : mScroller.scrolling;
+    }
+
     //  Scrolling processor
     class ScrollingProcessor {
         private int mScrollToPosition = -1;
         private Vector3Axis mScrollByOffset = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
         private SimpleAnimationTracker animationTracker = SimpleAnimationTracker.get(getGVRContext());
+        private boolean scrolling = false;
 
         private class ScrollAnimation extends Animation {
             private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
@@ -712,6 +715,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scroll() mScrollToPosition = %d mScrollByOffset = %s",
                   mScrollToPosition, mScrollByOffset);
             AnimationSet.Builder builder = new AnimationSet.Builder(ListWidget.this);
+            scrolling = true;
 
             for (Layout layout: mLayouts) {
                 // measure all directions. Finally measuredChildren has to contain all
@@ -775,6 +779,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             if (force) {
                 mTrimRequest = true;
                 mScroller = null;
+                scrolling = false;
                 requestLayout();
             } else {
                 scroll();
@@ -1222,6 +1227,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     @Override
     public boolean scrollToPosition(final int dataIndex) {
+        if (isScrolling()) {
+            return false;
+        }
+
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPosition, position = %d", dataIndex);
 
         boolean scrolled = false;
@@ -1277,6 +1286,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      */
     @Override
     public boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset) {
+        if (isScrolling()) {
+            return false;
+        }
+
         Vector3Axis offset = new Vector3Axis(xOffset, yOffset, zOffset);
         if (offset.isInfinite() || offset.isNaN()) {
             Log.e(TAG, new IllegalArgumentException(),
