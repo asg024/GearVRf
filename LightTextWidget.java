@@ -158,8 +158,12 @@ public class LightTextWidget extends Widget implements TextContainer {
         mNoApply = true;
         try {
             if (typefaceJson != null) {
-                Typeface typeface = TypefaceManager.get(this).getTypeface(typefaceJson);
-                setTypeface(typeface);
+                try {
+                    Typeface typeface = TypefaceManager.get(this).getTypeface(typefaceJson);
+                    setTypeface(typeface);
+                } catch (Throwable e) {
+                    Log.e(TAG, e, "Couldn't set typeface from properties: %s", typefaceJson);
+                }
             }
 
             setTextSize(textSize);
