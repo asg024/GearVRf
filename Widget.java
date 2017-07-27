@@ -52,6 +52,7 @@ public class Widget  implements Layout.WidgetContainer {
      * Call to initialize the Widget infrastructure. Parses {@code objects.json}
      * to load metadata for {@code Widgets}, as well as animation and material
      * specs.
+     *
      * @param context
      *            A valid Android {@link Context}.
      * @throws JSONException
@@ -738,16 +739,20 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Add a listener for {@linkplain OnTouchListener#onTouch() touch}
+     * Add a listener for {@linkplain OnTouchListener#onTouch(Widget) touch}
      * notifications for this object.
      *
      * @param listener
      *            An implementation of {@link OnTouchListener}.
-     * @return {@code True} if the listener was successfully registered,
-     *         {@code false} if the listener was already registered.
+     * @return {@code True} if {@code listener} was successfully registered,
+     *         {@code false} if {@code listener} was already registered or {@code listener} is
+     *         {@code null}.
      */
     public boolean addTouchListener(final OnTouchListener listener) {
-        return mTouchListeners.add(listener);
+        if (listener != null) {
+            return mTouchListeners.add(listener);
+        }
+        return false;
     }
 
     /**
@@ -756,9 +761,9 @@ public class Widget  implements Layout.WidgetContainer {
      *
      * @param listener
      *            An implementation of {@link OnTouchListener}
-     * @return {@code True} if the listener was successfully unregistered,
-     *         {@code false} if the specified listener was not previously
-     *         registered with this object.
+     * @return {@code True} if {@code listener} was successfully unregistered,
+     *         {@code false} if {@code listener} was not previously
+     *         registered with this object or is {@code null}.
      */
     public boolean removeTouchListener(final OnTouchListener listener) {
         return mTouchListeners.remove(listener);
@@ -2665,8 +2670,12 @@ public class Widget  implements Layout.WidgetContainer {
      *                       cannot be modified after we receive them.
      */
     private Widget(final GVRContext context, @NonNull JSONObject properties, boolean copyProperties) {
-        if (copyProperties) {
-            properties = copy(properties);
+        if (properties != null) {
+            if (copyProperties) {
+                properties = copy(properties);
+            }
+        } else {
+            properties = new JSONObject();
         }
 
         initMetadata(properties);

@@ -78,7 +78,7 @@ public class PropertyManager {
         // Recursively check for class properties up the class hierarchy
         final JSONObject superProperties;
         final Class<?> superclass = clazz.getSuperclass();
-        if (isWidgetClass(superclass)) {
+        if (superclass != null) {
             superProperties = getClassProperties(superclass, name);
         } else {
             superProperties = new JSONObject();
