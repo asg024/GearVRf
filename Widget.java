@@ -3,10 +3,13 @@ package com.samsung.smcl.vr.widgets;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.PointF;
+import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.utility.UnmodifiableJSONObject;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
@@ -24,6 +27,7 @@ import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
+import org.joml.Vector3f;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -201,7 +204,17 @@ public class Widget  implements Layout.WidgetContainer {
      *            The {@link GVRSceneObject} to wrap.
      */
     protected Widget(final GVRContext context, final GVRSceneObject sceneObject) {
-        this(context, sceneObject, true);
+        this(context, packageSceneObject(sceneObject), false);
+    }
+
+    private static JSONObject packageSceneObject(GVRSceneObject sceneObject) {
+        try {
+            final JSONObject json = new JSONObject();
+            put(json, Properties.scene_object, sceneObject);
+            return json;
+        } catch (JSONException e) {
+            throw new RuntimeException(e.getLocalizedMessage(), e);
+        }
     }
 
     /**
@@ -220,51 +233,26 @@ public class Widget  implements Layout.WidgetContainer {
     /* package */
     Widget(final GVRContext context, final GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
-        // Skip setting up the metadata so that it gets processed after
-        // attributes
-        this(context, sceneObject, false);
+        this(context, packageSceneObjectWithAttributes(sceneObject, attributes), false);
+    }
 
-        String attribute = null;
-        if (attributes != null) {
-            // This gives us the demangled name, which is the name we'll use to
-            // refer to the widget
-            attribute = attributes.getProperty("name");
-            setName(attribute);
+    private static JSONObject packageSceneObjectWithAttributes(GVRSceneObject sceneObject,
+                                                               NodeEntry attributes)
+            throws InstantiationException {
+        try {
+            final JSONObject json;
 
-            final boolean hasRenderData = sceneObject.getRenderData() != null;
-
-            attribute = attributes.getProperty("touchable");
-            if (attribute != null) {
-                setTouchable(hasRenderData
-                        && attribute.compareToIgnoreCase("false") != 0);
-            }
-
-            attribute = attributes.getProperty("focusenabled");
-            if (attribute != null) {
-                setFocusEnabled(attribute.compareToIgnoreCase("false") != 0);
-            }
-
-            attribute = attributes.getProperty("selected");
-            setSelected(attribute != null && hasRenderData
-                    && attribute.compareToIgnoreCase("false") != 0);
-
-            attribute = attributes.getProperty("visibility");
+            if (attributes != null) {
+                json = attributes.toJSON();
+                put(json, Properties.preapply_attribs, true);
+            } else {
+                json = new JSONObject();
         }
 
-        setVisibility(attribute != null ? Visibility.valueOf(attribute
-                .toUpperCase(Locale.ENGLISH)) : Visibility.VISIBLE);
+            put(json, Properties.scene_object, sceneObject);
 
-        try {
-            final JSONObject metaData = getObjectMetadata();
-            Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
-                    getName(), metaData);
-
-            setupAttributes(metaData);
-
-            createChildren(context, sceneObject);
-
-            setupStatesAndLevels(metaData);
-        } catch (Exception e) {
+            return json;
+        } catch (JSONException e) {
             throw new InstantiationException(e.getLocalizedMessage());
         }
     }
@@ -279,23 +267,21 @@ public class Widget  implements Layout.WidgetContainer {
     // mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
     // }
 
-    public Widget(final GVRContext context, final float width,
-            final float height) {
-        this(context, new GVRSceneObject(context, width, height), false);
+    public Widget(final GVRContext context, final float width, final float height) {
+        this(context, makeQuad(context, width, height));
+    }
 
-        GVRRenderData renderData = getRenderData();
+    private static final GVRSceneObject makeQuad(GVRContext context, final float width,
+                                                 final float height) {
+        GVRSceneObject sceneObject = new GVRSceneObject(context, width, height);
+        GVRRenderData renderData = sceneObject.getRenderData();
         if (renderData != null) {
-            GVRMaterial material = new GVRMaterial(mContext,
+            GVRMaterial material = new GVRMaterial(context,
                     GVRShaderType.Texture.ID);
             material.setMainTexture(sDefaultTexture);
-            setMaterial(material);
+            renderData.setMaterial(material);
         }
-
-        try {
-            setupMetadata();
-        } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage(), e);
-        }
+        return sceneObject;
     }
 
     /**
@@ -1897,7 +1883,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return A {@link List} of {@code ChildInfo}.
      */
     public List<ChildInfo> getChildInfo(boolean includeHidden) {
-        List<ChildInfo> children = new ArrayList<ChildInfo>();
+        List<ChildInfo> children = new ArrayList<>();
         for (Widget child : mChildren) {
             if (includeHidden || child.mVisibility == Visibility.VISIBLE) {
                 children.add(new ChildInfo(child.getName(), child
@@ -2065,9 +2051,6 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     protected JSONObject getObjectMetadata() {
-        if (mMetadata == null) {
-            mMetadata = PropertyManager.get().getWidgetProperties(this);
-        }
         return mMetadata;
     }
 
@@ -2637,25 +2620,70 @@ public class Widget  implements Layout.WidgetContainer {
         return mSceneObject.getTransform();
     }
 
-    private Widget(final GVRContext context, final GVRSceneObject sceneObject,
-            final boolean setupMetadata) {
+    public Widget(final GVRContext context, @NonNull final JSONObject properties) {
+        this(context, properties, true);
+    }
+
+    /**
+     * Core {@link Widget} constructor.
+     *
+     * @param context A valid {@link GVRContext}.
+     * @param properties A structured set of properties for the {@code Widget} instance. See
+     *                       {@code widget.json} for schema.
+     * @param copyProperties Properties which are passed in from client code are copied so that they
+     *                       cannot be modified after we receive them.
+     */
+    private Widget(final GVRContext context, @NonNull JSONObject properties, boolean copyProperties) {
+        if (copyProperties) {
+            properties = copy(properties);
+        }
+
+        initMetadata(properties);
+
         mContext = context;
-        mSceneObject = sceneObject;
+        mSceneObject = getSceneObjectProperty(context, properties);
 
         Log.v(Log.SUBSYSTEM.WIDGET, TAG,
-                "Widget constructor: %s width = %f height = %f depth = %f",
-                sceneObject.getName(), getWidth(), getHeight(), getDepth());
+                "Widget(context, properties): %s width = %f height = %f depth = %f",
+                mSceneObject.getName(), getWidth(), getHeight(), getDepth());
 
         mTransformCache = new TransformCache(getTransform());
         requestLayout();
-        if (setupMetadata) {
-            try {
-                setupMetadata();
-            } catch (Exception e) {
-                throw new RuntimeException(e.getLocalizedMessage(), e);
+
+        try {
+            final JSONObject metadata = getObjectMetadata();
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                    "Widget(context, properties): setting up metadata for %s: %s",
+                    getName(), metadata);
+            setupAttributes(metadata);
+            createChildren(context, mSceneObject);
+            setupStatesAndLevels(metadata);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getLocalizedMessage(), e);
+        }
+
+        mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
+    }
+
+    private GVRSceneObject getSceneObjectProperty(GVRContext context, final JSONObject properties) {
+        GVRSceneObject sceneObject = opt(properties, Properties.scene_object, GVRSceneObject.class);
+        if (sceneObject == null) {
+            if (hasFloat(properties, Properties.size)) {
+                float size = optFloat(properties, Properties.size);
+                Log.d(TAG, "getSceneObjectProperty(%s): single size: %.2f", getName(), size);
+                sceneObject = makeQuad(context, size, size);
+            } else if (hasPoint(properties, Properties.size)) {
+                PointF size = optPointF(properties, Properties.size);
+                Log.d(TAG, "getSceneObjectProperty(%s): point size: %.2f", getName(), size);
+                sceneObject = makeQuad(context, size.x, size.y);
+            } else {
+                Log.d(TAG, "getSceneObjectProperty(%s): empty object!", getName());
+                sceneObject = new GVRSceneObject(context);
             }
         }
-        mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
+        // TODO: Add support for specifying mesh
+        // TODO: Add support for specifying a primitive (quad, rounded_quad, sphere, cylinder, etc.)
+        return sceneObject;
     }
 
     /**
@@ -3027,8 +3055,13 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    private enum Properties {
-        touchable, focusenabled, visibility, states, levels, level, selected
+    public enum Properties {
+        name, touchable, focusenabled, visibility, states, levels, level, selected, scene_object,
+        preapply_attribs, size, transform
+    }
+
+    public enum TransformProperties {
+        position, scale, rotation, pivot, angle
     }
 
     private static void loadAnimations(Context context) throws JSONException, NoSuchMethodException {
@@ -3043,24 +3076,77 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    private void setupMetadata() throws JSONException, NoSuchMethodException {
-        final JSONObject metaData = getObjectMetadata();
-        Log.d(TAG, "setupMetadata(): setting up metadata for %s: %s",
-                getName(), metaData);
+    private void initMetadata(JSONObject properties) {
+        setName(optString(properties, Properties.name, getName()));
 
-        setupAttributes(metaData);
-        setupStatesAndLevels(metaData);
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): properties: %s", getName(), properties);
+        UnmodifiableJSONObject objectMetadata = PropertyManager.get().getWidgetProperties(this);
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): objectMetadata: %s", getName(), objectMetadata);
+        final boolean preApplyAttribs = optBoolean(properties, Properties.preapply_attribs);
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): preApplyAttribs: %b", getName(), preApplyAttribs);
+        if (preApplyAttribs) {
+            // Allow JSON metadata to overwrite metadata from the model
+            mMetadata = merge(objectMetadata, properties);
+        } else {
+            mMetadata = merge(properties, objectMetadata);
+        }
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): merged metadata: %s", getName(), mMetadata);
     }
 
     private void setupAttributes(JSONObject metaData) {
-        mIsTouchable = optBoolean(metaData, Properties.touchable,
+        // We do this a second time because the properties received by initMetadata() may have been
+        // overwritten if they were pre-applied
+        setName(optString(metaData, Properties.name, getName()));
+
+        final boolean hasRenderData = getRenderData() != null;
+        mIsTouchable = hasRenderData && optBoolean(metaData, Properties.touchable,
                 mIsTouchable);
         mFocusEnabled = optBoolean(metaData, Properties.focusenabled,
                 mFocusEnabled);
-        mIsSelected = optBoolean(metaData, Properties.selected, mIsSelected);
+        mIsSelected = hasRenderData && optBoolean(metaData, Properties.selected, mIsSelected);
         Visibility visibility = optEnum(metaData, Properties.visibility,
-                mVisibility);
+                mVisibility, true);
         setVisibility(visibility);
+
+        // Set up transform positioning
+        final Vector3f zeroVector = new Vector3f(0, 0, 0);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): %s", getName(), metaData);
+        Vector3f position = optVector3f(metaData, TransformProperties.position, zeroVector);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): position: %s", getName(), position);
+        if (position != null) {
+            setPosition(position.x, position.y, position.z);
+        }
+
+        // Set up transform scaling
+        if (hasVector3f(metaData, TransformProperties.scale)) {
+            Vector3f scale = optVector3f(metaData, TransformProperties.scale, zeroVector);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): scale: %s", getName(), scale);
+            if (scale != null) {
+                setScale(scale.x, scale.y, scale.z);
+            }
+        } else if (hasNumber(metaData, TransformProperties.scale)) {
+            final float scale = optFloat(metaData, TransformProperties.scale, 1);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): scale: %.2f", getName(), scale);
+            setScale(scale);
+        }
+
+        // Set up transform rotation
+        JSONObject rotation = optJSONObject(metaData, TransformProperties.rotation);
+        if (rotation != null) {
+            Vector3f scalars = asVector3f(rotation, new Vector3f(1, 1, 1));
+            float angle;
+            try {
+                angle = getFloat(rotation, TransformProperties.angle);
+            } catch (JSONException e) {
+                throw new RuntimeException(e.getLocalizedMessage(), e);
+            }
+            if (hasVector3f(rotation, TransformProperties.pivot)) {
+                Vector3f pivot = optVector3f(rotation, TransformProperties.pivot, zeroVector);
+                rotateByAxisWithPivot(angle, scalars.x, scalars.y, scalars.z, pivot.x, pivot.y, pivot.z);
+            } else {
+                rotateByAxis(angle, scalars.x, scalars.y, scalars.z);
+            }
+        }
     }
 
     private void setupStatesAndLevels(JSONObject metaData) throws JSONException, NoSuchMethodException {
@@ -3068,7 +3154,7 @@ public class Widget  implements Layout.WidgetContainer {
         final boolean hasLevels = has(metaData, Properties.levels);
         final boolean hasLevel = has(metaData, Properties.level);
         Log.d(TAG,
-                "setupMetadata(): for '%s'; states: %b, levels %b, level %b",
+                "setupStatesAndLevels(): for '%s'; states: %b, levels %b, level %b",
                 getName(), hasStates, hasLevels, hasLevel);
         if (hasStates) {
             if (hasLevels || hasLevel) {
