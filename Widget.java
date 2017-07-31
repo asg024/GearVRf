@@ -271,6 +271,11 @@ public class Widget  implements Layout.WidgetContainer {
     private static final GVRSceneObject makeQuad(GVRContext context, final float width,
                                                  final float height) {
         GVRSceneObject sceneObject = new GVRSceneObject(context, width, height);
+        setupDefaultMaterial(context, sceneObject);
+        return sceneObject;
+    }
+
+    private static void setupDefaultMaterial(GVRContext context, GVRSceneObject sceneObject) {
         GVRRenderData renderData = sceneObject.getRenderData();
         if (renderData != null) {
             GVRMaterial material = new GVRMaterial(context,
@@ -278,7 +283,6 @@ public class Widget  implements Layout.WidgetContainer {
             material.setMainTexture(sDefaultTexture);
             renderData.setMaterial(material);
         }
-        return sceneObject;
     }
 
     /**
@@ -2701,11 +2705,13 @@ public class Widget  implements Layout.WidgetContainer {
                 sceneObject = makeQuad(context, size, size);
             } else if (hasPoint(properties, Properties.size)) {
                 PointF size = optPointF(properties, Properties.size);
-                Log.d(TAG, "getSceneObjectProperty(%s): point size: %.2f", getName(), size);
+                Log.d(TAG, "getSceneObjectProperty(%s): point size: %s", getName(), size);
                 sceneObject = makeQuad(context, size.x, size.y);
             } else {
                 Log.d(TAG, "getSceneObjectProperty(%s): empty object!", getName());
-                sceneObject = new GVRSceneObject(context);
+                // TODO: Ideally, we wouldn't create a mesh here, but if we don't, things hang
+                sceneObject = new GVRSceneObject(context, 0, 0);
+                setupDefaultMaterial(context, sceneObject);
             }
         }
         // TODO: Add support for specifying mesh

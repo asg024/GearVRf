@@ -23,10 +23,10 @@ import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
 @SuppressWarnings("deprecation")
 public class LightTextWidget extends Widget implements TextContainer {
 
-    private final TextWidget.TextParams params = new TextWidget.TextParams();
+    private final TextParams params = new TextParams();
 
     public static TextContainer copy(TextContainer src, TextContainer dest) {
-        return TextWidget.TextParams.copy(src, dest);
+        return TextParams.copy(src, dest);
     }
 
     /**
@@ -37,6 +37,11 @@ public class LightTextWidget extends Widget implements TextContainer {
      */
     public LightTextWidget(final GVRContext context, final GVRSceneObject sceneObject) {
         super(context, sceneObject);
+        init((CharSequence) null);
+    }
+
+    public LightTextWidget(GVRContext context, JSONObject properties) {
+        super(context, properties);
         init((CharSequence) null);
     }
 
@@ -53,42 +58,6 @@ public class LightTextWidget extends Widget implements TextContainer {
     public LightTextWidget(GVRContext context, GVRSceneObject sceneObject,
                            NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
-
-        String attribute = attributes.getProperty("text");
-        if (attribute != null) {
-            setText(attribute);
-        }
-
-        attribute = attributes.getProperty("text_size");
-        if (attribute != null) {
-            setTextSize(Float.parseFloat(attribute));
-        }
-
-        attribute = attributes.getProperty("background");
-        if (attribute != null) {
-            setBackGround(context.getContext().getResources()
-                    .getDrawable(Integer.parseInt(attribute)));
-        }
-
-        attribute = attributes.getProperty("background_color");
-        if (attribute != null) {
-            setBackgroundColor(Integer.parseInt(attribute));
-        }
-
-        attribute = attributes.getProperty("gravity");
-        if (attribute != null) {
-            setGravity(Integer.parseInt(attribute));
-        }
-
-        attribute = attributes.getProperty("refresh_freq");
-        if (attribute != null) {
-            setRefreshFrequency(IntervalFrequency.valueOf(attribute));
-        }
-
-        attribute = attributes.getProperty("text_color");
-        if (attribute != null) {
-            setTextColor(Integer.parseInt(attribute));
-        }
         init((CharSequence) null);
     }
 
@@ -135,46 +104,12 @@ public class LightTextWidget extends Widget implements TextContainer {
         init(text);
     }
 
-    private enum Attributes {
-        text, text_size, background, background_color, gravity, refresh_freq, text_color, typeface
-    }
-
     private void init(CharSequence text) {
-        final JSONObject metadata = getObjectMetadata();
-        text = optString(metadata, Attributes.text, text != null ? text.toString() : "");
-        final float textSize = optFloat(metadata, Attributes.text_size, params.getTextSize());
-        String backgroundResStr = optString(metadata, Attributes.background);
-        final int backgroundResId;
-        if (backgroundResStr != null && !backgroundResStr.isEmpty()) {
-            backgroundResId = Helpers.getId(getContext(), backgroundResStr, "drawable");
-        } else {
-            backgroundResId = -1;
-        }
-        final int backgroundColor = Helpers.getJSONColor(metadata, Attributes.background_color, params.getBackgroundColor());
-        final IntervalFrequency refresh = optEnum(metadata, Attributes.refresh_freq, params.getRefreshFrequency());
-        final int textColor = Helpers.getJSONColor(metadata, Attributes.text_color, params.getTextColor());
-        final JSONObject typefaceJson = optJSONObject(metadata, Attributes.typeface);
-
         mNoApply = true;
+        params.setText(text);
         try {
-            if (typefaceJson != null) {
-                try {
-                    Typeface typeface = TypefaceManager.get(this).getTypeface(typefaceJson);
-                    setTypeface(typeface);
-                } catch (Throwable e) {
-                    Log.e(TAG, e, "Couldn't set typeface from properties: %s", typefaceJson);
-                }
-            }
-
-            setTextSize(textSize);
-            if (backgroundResId != -1) {
-                setBackGround(getContext().getResources()
-                            .getDrawable(backgroundResId));
-            }
-            setBackgroundColor(backgroundColor);
-            setRefreshFrequency(refresh);
-            setTextColor(textColor);
-            setText(text);
+            JSONObject properties = getObjectMetadata();
+            params.setFromJSON(getGVRContext().getActivity(), properties);
         } finally {
             mNoApply = false;
         }
@@ -386,7 +321,7 @@ public class LightTextWidget extends Widget implements TextContainer {
         return params.getTypeface();
     }
 
-    public TextWidget.TextParams getTextParams() {
+    public TextParams getTextParams() {
         return params;
     }
 

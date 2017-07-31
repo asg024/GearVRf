@@ -65,7 +65,7 @@ abstract public class JSONHelpers {
 
     public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, Object value) {
         if (json != null && !has(json, e)) {
-            safePut(json, e, value);
+            put(json, e, value);
         }
         return json;
     }
@@ -119,7 +119,11 @@ abstract public class JSONHelpers {
 
     public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, double value) {
         if (!has(json, e)) {
-            safePut(json, e, value);
+            try {
+                json.put(e.name(), value);
+            } catch (JSONException e1) {
+                throw new RuntimeException(e1.getLocalizedMessage(), e1);
+            }
         }
         return json;
     }
@@ -214,9 +218,12 @@ abstract public class JSONHelpers {
         return json.optString(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, String value)
-            throws JSONException {
-        return json.put(e.name(), value);
+    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, String value) {
+        try {
+            return json.put(e.name(), value);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>, R extends Enum<R>> R getEnum(
@@ -360,6 +367,11 @@ abstract public class JSONHelpers {
         return jsonArray;
     }
 
+    public static <P extends Enum<P>> Point getPoint(final JSONObject json, P e) throws JSONException {
+        JSONObject value = getJSONObject(json, e);
+        return asPoint(value);
+    }
+
     /**
      * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
      * "y" members into a {@link Point}.
@@ -384,16 +396,25 @@ abstract public class JSONHelpers {
      * {@code e}.
      */
     public static <P extends Enum<P>> Point optPoint(final JSONObject json, P e, Point fallback) {
-        Point p = fallback;
         JSONObject value = optJSONObject(json, e);
         Log.d(TAG, "optPoint(): raw: %s", value);
-        if (value != null && isPoint(value)) {
-            int x = value.optInt("x", fallback != null ? fallback.x : 0);
-            int y = value.optInt("y", fallback != null ? fallback.y : 0);
+        Point p = asPoint(value, fallback);
+
+        return p;
+    }
+
+    public static Point asPoint(JSONObject json) {
+        return asPoint(json, new Point());
+    }
+
+    public static Point asPoint(JSONObject json, Point defValue) {
+        Point p = defValue;
+        if (json != null && isPoint(json)) {
+            int x = json.optInt("x", defValue != null ? defValue.x : 0);
+            int y = json.optInt("y", defValue != null ? defValue.y : 0);
             Log.d(TAG, "optPoint(): x: %d, y: %d", x, y);
             p = new Point(x, y);
         }
-
         return p;
     }
 
@@ -418,13 +439,19 @@ abstract public class JSONHelpers {
         return p;
     }
 
+    public static <P extends Enum<P>> PointF getPointF(final JSONObject json, P e) throws JSONException {
+        JSONObject value = getJSONObject(json, e);
+        return asPointF(value);
+    }
+
     /**
      * Return the value mapped by enum if it exists and is a {@link JSONObject} by mapping "x" and
      * "y" members into a {@link PointF}.
      *
      * @param json {@code JSONObject} to get data from
      * @param e {@link Enum} labeling the data to get
-     * @return An instance of {@code PointF} or {@null} if there is no object mapping for {@code e}.
+     * @return An instance of {@code PointF} or {@code null} if there is no object mapping for
+     *          {@code e}.
      */
     public static <P extends Enum<P>> PointF optPointF(final JSONObject json, P e) {
         return optPointF(json, e, null);
@@ -442,15 +469,24 @@ abstract public class JSONHelpers {
      * {@code e}.
      */
     public static <P extends Enum<P>> PointF optPointF(final JSONObject json, P e, PointF fallback) {
-        PointF p = fallback;
         JSONObject value = optJSONObject(json, e);
-        if (value != null && isPoint(value)) {
-            float x = (float) value.optDouble("x", fallback != null ? fallback.x : Float.NaN);
-            float y = (float) value.optDouble("y", fallback != null ? fallback.y : Float.NaN);
+        PointF p = asPointF(value, fallback);
+
+        return p;
+    }
+
+    public static PointF asPointF(JSONObject json) {
+        return asPointF(json, new PointF());
+    }
+
+    public static PointF asPointF(JSONObject json, PointF fallback) {
+        PointF p = fallback;
+        if (json != null && isPoint(json)) {
+            float x = (float) json.optDouble("x", fallback != null ? fallback.x : Float.NaN);
+            float y = (float) json.optDouble("y", fallback != null ? fallback.y : Float.NaN);
 
             p = new PointF(x,y);
         }
-
         return p;
     }
 
@@ -475,12 +511,35 @@ abstract public class JSONHelpers {
         return p;
     }
 
+    public static <P extends Enum<P>> void put(JSONObject json, P e, PointF defPoint) {
+        JSONObject defJson = new JSONObject();
+        try {
+            defJson.put("x", defPoint.x);
+            defJson.put("y", defPoint.y);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
+        safePut(json, e, defJson);
+    }
+
     public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, PointF defPoint) {
-        if (json != null && !has(json, e)) {
-            JSONObject defJson = new JSONObject();
-            safePut(defJson, "x", defPoint.x);
-            safePut(defJson, "y", defPoint.y);
-            safePut(json, e, defJson);
+        if (json != null) {
+            JSONObject pointJson = optJSONObject(json, e);
+            if (pointJson != null) {
+                // Check both members; default if missing
+                try {
+                    if (!hasNumber(pointJson, "x", true)) {
+                        pointJson.put("x", defPoint.x);
+                    }
+                    if (!hasNumber(pointJson, "y", true)) {
+                        pointJson.put("y", defPoint.y);
+                    }
+                } catch (JSONException e1) {
+                    throw new RuntimeException(e1);
+                }
+            } else {
+                put(json, e, defPoint);
+            }
         }
         return json;
     }
@@ -529,9 +588,13 @@ abstract public class JSONHelpers {
     public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, Vector3f defVector) {
         if (json != null && !has(json, e)) {
             JSONObject defJson = new JSONObject();
-            safePut(defJson, "x", defVector.x);
-            safePut(defJson, "y", defVector.y);
-            safePut(defJson, "z", defVector.z);
+            try {
+                defJson.put("x", defVector.x);
+                defJson.put("y", defVector.y);
+                defJson.put("z", defVector.z);
+            } catch (JSONException e1) {
+                throw new RuntimeException(e1.getLocalizedMessage(), e1);
+            }
             safePut(json, e, defJson);
         }
         return json;

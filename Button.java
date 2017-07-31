@@ -7,6 +7,7 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONObject;
 
+import android.graphics.PointF;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
@@ -16,9 +17,12 @@ import com.samsung.smcl.utility.Log;
 import java.util.List;
 
 import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.copy;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optBoolean;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optDouble;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optPointF;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.put;
 
 /**
  * A basic Button widget.
@@ -31,10 +35,14 @@ import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
  */
 public class Button extends Widget implements TextContainer {
 
+    public enum Properties {
+        text_widget_size
+    }
+
     public Button(GVRContext context, float width, float height,
                   float textWidgetWidth, float textWidgetHeight) {
         super(context, width, height);
-        init();
+        mTextContainer = init();
 
         mTextWidgetWidth = textWidgetWidth;
         mTextWidgetHeight = textWidgetHeight;
@@ -42,40 +50,23 @@ public class Button extends Widget implements TextContainer {
 
     public Button(GVRContext context, float width, float height) {
         super(context, width, height);
-        init();
+        mTextContainer = init();
     }
 
     public Button(GVRContext context, GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
-        init();
-
-        int width = getDimensionAttribute(attributes, ButtonProperties.textWidgetWidth);
-        if (width >= 0) {
-            mTextWidgetWidth = width;
-        }
-        int height = getDimensionAttribute(attributes, ButtonProperties.textWidgetHeight);
-        if (height >= 0) {
-            mTextWidgetHeight = height;
-        }
-    }
-
-    private int getDimensionAttribute(NodeEntry attributes, ButtonProperties property) {
-        int dimension = -1;
-        final String attr = attributes.getProperty(property);
-        if (attr != null) {
-            dimension = Integer.parseInt(attr);
-        }
-        return dimension;
-    }
-
-    private enum ButtonProperties {
-        textWidgetWidth, textWidgetHeight;
+        mTextContainer = init();
     }
 
     public Button(GVRContext context, GVRSceneObject sceneObject) {
         super(context, sceneObject);
-        init();
+        mTextContainer = init();
+    }
+
+    public Button(GVRContext context, JSONObject properties) {
+        super(context, properties);
+        mTextContainer = init();
     }
 
     @Override
@@ -188,7 +179,7 @@ public class Button extends Widget implements TextContainer {
 
     protected Button(GVRContext context, GVRMesh mesh) {
         super(context, mesh);
-        init();
+        mTextContainer = init();
     }
 
     /**
@@ -281,10 +272,11 @@ public class Button extends Widget implements TextContainer {
         });
     }
 
-    private void init() {
+    private TextParams init() {
         JSONObject metaData = getObjectMetadata();
-        mTextWidgetWidth = (float) optDouble(metaData, ButtonProperties.textWidgetWidth, getWidth());
-        mTextWidgetHeight = (float) optDouble(metaData, ButtonProperties.textWidgetHeight, getHeight());
+        PointF textWidgetSize = optPointF(metaData, Properties.text_widget_size, new PointF(getWidth(), getHeight()));
+        mTextWidgetWidth = textWidgetSize.x;
+        mTextWidgetHeight = textWidgetSize.y;
 
         setRenderingOrder(GVRRenderingOrder.TRANSPARENT);
 
@@ -299,6 +291,12 @@ public class Button extends Widget implements TextContainer {
         ((LinearLayout) mDefaultLayout).setGravity(LinearLayout.Gravity.BACK);
 
         mDefaultLayout.setDividerPadding(0.025f, Layout.Axis.Z);
+
+        JSONObject textProperties = copy(metaData);
+        put(textProperties, Widget.Properties.size, textWidgetSize);
+        TextParams params = new TextParams();
+                params.setFromJSON(getGVRContext().getActivity(), textProperties);
+        return params;
     }
 
     @Override
@@ -312,7 +310,7 @@ public class Button extends Widget implements TextContainer {
         }
     }
 
-    private TextContainer mTextContainer = new TextWidget.TextParams();
+    private TextContainer mTextContainer;
     private Widget mGraphic;
 
     private final OrientedLayout mDefaultLayout = new LinearLayout() {

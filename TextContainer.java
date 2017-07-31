@@ -7,6 +7,17 @@ import android.graphics.drawable.Drawable;
 
 public interface TextContainer {
 
+    enum Properties {
+        background,
+        background_color,
+        gravity,
+        refresh_freq,
+        text,
+        text_color,
+        text_size,
+        typeface
+    }
+
     Drawable getBackGround();
 
     int getBackgroundColor();
