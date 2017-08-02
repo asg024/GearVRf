@@ -32,24 +32,33 @@ public class PageIndicatorWidget extends CheckableGroup {
             addIndicatorChildren(numIndicators);
             check(defaultPageId);
         }
+        setName("PageIndicatorWidget");
     }
 
     private void addIndicatorChildren(int numIndicators) {
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "addIndicatorChildren %d", numIndicators);
         while (numIndicators-- > 0) {
             PageIndicatorButton buttonWidget = new PageIndicatorButton(getGVRContext(),
                     mPageIndicatorButtonWidth, mPageIndicatorButtonHeight);
-            addChild(buttonWidget);
+            buttonWidget.setName("PageIndicatorButton." + getCheckableCount());
+            addChild(buttonWidget, true);
         }
+        invalidateAllLayouts();
+        requestLayout();
     }
 
     private void removeIndicatorChildren(int numIndicators) {
+        Log.d(Log.SUBSYSTEM.PANELS, TAG, "removeIndicatorChildren %d", numIndicators);
+
         List<PageIndicatorButton> children = getCheckableChildren();
         for (Widget child: children) {
             if (numIndicators-- <= 0) {
                 break;
             }
-            removeChild(child);
+            removeChild(child, true);
         }
+        invalidateAllLayouts();
+        requestLayout();
     }
 
     @Override
@@ -92,7 +101,6 @@ public class PageIndicatorWidget extends CheckableGroup {
 
     public int setPageCount(final int num) {
         int diff = num - getCheckableCount();
-
         if (diff > 0) {
             addIndicatorChildren(diff);
         } else if (diff < 0) {

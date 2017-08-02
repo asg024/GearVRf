@@ -547,8 +547,14 @@ abstract public class Layout {
 
         Set<Integer> copySet = new HashSet<>(mMeasuredChildren);
         for (int nextMeasured: copySet) {
-            layoutChild(nextMeasured);
-            postLayoutChild(nextMeasured);
+            Widget child = mContainer.get(nextMeasured);
+            if (child != null) {
+                child.preventTransformChanged(true);
+                layoutChild(nextMeasured);
+                postLayoutChild(nextMeasured);
+                child.preventTransformChanged(false);
+            }
+
         }
     }
 }

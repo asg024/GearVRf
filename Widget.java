@@ -1813,9 +1813,16 @@ public class Widget  implements Layout.WidgetContainer {
 
         if (mParent != null && !mParent.isLayoutRequested()) {
             Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "requestLayout(%s) requesting", getName());
-
             mParent.requestLayout();
             // new RuntimeException().printStackTrace();
+        } else if (isInLayout()) {
+            requestInnerLayout(this);
+        }
+    }
+
+    protected void requestInnerLayout(Widget widget)  {
+        if (mParent != null) {
+            mParent.requestInnerLayout(widget);
         }
     }
 
@@ -2227,18 +2234,24 @@ public class Widget  implements Layout.WidgetContainer {
      * bounding box will get out of date.
      */
     protected void onTransformChanged() {
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "onTransformChanged(): %s", getName());
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "onTransformChanged(): %s mPreventTransformChanged = %b",
+                getName(), mPreventTransformChanged);
 
         // Even if the calling code that altered the transform doesn't request a
         // layout, we'll do a layout the next time a layout is requested on our
         // part of the scene graph.
-        if (!isInLayout()) {
+        if (!mPreventTransformChanged) {
             mChanged = true;
 
             // Clear this to indicate that the bounding box has been invalidated and
             // needs to be constructed and transformed anew.
             mBoundingBox = null;
         }
+    }
+
+    private boolean mPreventTransformChanged;
+    void preventTransformChanged(boolean prevent) {
+        mPreventTransformChanged = prevent;
     }
 
     /* package */
@@ -2490,6 +2503,7 @@ public class Widget  implements Layout.WidgetContainer {
                                final GVRSceneObject childRootSceneObject, final int index,
                                boolean preventLayout) {
         final boolean added = addChildInner(child, childRootSceneObject, index);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "addChild [%s] %b", child, added);
         if (added) {
             onTransformChanged();
             if (!preventLayout) {
@@ -2573,6 +2587,8 @@ public class Widget  implements Layout.WidgetContainer {
     protected boolean removeChild(final Widget child,
             final GVRSceneObject childRootSceneObject, boolean preventLayout) {
         final boolean removed = mChildren.remove(child);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild [%s] %b", child, removed);
+
         if (removed) {
             Log.d(TAG, "removeChild(): '%s' removed", child.getName());
             if (childRootSceneObject.getParent() != getSceneObject()) {
