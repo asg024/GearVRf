@@ -14,18 +14,20 @@ public class PageIndicatorWidget extends CheckableGroup {
     private float mPageIndicatorButtonWidth,  mPageIndicatorButtonHeight;
     private int mCurrentPage;
     private static final String TAG = PageIndicatorWidget.class.getSimpleName();
+    private boolean mTouchEnabled;
 
     public interface OnPageSelectedListener {
         void onPageSelected(final int pageId);
     }
 
     public PageIndicatorWidget(GVRContext context, int numIndicators, int defaultPageId,
-                               float indicatorWidth, float indicatorHeight) {
+                               float indicatorWidth, float indicatorHeight, boolean touchEnabled) {
         super(context, 0, 0);
 
         Log.d(TAG, "PageIndicatorWidget numIndicators = %d defaultPageId = %d", numIndicators, defaultPageId);
         mPageIndicatorButtonWidth = indicatorWidth;
         mPageIndicatorButtonHeight = indicatorHeight;
+        mTouchEnabled = touchEnabled;
         getDefaultLayout().setDividerPadding(mPageIndicatorButtonHeight / 2, Layout.Axis.Y);
 
         if (numIndicators > 0) {
@@ -142,6 +144,11 @@ public class PageIndicatorWidget extends CheckableGroup {
             Graphic(GVRContext context, float width, float height) {
                 super(context, width, height);
             }
+        }
+
+        @Override
+        protected boolean onTouch() {
+            return mTouchEnabled ? super.onTouch() : false;
         }
     }
 }

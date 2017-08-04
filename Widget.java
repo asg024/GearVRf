@@ -997,7 +997,7 @@ public class Widget  implements Layout.WidgetContainer {
         for (Layout layout : mLayouts) {
             size = Math.max(size, layout.getSize(axis));
         }
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getLayoutSize [%s] axis [%s] size [%f]", this, axis, size);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getLayoutSize [%s] axis [%s] size [%f]", getName(), axis, size);
         return size;
     }
 
