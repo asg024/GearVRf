@@ -2664,7 +2664,6 @@ public class Widget  implements Layout.WidgetContainer {
                 mSceneObject.getName(), getWidth(), getHeight(), getDepth());
 
         mTransformCache = new TransformCache(getTransform());
-        requestLayout();
 
         try {
             final JSONObject metadata = getObjectMetadata();
