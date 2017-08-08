@@ -411,9 +411,9 @@ abstract public class Layout {
     protected boolean measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
         boolean inBounds = true;
         boolean changed = false;
-        for (int i = centerDataIndex; i < mContainer.size() && inBounds; ++i) {
+        for (int i = centerDataIndex; i >= 0 && i < mContainer.size() && inBounds; ++i) {
             if (!isChildMeasured(i)) {
-                Widget view = measureChild(i);
+                Widget view = measureChild(i, false);
                 if (!mClippingEnabled) {
                     postMeasurement();
                 } else {

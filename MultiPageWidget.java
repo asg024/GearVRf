@@ -918,6 +918,12 @@ public class MultiPageWidget extends ListWidget {
             public void unregisterDataSetObserver(DataSetObserver observer) {
                 MultiPageWidget.super.unregisterDataSetObserver(observer);
             }
+
+            @Override
+            public int getCurrentPosition() {
+                return MultiPageWidget.super.getCurrentPosition();
+            }
+
         };
     }
 }

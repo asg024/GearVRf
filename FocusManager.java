@@ -3,6 +3,7 @@ package com.samsung.smcl.vr.widgets;
 import android.app.Activity;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.vr.gvrf_launcher.FPSCounter;
 import com.samsung.smcl.vr.gvrf_launcher.Holder;
 import com.samsung.smcl.vr.gvrf_launcher.HolderHelper;
 import com.samsung.smcl.vr.gvrf_launcher.MainThread;
@@ -170,10 +171,13 @@ public class FocusManager {
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
+            FPSCounter.timeCheck("onDrawFrame <START>: " + this + " frameTime = " + frameTime);
+
             final GVRScene mainScene = mContext.getMainScene();
             mPickedObjects = GVRPicker.pickObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
 
             MainThread.get(mContext).runOnMainThread(mFocusRunnable);
+            FPSCounter.timeCheck("onDrawFrame <END>: " + this + " frameTime = " + frameTime);
         }
     };
 

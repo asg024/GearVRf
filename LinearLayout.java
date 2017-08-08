@@ -399,6 +399,7 @@ public class LinearLayout extends OrientedLayout {
 
     @Override
     protected boolean measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull centerDataIndex = %d", centerDataIndex);
         // no preferred position, just feed all data starting from beginning.
         if (centerDataIndex == -1) {
             return super.measureUntilFull(0, measuredChildren);
@@ -430,7 +431,7 @@ public class LinearLayout extends OrientedLayout {
 
                 inBounds = !isClippingEnabled() || inViewPort(i);
 
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull<Linear>: measureChild view = %s " +
                                 "isBounds = %b index = %d isViewPortEnabled() = %b layout = %s",
                         view == null ? "null" : view.getName(), inBounds, i, isClippingEnabled(), this);
 
@@ -611,6 +612,7 @@ public class LinearLayout extends OrientedLayout {
                         endDataOffset > layoutOffset &&
                         startDataOffset < -layoutOffset;
                 startDataOffset = endDataOffset;
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "computeOffset [%d] = %f" , id, cache.getDataOffset(id));
             }
         }
 

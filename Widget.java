@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.vr.gvrf_launcher.FPSCounter;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
@@ -2008,7 +2009,14 @@ public class Widget  implements Layout.WidgetContainer {
      *            {@link Runnable} to execute on the GL thread.
      */
     protected final void runOnGlThread(final Runnable r) {
-        getGVRContext().runOnGlThread(r);
+
+        getGVRContext().runOnGlThread(new Runnable() {
+            public void run() {
+                FPSCounter.timeCheck("runOnGlThread <START>: " + r);
+                r.run();
+                FPSCounter.timeCheck("runOnGlThread <END>: " + r);
+            }
+        });
     }
 
     protected final GVRContext getGVRContext() {
@@ -2157,10 +2165,14 @@ public class Widget  implements Layout.WidgetContainer {
      * children.
      * @return true if the widget has been relaidout, otherwise - false
      */
+    protected long time;
+
     protected boolean onLayout() {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout() called (%s) mChanged = %b ", getName(), mChanged);
         boolean changed = isChanged();
         boolean runLayout = false;
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout() called (%s) mChanged = %b ", getName(), changed);
+
+        FPSCounter.timeCheck("onLayout <START>: " + this + "<" + getName() + "> changed = " + changed);
 
         float oldWidth = getLayoutWidth();
         float oldHeight = getLayoutHeight();
@@ -2192,11 +2204,14 @@ public class Widget  implements Layout.WidgetContainer {
                     !Utility.equal(oldDepth, newDepth);
 
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout changed %s " +
-                    "old = [%f, %f, %f] new [%f, %f, %f]!",
-                    getName(), oldWidth, oldHeight, oldDepth, newWidth, newHeight, newDepth);
+                            "old = [%f, %f, %f] new [%f, %f, %f]!",
+
+                  getName(), oldWidth, oldHeight, oldDepth, newWidth, newHeight, newDepth);
         } else {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout is not changed %s!", getName());
         }
+
+        FPSCounter.timeCheck("onLayout <END>: " + this + "<" + getName() + "> changed = " + changed);
         return changed;
     }
 

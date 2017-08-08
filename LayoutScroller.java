@@ -47,6 +47,7 @@ public class LayoutScroller {
 	    boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset);
 	    void registerDataSetObserver(final DataSetObserver observer);
         void unregisterDataSetObserver(final DataSetObserver observer);
+        int getCurrentPosition();
 	}
 
 	protected DataSetObserver mObserver = new DataSetObserver() {
@@ -76,12 +77,12 @@ public class LayoutScroller {
 	};
 
 	public LayoutScroller(final Context context, final ScrollableList scrollable) {
-        this(context, scrollable, false, 1, 1, 0);
+        this(context, scrollable, false, 0, 1, scrollable.getCurrentPosition());
     }
 
 	public LayoutScroller(final Context context, final ScrollableList scrollable,
 	        final boolean scrollOver) {
-		this(context, scrollable, scrollOver, 1, 1, 0);
+		this(context, scrollable, scrollOver, 0, 1, scrollable.getCurrentPosition());
 	}
 
 	public LayoutScroller(final Context context, final ScrollableList scrollable,
