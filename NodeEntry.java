@@ -1,11 +1,8 @@
 package com.samsung.smcl.vr.widgets;
 
 import com.samsung.smcl.utility.Log;
-import com.samsung.smcl.utility.RuntimeAssertion;
 
 import org.gearvrf.GVRSceneObject;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,16 +89,7 @@ public class NodeEntry {
         } else {
             keyName = key.name();
         }
-        return getProperty(keyName);
-    }
-
-    public JSONObject toJSON() {
-        try {
-            return new JSONObject(properties).putOpt("name", getName());
-        } catch (JSONException e) {
-            e.printStackTrace();
-            throw new RuntimeAssertion("NodeEntry.toJSON() failed for '%s'", this);
-        }
+        return properties == null ? null : properties.get(keyName);
     }
 
     @Override

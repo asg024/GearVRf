@@ -3,7 +3,6 @@ package com.samsung.smcl.vr.widgets;
 import java.io.File;
 import java.util.Iterator;
 
-import org.joml.Vector3f;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,7 +12,6 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.UnmodifiableJSONArray;
@@ -42,31 +40,6 @@ abstract public class JSONHelpers {
         return json.opt(e.name());
     }
 
-    public static final <P extends Enum<P>, R> R get(final JSONObject json, P e, Class<R> r)
-            throws JSONException {
-        return r.cast(json.get(e.name()));
-    }
-
-    public static final <P extends Enum<P>, R> R opt(final JSONObject json, P e, Class<R> r) {
-        Object o = opt(json, e);
-        if (o != null) {
-            return r.cast(o);
-        }
-        return null;
-    }
-
-    public static final <P extends Enum<P>> JSONObject put(JSONObject json, P e, Object value)
-            throws JSONException {
-        return json.put(e.name(), value);
-    }
-
-    public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, Object value) {
-        if (json != null && !has(json, e)) {
-            safePut(json, e, value);
-        }
-        return json;
-    }
-
     public static <P extends Enum<P>> boolean getBoolean(final JSONObject json,
             P e) throws JSONException {
         return json.getBoolean(e.name());
@@ -82,18 +55,6 @@ abstract public class JSONHelpers {
         return json.optBoolean(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, boolean value)
-            throws JSONException {
-        return json.put(e.name(), value);
-    }
-
-    public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, boolean value) {
-        if (!has(json, e)) {
-            safePut(json, e, value);
-        }
-        return json;
-    }
-
     public static <P extends Enum<P>> double getDouble(final JSONObject json,
             P e) throws JSONException {
         return json.getDouble(e.name());
@@ -107,18 +68,6 @@ abstract public class JSONHelpers {
     public static <P extends Enum<P>> double optDouble(final JSONObject json,
             P e, double fallback) {
         return json.optDouble(e.name(), fallback);
-    }
-
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, double value)
-            throws JSONException {
-        return json.put(e.name(), value);
-    }
-
-    public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, double value) {
-        if (!has(json, e)) {
-            safePut(json, e, value);
-        }
-        return json;
     }
 
     public static <P extends Enum<P>> float getFloat(final JSONObject json,
@@ -150,18 +99,6 @@ abstract public class JSONHelpers {
         return json.optInt(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, int value)
-            throws JSONException {
-        return json.put(e.name(), value);
-    }
-
-    public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, int value) {
-        if (!has(json, e)) {
-            safePut(json, e, value);
-        }
-        return json;
-    }
-
     public static <P extends Enum<P>> long getLong(final JSONObject json, P e)
             throws JSONException {
         return json.getLong(e.name());
@@ -174,18 +111,6 @@ abstract public class JSONHelpers {
     public static <P extends Enum<P>> long optLong(final JSONObject json, P e,
             long fallback) {
         return json.optLong(e.name(), fallback);
-    }
-
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, long value)
-            throws JSONException {
-        return json.put(e.name(), value);
-    }
-
-    public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, long value) {
-        if (!has(json, e)) {
-            safePut(json, e, value);
-        }
-        return json;
     }
 
     public static <P extends Enum<P>> String getString(final JSONObject json,
@@ -211,40 +136,16 @@ abstract public class JSONHelpers {
         return json.optString(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, String value)
-            throws JSONException {
-        return json.put(e.name(), value);
-    }
-
     public static <P extends Enum<P>, R extends Enum<R>> R getEnum(
             final JSONObject json, P e, Class<R> r) throws JSONException {
-        return getEnum(json, e, r, false);
-    }
-
-    @NonNull
-    public static <P extends Enum<P>, R extends Enum<R>> R getEnum(
-            JSONObject json, P e, Class<R> r, boolean uppercase) throws JSONException {
-        String value = json.getString(e.name());
-        if (uppercase) {
-            value = value.toUpperCase();
-        }
-        return Enum.valueOf(r, value);
+        return Enum.valueOf(r, json.getString(e.name()));
     }
 
     public static <P extends Enum<P>, R extends Enum<R>> R optEnum(
             final JSONObject json, P e, Class<R> r) {
-        return optEnum(json, e, r, false);
-    }
-
-    @Nullable
-    public static <P extends Enum<P>, R extends Enum<R>> R optEnum(
-            JSONObject json, P e, Class<R> r, boolean uppercase) {
-        String value = json.optString(e.name());
+        final String value = json.optString(e.name());
         if (value == null) {
             return null;
-        }
-        if (uppercase) {
-            value = value.toUpperCase();
         }
         return Enum.valueOf(r, value);
     }
@@ -252,46 +153,8 @@ abstract public class JSONHelpers {
     @SuppressWarnings("unchecked")
     public static <P extends Enum<P>, R extends Enum<R>> R optEnum(
             final JSONObject json, P e, R fallback) {
-        return optEnum(json, e, fallback, false);
-    }
-
-    public static <P extends Enum<P>, R extends Enum<R>> R optEnum(
-            JSONObject json, P e, R fallback, boolean uppercase) {
-        String value = json.optString(e.name(), fallback.name());
-        if (uppercase) {
-            value = value.toUpperCase();
-        }
+        final String value = json.optString(e.name(), fallback.name());
         return (R) Enum.valueOf(fallback.getClass(), value);
-    }
-
-    public static <P extends Enum<P>, V extends Enum<V>> JSONObject put(JSONObject json, P e,
-                                                                        V value) throws JSONException {
-        return put(json, e, value, false);
-    }
-
-    public static <P extends Enum<P>, V extends Enum<V>> JSONObject put(JSONObject json, P e,
-                                                                        V value, boolean lowerCase) throws JSONException {
-        String strVal = value.name();
-        if (lowerCase) {
-            strVal = strVal.toLowerCase();
-        }
-        return json.put(e.name(), strVal);
-    }
-
-    public static <P extends Enum<P>, V extends Enum<V>> JSONObject putDefault(
-            final JSONObject json, P e, V value) {
-        if (!has(json, e)) {
-            safePut(json, e, value);
-        }
-        return json;
-    }
-
-    public static <P extends Enum<P>, V extends Enum<V>> JSONObject putDefault(
-            final JSONObject json, P e, V value, boolean lowerCase) {
-        if (!has(json, e, lowerCase)) {
-            safePut(json, e, value, lowerCase);
-        }
-        return json;
     }
 
     public static <P extends Enum<P>> JSONObject getJSONObject(
@@ -472,16 +335,6 @@ abstract public class JSONHelpers {
         return p;
     }
 
-    public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, PointF defPoint) {
-        if (json != null && !has(json, e)) {
-            JSONObject defJson = new JSONObject();
-            safePut(defJson, "x", defPoint.x);
-            safePut(defJson, "y", defPoint.y);
-            safePut(json, e, defJson);
-        }
-        return json;
-    }
-
     /**
      * Checks whether the value mapped by enum exists, is a {@link JSONObject}, has at least one
      * field named either "x" or "y", and that if either field is present, it is a number.  If at
@@ -513,76 +366,8 @@ abstract public class JSONHelpers {
         return true;
     }
 
-    public static <P extends Enum<P>> Vector3f optVector3f(JSONObject json, P e) {
-        return optVector3f(json, e, null);
-    }
-
-    public static <P extends Enum<P>> Vector3f optVector3f(JSONObject json, P e, Vector3f fallback) {
-        JSONObject value = optJSONObject(json, e);
-
-        return asVector3f(value, fallback);
-    }
-
-    public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, Vector3f defVector) {
-        if (json != null && !has(json, e)) {
-            JSONObject defJson = new JSONObject();
-            safePut(defJson, "x", defVector.x);
-            safePut(defJson, "y", defVector.y);
-            safePut(defJson, "z", defVector.z);
-            safePut(json, e, defJson);
-        }
-        return json;
-    }
-
-    public static Vector3f asVector3f(JSONObject value, Vector3f fallback) {
-        Vector3f v = fallback;
-        if (value != null && isVector3f(value)) {
-            float x = (float) value.optDouble("x", fallback != null ? fallback.x : Float.NaN);
-            float y = (float) value.optDouble("y", fallback != null ? fallback.y : Float.NaN);
-            float z = (float) value.optDouble("z", fallback != null ? fallback.z : Float.NaN);
-
-            v = new Vector3f(x, y, z);
-        }
-        return v;
-    }
-
-    public static <P extends Enum<P>> Vector3f optVector3f(final JSONObject json, P e,
-                                                           boolean emptyForNull) {
-        Vector3f v = optVector3f(json, e);
-        if (v == null && emptyForNull) {
-            v = new Vector3f();
-        }
-        return v;
-    }
-    public static <P extends Enum<P>> boolean hasVector3f(final JSONObject json, P e) {
-        Object o = opt(json, e);
-        return o != null && o != JSONObject.NULL && o instanceof JSONObject &&
-                isVector3f((JSONObject) o);
-    }
-
-    public static boolean isVector3f(JSONObject jo) {
-        Object x = jo.opt("x");
-        Object y = jo.opt("y");
-        Object z = jo.opt("z");
-        Log.d(TAG, "isVector3f(): x: %s, y: %s, z: %s", x, y, z);
-        if (x == null && y == null && z == null) return false;
-        if (x != null && !(x instanceof Number)) return false;
-        if (y != null && !(y instanceof Number)) return false;
-        if (z != null && !(z instanceof Number)) return false;
-
-        return true;
-    }
-
     public static <P extends Enum<P>> boolean has(final JSONObject json, P e) {
-        return has(json, e, false);
-    }
-
-    private static <P extends Enum<P>> boolean has(JSONObject json, P e, boolean lowerCase) {
-        String name = e.name();
-        if (lowerCase) {
-            name = name.toLowerCase();
-        }
-        return json.has(name);
+        return json.has(e.name());
     }
 
     /**
@@ -595,12 +380,8 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code Boolean};
      *         {@code false} otherwise
      */
-    public static boolean hasBoolean(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Boolean.class);
-    }
-
-    public static <P extends Enum<P>> boolean hasBoolean(final JSONObject json, P e) {
-        return hasBoolean(json, e.name());
+    public static boolean isBoolean(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, Boolean.class);
     }
 
     /**
@@ -617,10 +398,10 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code Boolean};
      *         {@code false} otherwise
      */
-    public static boolean hasBoolean(final JSONObject json, final String key,
-                                     final boolean coerce) {
+    public static boolean isBoolean(final JSONObject json, final String key,
+            final boolean coerce) {
         if (!coerce) {
-            return hasBoolean(json, key);
+            return isBoolean(json, key);
         }
 
         // This could be trivially implemented as
@@ -655,23 +436,15 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code Double};
      *         {@code false} otherwise
      */
-    public static boolean hasDouble(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Double.class);
-    }
-
-    public static <P extends Enum<P>> boolean hasDouble(final JSONObject json, P e) {
-        return hasDouble(json, e.name());
+    public static boolean isDouble(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, Double.class);
     }
 
     /**
-     * Alias for {@link #hasDouble(JSONObject, String)}.
+     * Alias for {@link #isDouble(JSONObject, String)}.
      */
-    public static boolean hasFloat(final JSONObject json, final String key) {
-        return hasDouble(json, key);
-    }
-
-    public static <P extends Enum<P>> boolean hasFloat(final JSONObject json, P e) {
-        return hasDouble(json, e);
+    public static boolean isFloat(final JSONObject json, final String key) {
+        return isDouble(json, key);
     }
 
     /**
@@ -684,12 +457,8 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is an {@code Integer};
      *         {@code false} otherwise
      */
-    public static boolean hasInt(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Integer.class);
-    }
-
-    public static <P extends Enum<P>> boolean hasInt(final JSONObject json, P e) {
-        return hasInt(json, e.name());
+    public static boolean isInt(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, Integer.class);
     }
 
     /**
@@ -702,12 +471,8 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code Long};
      *         {@code false} otherwise
      */
-    public static boolean hasLong(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Long.class);
-    }
-
-    public static <P extends Enum<P>> boolean hasLong(final JSONObject json, P e) {
-        return hasLong(json, e.name());
+    public static boolean isLong(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, Long.class);
     }
 
     /**
@@ -720,12 +485,8 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code Number};
      *         {@code false} otherwise
      */
-    public static boolean hasNumber(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Number.class);
-    }
-
-    public static <P extends Enum<P>> boolean hasNumber(final JSONObject json, P e) {
-        return hasNumber(json, e.name());
+    public static boolean isNumber(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, Number.class);
     }
 
     /**
@@ -742,10 +503,10 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code Number};
      *         {@code false} otherwise
      */
-    public static boolean hasNumber(final JSONObject json, final String key,
-                                    final boolean coerce) {
+    public static boolean isNumber(final JSONObject json, final String key,
+            final boolean coerce) {
         if (!coerce) {
-            return hasNumber(json, key);
+            return isNumber(json, key);
         }
         final Object o = json.opt(key);
         if (o == null || o == JSONObject.NULL) {
@@ -764,7 +525,7 @@ abstract public class JSONHelpers {
                 return true;
             } catch (NumberFormatException e) {
                 Log.e(TAG, e,
-                      "hasNumber(): failed to coerce value at '%s' (%s)", key, o);
+                      "isNumber(): failed to coerce value at '%s' (%s)", key, o);
             }
         }
         return false;
@@ -781,12 +542,12 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code String};
      *         {@code false} otherwise
      */
-    public static boolean hasString(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, String.class);
+    public static boolean isString(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, String.class);
     }
 
-    public static <P extends Enum<P>> boolean hasString(final JSONObject json, P e) {
-        return hasString(json, e.name());
+    public static <P extends Enum<P>> boolean isString(final JSONObject json, P e) {
+        return isInstanceOf(json, e.toString(), String.class);
     }
 
     /**
@@ -802,9 +563,9 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is an {@code Enum};
      *         {@code false} otherwise
      */
-    public static <P extends Enum<P>> boolean hasEnum(final JSONObject json,
-                                                      final String key, final Class<? extends Enum> enumType) {
-        if (hasInstanceOf(json, key, enumType)) {
+    public static <P extends Enum<P>> boolean isEnum(final JSONObject json,
+            final String key, final Class<P> enumType) {
+        if (isInstanceOf(json, key, enumType)) {
             return true;
         }
 
@@ -820,16 +581,11 @@ abstract public class JSONHelpers {
                 return true;
             } catch (IllegalArgumentException e) {
                 Log.e(TAG, e,
-                      "hasEnum(): failed to coerce value at '%s' to %s (%s)",
+                      "isEnum(): failed to coerce value at '%s' to %s (%s)",
                       key, enumType.getSimpleName(), o);
             }
         }
         return false;
-    }
-
-    public static <P extends Enum<P>> boolean hasEnum(final JSONObject json, P e,
-                                                      Class<? extends Enum> enumType) {
-        return hasEnum(json, e.name(), enumType);
     }
 
     /**
@@ -843,12 +599,8 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code JSONArray};
      *         {@code false} otherwise
      */
-    public static boolean hasJSONArray(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, JSONArray.class);
-    }
-
-    public static <P extends Enum<P>> boolean hasJSONArray(final JSONObject json, P e) {
-        return hasJSONArray(json, e.name());
+    public static boolean isJSONArray(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, JSONArray.class);
     }
 
     /**
@@ -862,12 +614,8 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is a {@code JSONObject};
      *         {@code false} otherwise
      */
-    public static boolean hasJSONObject(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, JSONObject.class);
-    }
-
-    public static <P extends Enum<P>> boolean hasJSONObject(final JSONObject json, P e) {
-        return hasJSONObject(json, e.name());
+    public static boolean isJSONObject(final JSONObject json, final String key) {
+        return isInstanceOf(json, key, JSONObject.class);
     }
 
     /**
@@ -883,17 +631,9 @@ abstract public class JSONHelpers {
      * @return {@code True} if the item exists and is of the specified
      *         {@code type}; {@code false} otherwise
      */
-    public static boolean hasInstanceOf(final JSONObject json, final String key,
-                                        Class<?> type) {
+    public static boolean isInstanceOf(final JSONObject json, final String key,
+            Class<?> type) {
         Object o = json.opt(key);
-        return isInstanceOf(o, type);
-    }
-
-    public static <P extends Enum<P>> boolean hasInstanceOf(final JSONObject json, P e, Class<?> type) {
-        return hasInstanceOf(json, e.name(), type);
-    }
-
-    public static boolean isInstanceOf(Object o, Class<?> type) {
         return o != null && o != JSONObject.NULL && type.isInstance(o);
     }
 
@@ -1388,18 +1128,6 @@ abstract public class JSONHelpers {
         } catch (JSONException e) {
             throw new RuntimeException("This should not be able to happen!", e);
         }
-    }
-
-    private static <P extends Enum<P>> void safePut(JSONObject dest, P e, Object value) {
-        safePut(dest, e, value, false);
-    }
-
-    private static <P extends Enum<P>> void safePut(JSONObject dest, P e, Object value, boolean lowerCase) {
-        String name = e.name();
-        if (lowerCase) {
-            name = name.toLowerCase();
-        }
-        safePut(dest, name, value);
     }
 
     private static final String TAG = JSONHelpers.class.getSimpleName();

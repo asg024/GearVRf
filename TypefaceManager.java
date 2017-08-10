@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.isString;
 
 public class TypefaceManager {
 
@@ -64,7 +65,7 @@ public class TypefaceManager {
     public Typeface getTypeface(JSONObject json) {
         try {
             final Typeface tf;
-            if (hasString(json, Attributes.resource_type)) {
+            if (isString(json, Attributes.resource_type)) {
                 Log.d(TAG, "getTypeface(): getting resource typeface");
                 tf = getTypefaceResource(json);
                 Log.d(TAG, "getTypeface(): got typeface: %s", tf);
