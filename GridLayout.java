@@ -551,9 +551,13 @@ public class GridLayout extends OrientedLayout {
             final Axis axis, final Direction direction) {
 
         float totalSize = getOrientationLayout().preMeasureNext(measuredChildren, axis, direction);
-        for (int id: getOrientationLayout().mMeasuredChildren) {
-            getNonOrientationLayout().measureChild(id);
-            super.measureChild(id);
+        if (mContainer != null) {
+            Layout nonOrientedLayout = getNonOrientationLayout();
+            for (Widget widget : measuredChildren) {
+                int id = mContainer.getDataIndex(widget);
+                nonOrientedLayout.measureChild(id);
+                super.measureChild(id);
+            }
         }
         return totalSize;
     }
