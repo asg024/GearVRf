@@ -297,17 +297,15 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         public boolean onFocus(final Widget widget, final boolean focused) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget, focused);
             Widget parent = widget.getParent();
-            boolean ret = false;
             if (parent instanceof ListItemHostWidget) {
                 int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
                 for (OnItemFocusListener listener : mItemFocusListeners) {
                     listener.onFocus(ListWidget.this, focused, dataIndex);
                 }
-                ret = true;
             } else {
                 Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Focused widget is not a list item!");
             }
-            return ret;
+            return false;
         }
 
         @Override
