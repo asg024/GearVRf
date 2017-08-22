@@ -279,7 +279,7 @@ public class GridLayout extends OrientedLayout {
         protected float getChildSize(final int dataIndex, Axis axis) {
             int chunkSize = mChunkBreaker != null ? mChunkBreaker.getChunkSize() : 0;
             float size =  mSize > 0 ?
-                            (mClippingEnabled ?
+                            (mViewPort.isClippingEnabled(axis) ?
                                   Math.min(mSize, getViewPortSize(axis)/(
                                           chunkSize > 0 ? chunkSize : 1)) :
                                   mSize) :
@@ -298,6 +298,7 @@ public class GridLayout extends OrientedLayout {
 
         @Override
         public void shiftBy(final float offset, final Axis axis) {
+            super.shiftBy(offset, axis);
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "shiftBy offset = %f axis = %s layout = %s", offset, axis, this);
 
             if (!Float.isNaN(offset) && axis == getOrientationAxis()) {
@@ -668,6 +669,8 @@ public class GridLayout extends OrientedLayout {
 
     private boolean init(Orientation orientation) {
         boolean ret = false;
+        boolean clipping = mViewPort != null ? mViewPort.isClippingEnabled() : false;
+
         switch(orientation) {
             case VERTICAL:
                 if (mColumnCount == 0) {
@@ -676,8 +679,8 @@ public class GridLayout extends OrientedLayout {
                 } else {
                     mRowLayout.setChunkBreaker(new ChunkBreakerBy(mColumnCount));
                     mColumnLayout.setChunkBreaker(new ChunkBreakerTo(mColumnCount));
-                    mRowLayout.enableClipping(mClippingEnabled);
-                    mColumnLayout.enableClipping(mClippingEnabled);
+                    mRowLayout.enableClipping(clipping);
+                    mColumnLayout.enableClipping(clipping);
 
                     mRowLayout.forcePostMeasurement(true);
                     mColumnLayout.forcePostMeasurement(false);
@@ -692,8 +695,8 @@ public class GridLayout extends OrientedLayout {
                 } else {
                     mRowLayout.setChunkBreaker(new ChunkBreakerTo(mRowCount));
                     mColumnLayout.setChunkBreaker(new ChunkBreakerBy(mRowCount));
-                    mRowLayout.enableClipping(mClippingEnabled);
-                    mColumnLayout.enableClipping(mClippingEnabled);
+                    mRowLayout.enableClipping(clipping);
+                    mColumnLayout.enableClipping(clipping);
 
                     mRowLayout.forcePostMeasurement(false);
                     mColumnLayout.forcePostMeasurement(true);

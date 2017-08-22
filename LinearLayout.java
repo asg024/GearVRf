@@ -402,7 +402,7 @@ public class LinearLayout extends OrientedLayout {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull centerDataIndex = %d", centerDataIndex);
         // no preferred position, just feed all data starting from beginning.
         if (centerDataIndex == -1) {
-            return super.measureUntilFull(0, measuredChildren);
+            return super.measureUntilFull(centerDataIndex, measuredChildren);
         }
 
         boolean inBounds = true;
@@ -533,7 +533,8 @@ public class LinearLayout extends OrientedLayout {
         }
 
         if (mGravity == Gravity.FILL) {
-            if (mClippingEnabled && cache.getTotalSize() >= getViewPortSize(getOrientationAxis())) {
+            if (mViewPort.isClippingEnabled(getOrientationAxis()) &&
+                    cache.getTotalSize() >= getViewPortSize(getOrientationAxis())) {
                 // reset padding for all items if size of the data exceeds the view port
                 cache.uniformPadding(0);
             } else {
@@ -546,7 +547,8 @@ public class LinearLayout extends OrientedLayout {
 
     @Override
     public void shiftBy(final float offset, final Axis axis) {
-        if (!Float.isNaN(offset) && axis == getOrientationAxis()) {
+        super.shiftBy(offset, axis);
+        if (mCache != null && !Float.isNaN(offset) && axis == getOrientationAxis()) {
             mCache.shiftBy(offset);
         }
     }

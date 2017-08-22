@@ -383,7 +383,14 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     @Override
     public boolean applyLayout(final Layout layout) {
-        boolean ret = mContent.applyLayout(layout);
+        boolean ret = layout == getDefaultLayout() ?
+                super.applyLayout(layout) :
+                mContent.applyLayout(layout);
+
+        mContent.setViewPortWidth(getViewPortWidth());
+        mContent.setViewPortHeight(getViewPortHeight());
+        mContent.setViewPortDepth(getViewPortDepth());
+
         if (ret && mAdapter != null) {
             onChanged();
         }
@@ -481,7 +488,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         ContentWidget(GVRContext gvrContext) {
             super(gvrContext, 0, 0);
         }
-
         @Override
         protected boolean measureLayout(Layout layout) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] measure layout = %s", this, layout);
@@ -491,11 +497,16 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             boolean relaidout = layout.measureUntilFull(centerPosition, measuredChildren);
             centerPosition = layout.getCenterChild();
 
+            for (Widget next: measuredChildren) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout<next>: [%s] %s", next.getName(), next);
+            }
+
             List<ListItemHostWidget> views = getAllHosts();
             int count = 0;
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d]", measuredChildren.size(), views.size());
             for (ListItemHostWidget host : views) {
                 if (!measuredChildren.contains(host)) {
-                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] recycling", host.getName());
+                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] %s recycling", host.getName(), host);
                     recycle(host);
                 } else {
                     count++;
@@ -676,7 +687,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         private boolean mScrolling = false;
 
         private class ScrollAnimation extends Animation {
-            private static final float ANIMATION_SPEED = 15f; // 15 unit per sec
+            private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
             private final float mShiftBy;
             private float mShiftedBy;
             private final Layout mLayout;
@@ -695,6 +706,20 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 float shifted  = mShiftedBy;
                 mShiftedBy = ratio * mShiftBy;
                 mLayout.shiftBy(mShiftedBy - shifted, mAxis);
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "animate: target <%s> shift = %f axis = %s", target.getName(), mShiftedBy, mAxis);
+
+                switch(mAxis) {
+                    case X:
+                        target.translate(mShiftedBy - shifted, 0, 0);
+                        break;
+                    case Y:
+                        target.translate(0, -(mShiftedBy - shifted), 0);
+                        break;
+                    case Z:
+                        target.translate(0, 0, -(mShiftedBy - shifted));
+                        break;
+                }
+
             }
         }
 
@@ -1466,43 +1491,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     @Override
-    public void setViewPortWidth(float viewPortWidth) {
-        mContent.setViewPortWidth(viewPortWidth);
-    }
-
-    @Override
-    public void setViewPortHeight(float viewPortHeight) {
-        mContent.setViewPortHeight(viewPortHeight);
-    }
-
-    @Override
-    public void setViewPortDepth(float viewPortDepth) {
-        mContent.setViewPortDepth(viewPortDepth);
-    }
-
-    @Override
-    public float getViewPortWidth() {
-        return mContent.getViewPortWidth();
-    }
-
-    @Override
-    public float getViewPortHeight() {
-        return mContent.getViewPortHeight();
-    }
-
-    @Override
-    public float getViewPortDepth() {
-        return mContent.getViewPortDepth();
-    }
-
-    @Override
     protected boolean inViewPort(final int dataIndex) {
         return mContent.inViewPort(dataIndex);
-    }
-
-    @Override
-    public float getLayoutSize(final Layout.Axis axis) {
-        return mContent.getLayoutSize(axis);
     }
 
     private DataSetObserver mInternalObserver = new DataSetObserver() {

@@ -20,10 +20,6 @@ public class AbsoluteLayout extends Layout {
     }
 
     @Override
-    protected void shiftBy(final float offset, final Axis axis) {
-    }
-
-    @Override
     protected boolean postMeasurement() {
         return true;
     }

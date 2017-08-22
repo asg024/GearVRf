@@ -3236,8 +3236,10 @@ public class Widget  implements Layout.WidgetContainer {
      * @return An instance derived from {@link Layout} or {@code null}.
      */
     public Layout getDefaultLayout() {
-        return new AbsoluteLayout();
+        return mDefaultLayout;
     }
+
+    private Layout mDefaultLayout = new AbsoluteLayout();
 
     /**
      * Apply the specified {@link Layout}. Optionally, a call to {@link #requestLayout()} can be
@@ -3249,9 +3251,15 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public boolean applyLayout(Layout layout) {
         boolean applied = false;
-        if (layout != null && isValidLayout(layout) && mLayouts.add(layout)) {
-            layout.onLayoutApplied(this, mViewPort);
-            applied = true;
+        if (layout != null && isValidLayout(layout)) {
+            Layout defaultLayout  = getDefaultLayout();
+            if (layout != defaultLayout) {
+                mLayouts.remove(defaultLayout);
+            }
+            if(mLayouts.add(layout)) {
+                layout.onLayoutApplied(this, mViewPort);
+                applied = true;
+            }
         }
         return applied;
     }
