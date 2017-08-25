@@ -381,6 +381,12 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         mObservers.remove(observer);
     }
 
+
+    @Override
+    public float getLayoutSize(final Layout.Axis axis) {
+        return mContent.getLayoutSize(axis);
+    }
+
     @Override
     public boolean applyLayout(final Layout layout) {
         boolean ret = layout == getDefaultLayout() ?
