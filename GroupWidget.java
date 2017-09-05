@@ -1,9 +1,12 @@
 package com.samsung.smcl.vr.widgets;
 
+import android.support.annotation.NonNull;
+
 import java.util.List;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
+import org.json.JSONObject;
 
 import com.samsung.smcl.utility.Log;
 
@@ -41,6 +44,21 @@ public class GroupWidget extends Widget {
      */
     public GroupWidget(GVRContext context, float width, float height) {
         super(context, width, height);
+    }
+
+    public GroupWidget(GVRContext context, @NonNull JSONObject properties) {
+        super(context, properties);
+    }
+
+    /**
+     * Construct a {@link GroupWidget} whose initial properties will be entirely determined by
+     * metadata.
+     *
+     * @param context
+     *            The current {@link GVRContext}.
+     */
+    protected GroupWidget(GVRContext context) {
+        super(context);
     }
 
     public boolean addOnHierarchyChangedListener(OnHierarchyChangedListener listener) {

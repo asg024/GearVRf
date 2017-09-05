@@ -198,6 +198,16 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
+     * Construct a {@link Widget} whose initial properties will be entirely determined by metadata.
+     *
+     * @param context
+     *            The current {@link GVRContext}.
+     */
+    protected Widget(final GVRContext context) {
+        this(context, new JSONObject(), false);
+    }
+
+    /**
      * Construct a wrapper for an existing {@link GVRSceneObject}.
      *
      * @param context
@@ -2681,16 +2691,16 @@ public class Widget  implements Layout.WidgetContainer {
         initMetadata(properties);
 
         mContext = context;
-        mSceneObject = getSceneObjectProperty(context, properties);
-
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG,
-                "Widget(context, properties): %s (%s) width = %f height = %f depth = %f",
-                getName(), mSceneObject.getName(), getWidth(), getHeight(), getDepth());
-
-        mTransformCache = new TransformCache(getTransform());
-
         try {
             final JSONObject metadata = getObjectMetadata();
+            mSceneObject = getSceneObjectProperty(context, metadata);
+
+	        Log.v(Log.SUBSYSTEM.WIDGET, TAG,
+    	            "Widget(context, properties): %s (%s) width = %f height = %f depth = %f",
+    	            getName(), mSceneObject.getName(), getWidth(), getHeight(), getDepth());
+
+	        mTransformCache = new TransformCache(getTransform());
+
             Log.d(Log.SUBSYSTEM.WIDGET, TAG,
                     "Widget(context, properties): setting up metadata for %s: %s",
                     getName(), metadata);
@@ -2722,6 +2732,8 @@ public class Widget  implements Layout.WidgetContainer {
                 sceneObject = new GVRSceneObject(context, 0, 0);
                 setupDefaultMaterial(context, sceneObject);
             }
+        } else {
+            Log.d(TAG, "getSceneObjectProperty(%s): got a scene object: %s", getName(), sceneObject);
         }
         // TODO: Add support for specifying mesh
         // TODO: Add support for specifying a primitive (quad, rounded_quad, sphere, cylinder, etc.)
@@ -3132,14 +3144,15 @@ public class Widget  implements Layout.WidgetContainer {
         } else {
             mMetadata = merge(properties, objectMetadata);
         }
+
+        // We do this a second time because the properties received by initMetadata() may have been
+        // overwritten if they were pre-applied
+        setName(optString(mMetadata, Properties.name, getName()));
+
         Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): merged metadata: %s", getName(), mMetadata);
     }
 
     private void setupAttributes(JSONObject metaData) {
-        // We do this a second time because the properties received by initMetadata() may have been
-        // overwritten if they were pre-applied
-        setName(optString(metaData, Properties.name, getName()));
-
         final boolean hasRenderData = getRenderData() != null;
         mIsTouchable = hasRenderData && optBoolean(metaData, Properties.touchable,
                 mIsTouchable);
