@@ -1234,10 +1234,12 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         if (dataIndex < 0 || dataIndex >= mContent.size()) {
             throw new IndexOutOfBoundsException("Selection index [" + dataIndex + "] is out of bounds!");
         }
+
+        updateSelectedItemsList(dataIndex, select);
+
         ListItemHostWidget hostWidget = getHostView(dataIndex, false);
         if (hostWidget != null) {
             hostWidget.setSelected(select);
-            updateSelectedItemsList(dataIndex, select);
             hostWidget.requestLayout();
             return true;
         }
@@ -1261,7 +1263,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return updated;
     }
 
-    protected boolean updateSelectedItemsList(int dataIndex, boolean select) {
+    public boolean updateSelectedItemsList(int dataIndex, boolean select) {
         boolean done = false;
         boolean contains =  isSelected(dataIndex);
         if (select) {
