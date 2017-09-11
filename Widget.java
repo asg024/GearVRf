@@ -209,13 +209,9 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private static JSONObject packageSceneObject(GVRSceneObject sceneObject) {
-        try {
-            final JSONObject json = new JSONObject();
-            put(json, Properties.scene_object, sceneObject);
-            return json;
-        } catch (JSONException e) {
-            throw new RuntimeException(e.getLocalizedMessage(), e);
-        }
+        final JSONObject json = new JSONObject();
+        put(json, Properties.scene_object, sceneObject);
+        return json;
     }
 
     /**

@@ -55,9 +55,12 @@ abstract public class JSONHelpers {
         return null;
     }
 
-    public static final <P extends Enum<P>> JSONObject put(JSONObject json, P e, Object value)
-            throws JSONException {
-        return json.put(e.name(), value);
+    public static final <P extends Enum<P>> JSONObject put(JSONObject json, P e, Object value) {
+        try {
+            return json.put(e.name(), value);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, Object value) {
