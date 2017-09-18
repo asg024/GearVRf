@@ -3248,7 +3248,7 @@ public class Widget  implements Layout.WidgetContainer {
         }
 
         Log.d(TAG, "updateState(): %s for '%s'", state, getName());
-        if (!mLevelInfo.isEmpty()) {
+        if (!mLevelInfo.isEmpty() && mLevel >= 0) {
             mLevelInfo.get(mLevel).setState(this, state);
         }
 
