@@ -4,10 +4,8 @@ import android.database.DataSetObserver;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.wonderwall.ui.MultiPageStack;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,8 +14,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static java.lang.Float.NaN;
 
 /**
  * The list of the items combined into the multiple pages.
@@ -55,19 +51,6 @@ public class MultiPageWidget extends ListWidget {
      */
     private final Set<Layout> mItemLayouts = new HashSet<>();
 
-    /**
-     * Construct a new {@code MultiPageWidget} instance
-     * @param context
-     * @param pageAdapter  {@link Adapter} for the  pages. {@link Adapter#getView} should provide
-     *                  {@link ListWidget}
-     * @param sceneObject
-     */
-    public MultiPageWidget(GVRContext context, final Adapter pageAdapter, GVRSceneObject sceneObject,
-            int maxVisiblePageCount) {
-        super(context, sceneObject, pageAdapter);
-        setMaxVisiblePageCount(maxVisiblePageCount);
-    }
-
 
     /**
      * Construct a new {@code MultiPageWidget} instance
@@ -80,20 +63,6 @@ public class MultiPageWidget extends ListWidget {
     public MultiPageWidget(GVRContext context, final Adapter pageAdapter,
                            float width, float height, int maxVisiblePageCount) {
         super(context, pageAdapter, width, height);
-        setMaxVisiblePageCount(maxVisiblePageCount);
-    }
-
-    /**
-     * Construct a new {@code MultiPageWidget} instance
-     * @param context
-     * @param pageAdapter  {@link Adapter} for the  pages. {@link Adapter#getView} should provide
-     *                  {@link ListWidget}
-     * @param sceneObject
-     */
-    public MultiPageWidget(final GVRContext context, final Adapter pageAdapter,
-                   final GVRSceneObject sceneObject, NodeEntry attributes, int maxVisiblePageCount)
-            throws InstantiationException {
-        super(context, sceneObject, attributes, pageAdapter);
         setMaxVisiblePageCount(maxVisiblePageCount);
     }
 

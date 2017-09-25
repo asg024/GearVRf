@@ -11,7 +11,7 @@ import com.samsung.smcl.vr.widgets.Layout.Direction;
 import com.samsung.smcl.vr.widgets.LayoutScroller.ScrollableList;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +19,11 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optFloat;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONArray;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONObject;
 
 // TODO: Add support for animation (in particular, we need to handle layout changes)
 // TODO: Scrolling (this is different from rotating, a la AppRing)
@@ -35,6 +40,8 @@ import java.util.Set;
  * - scrolling
  */
 public class ListWidget extends GroupWidget implements ScrollableList {
+
+    private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
 
     /**
      * Interface definition for a callback to be invoked when an item in this {@link ListWidget}
@@ -245,20 +252,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Construct a new {@code ListWidget} instance wrapping an existing {@link GVRSceneObject} with
-     * LinearLayout applied by default
-     *  @param gvrContext
-     *            The active {@link GVRContext}.
-     * @param sceneObj The {@code GVRSceneObject} to wrap
-     * @param adapter  {@link Adapter} associated with this layout.
-     *
-     */
-    public ListWidget(final GVRContext gvrContext, GVRSceneObject sceneObj, final Adapter adapter) {
-        super(gvrContext, sceneObj);
-        init(gvrContext, adapter);
-    }
-
-    /**
      * Construct a new {@code ListWidget} instance with  LinearLayout applied by default
      *
      * @param gvrContext
@@ -272,16 +265,21 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         init(gvrContext, adapter);
     }
 
-    public ListWidget(final GVRContext gvrContext, final GVRSceneObject sceneObject,
-                      NodeEntry attributes, final Adapter adapter)
-            throws InstantiationException {
-        super(gvrContext, sceneObject, attributes);
-        init(gvrContext, adapter);
-    }
-
     private ContentWidget mContent;
+    private float mAnimationRate;
+    private Easing mAnimationEasing;
+
+    private enum Properties { transition_animation, rate, easing }
 
     private void init(final GVRContext gvrContext, final Adapter adapter) {
+        JSONObject properties = getObjectMetadata();
+        JSONObject transitionAnimationProperties = optJSONObject(properties,
+                Properties.transition_animation, true);
+        Log.d(TAG, "init(%s): transition_animation: %s", getName(), transitionAnimationProperties);
+        mAnimationRate = optFloat(transitionAnimationProperties, Properties.rate, ANIMATION_SPEED);
+        mAnimationEasing = optEnum(transitionAnimationProperties, Properties.easing, Easing.LINEAR);
+        Log.d(TAG, "init(%s): easing: %s", getName(), mAnimationEasing);
+
         mContent = new ContentWidget(gvrContext);
         setName("Content<" + getName() + ">");
         mContent.addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
@@ -693,14 +691,13 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         private boolean mScrolling = false;
 
         private class ScrollAnimation extends Animation {
-            private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
             private final float mShiftBy;
             private float mShiftedBy;
             private final Layout mLayout;
             private final Axis mAxis;
 
             ScrollAnimation(Widget target, Layout layout, float shiftBy, Axis axis) {
-                super(target, Math.abs(shiftBy/ANIMATION_SPEED));
+                super(target, Math.abs(shiftBy/mAnimationRate));
                 mShiftBy = shiftBy;
                 mLayout = layout;
                 mAxis = axis;
@@ -844,7 +841,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             if (builder.isEmptySet()) {
                 finish(true);
             } else {
-                builder.build().track(animationTracker,
+                Animation animation = builder.build();
+                animation.setInterpolator(mAnimationEasing);
+                animation.track(animationTracker,
                         new Runnable() {
                             public void run() {
                                 FPSCounter.startCheck("ScrollingAnimation");

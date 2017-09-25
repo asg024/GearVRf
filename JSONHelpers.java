@@ -271,7 +271,8 @@ abstract public class JSONHelpers {
         if (uppercase) {
             value = value.toUpperCase();
         }
-        return (R) Enum.valueOf(fallback.getClass(), value);
+
+        return (R) Enum.valueOf(fallback.getDeclaringClass(), value);
     }
 
     public static <P extends Enum<P>, V extends Enum<V>> JSONObject put(JSONObject json, P e,
