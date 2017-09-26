@@ -195,9 +195,12 @@ abstract public class JSONHelpers {
         return json;
     }
 
-    public static <P extends Enum<P>> String getString(final JSONObject json,
-            P e) throws JSONException {
-        return json.getString(e.name());
+    public static <P extends Enum<P>> String getString(final JSONObject json, P e) {
+        try {
+            return json.getString(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     /**

@@ -15,11 +15,13 @@ import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
+import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRAssetLoader;
 import org.gearvrf.GVRBitmapTexture;
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRImportSettings;
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMaterial.GVRShaderType;
 import org.gearvrf.GVRMesh;
@@ -28,14 +30,17 @@ import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
+import org.gearvrf.scene_objects.GVRModelSceneObject;
 import org.joml.Vector3f;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -238,8 +243,7 @@ public class Widget  implements Layout.WidgetContainer {
      *            TODO
      * @throws InstantiationException
      */
-    /* package */
-    Widget(final GVRContext context, final GVRSceneObject sceneObject,
+    public Widget(final GVRContext context, final GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
         this(context, packageSceneObjectWithAttributes(sceneObject, attributes), false);
     }
@@ -274,6 +278,18 @@ public class Widget  implements Layout.WidgetContainer {
     // getDepth(),
     // mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
     // }
+
+    private static GVRModelSceneObject loadSceneObjectFromModel(GVRContext context, String modelFile) {
+        final GVRAssetLoader loader = context.getAssetLoader();
+        final EnumSet<GVRImportSettings> settings = GVRImportSettings.getRecommendedSettings();
+        try {
+            Log.d(TAG, "loadSceneObjectFromModel(): attemping to load '%s'", modelFile);
+            return loader.loadModel(modelFile, settings, true, null);
+        } catch (IOException e) {
+            Log.e(TAG, e, "loadSceneObjectFromModel(): failed to load model for Widget: %s", modelFile);
+            throw new RuntimeException("Failed to load Widget model from " + modelFile, e);
+        }
+    }
 
     public Widget(final GVRContext context, final float width, final float height) {
         this(context, makeQuad(context, width, height));
@@ -976,8 +992,12 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public void setTexture(final Future<GVRTexture> texture) {
         final GVRMaterial material = getMaterial();
-        material.setMainTexture(texture);
-        material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+        if (material != null) {
+            material.setMainTexture(texture);
+            material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+        } else {
+            Log.w(TAG, "setTexture(%s): material is null!", getName());
+        }
     }
 
     /**
@@ -2349,11 +2369,11 @@ public class Widget  implements Layout.WidgetContainer {
     /* package */
     void createChildren(final GVRContext context,
             final GVRSceneObject sceneObject) throws InstantiationException {
-        Log.d(TAG, "GroupWidget(): creating children");
+        Log.d(TAG, "createChildren(%s): creating children", getName());
         List<GVRSceneObject> children = sceneObject.getChildren();
-        Log.d(TAG, "GroupWidget(): child count: %d", children.size());
+        Log.d(TAG, "createChildren(%s): child count: %d", getName(), children.size());
         for (GVRSceneObject sceneObjectChild : children) {
-            Log.d(TAG, "GroupWidget(): creating child '%s'",
+            Log.d(TAG, "createChildren(%s): creating child '%s'", getName(),
                   sceneObjectChild.getName());
             final Widget child = createChild(context, sceneObjectChild);
             if (child != null) {
@@ -2716,9 +2736,15 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private GVRSceneObject getSceneObjectProperty(GVRContext context, final JSONObject properties) {
+        Log.d(TAG, "getSceneObjectProperty(%s): called ", getName());
         GVRSceneObject sceneObject = opt(properties, Properties.scene_object, GVRSceneObject.class);
         if (sceneObject == null) {
-            if (hasFloat(properties, Properties.size)) {
+            if (hasJSONObject(properties, Properties.model)) {
+                JSONObject modelSpec = optJSONObject(properties, Properties.model);
+                Log.d(TAG, "getSceneObjectProperty(%s): model specified: %s", getName(), modelSpec);
+                String id = getString(modelSpec, Properties.id);
+                sceneObject = loadSceneObjectFromModel(context, id);
+            } else if (hasFloat(properties, Properties.size)) {
                 float size = optFloat(properties, Properties.size);
                 Log.d(TAG, "getSceneObjectProperty(%s): single size: %.2f", getName(), size);
                 sceneObject = makeQuad(context, size, size);
@@ -3110,8 +3136,8 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     public enum Properties {
-        name, touchable, focusenabled, visibility, states, levels, level, selected, scene_object,
-        preapply_attribs, size, transform
+        name, touchable, focusenabled, id, visibility, states, levels, level, model, selected,
+        scene_object, preapply_attribs, size, transform
     }
 
     public enum TransformProperties {
