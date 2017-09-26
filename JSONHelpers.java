@@ -33,18 +33,24 @@ abstract public class JSONHelpers {
      */
     public static final JSONArray EMPTY_ARRAY = new UnmodifiableJSONArray(new JSONArray());
 
-    public static <P extends Enum<P>> Object get(final JSONObject json, P e)
-            throws JSONException {
-        return json.get(e.name());
+    public static <P extends Enum<P>> Object get(final JSONObject json, P e) {
+        try {
+            return json.get(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> Object opt(final JSONObject json, P e) {
         return json.opt(e.name());
     }
 
-    public static final <P extends Enum<P>, R> R get(final JSONObject json, P e, Class<R> r)
-            throws JSONException {
-        return r.cast(json.get(e.name()));
+    public static final <P extends Enum<P>, R> R get(final JSONObject json, P e, Class<R> r) {
+        try {
+            return r.cast(json.get(e.name()));
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static final <P extends Enum<P>, R> R opt(final JSONObject json, P e, Class<R> r) {
@@ -70,9 +76,12 @@ abstract public class JSONHelpers {
         return json;
     }
 
-    public static <P extends Enum<P>> boolean getBoolean(final JSONObject json,
-            P e) throws JSONException {
-        return json.getBoolean(e.name());
+    public static <P extends Enum<P>> boolean getBoolean(final JSONObject json, P e) {
+        try {
+            return json.getBoolean(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> boolean optBoolean(final JSONObject json,
@@ -85,9 +94,12 @@ abstract public class JSONHelpers {
         return json.optBoolean(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, boolean value)
-            throws JSONException {
-        return json.put(e.name(), value);
+    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, boolean value) {
+        try {
+            return json.put(e.name(), value);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, boolean value) {
@@ -97,9 +109,12 @@ abstract public class JSONHelpers {
         return json;
     }
 
-    public static <P extends Enum<P>> double getDouble(final JSONObject json,
-            P e) throws JSONException {
-        return json.getDouble(e.name());
+    public static <P extends Enum<P>> double getDouble(final JSONObject json, P e) {
+        try {
+            return json.getDouble(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> double optDouble(final JSONObject json,
@@ -112,25 +127,42 @@ abstract public class JSONHelpers {
         return json.optDouble(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, double value)
-            throws JSONException {
-        return json.put(e.name(), value);
+    /**
+     * Maps {@code e} to {@code value}, clobbering any existing mapping with the same name.
+     *
+     * @param json {@link JSONObject} to put data to
+     * @param e {@link Enum} labeling the data to put
+     * @param value A {@code double} value to put. If {@link Float#NaN NaN} or
+     *              {@link Float#POSITIVE_INFINITY positive} or
+     *              {@link Float#NEGATIVE_INFINITY negative} infinity is specified, no mapping will
+     *              be put
+     * @return The {@code json} parameter, for chained calls
+     */
+    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, double value) {
+
+        try {
+            if (!Double.isNaN(value) && !Double.isInfinite(value)) {
+                json.put(e.name(), value);
+            }
+            return json;
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, double value) {
         if (!has(json, e)) {
-            try {
-                json.put(e.name(), value);
-            } catch (JSONException e1) {
-                throw new RuntimeException(e1.getLocalizedMessage(), e1);
-            }
+            put(json, e, value);
         }
         return json;
     }
 
-    public static <P extends Enum<P>> float getFloat(final JSONObject json,
-                                                       P e) throws JSONException {
-        return (float) json.getDouble(e.name());
+    public static <P extends Enum<P>> float getFloat(final JSONObject json, P e) {
+        try {
+            return (float) json.getDouble(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> float optFloat(final JSONObject json,
@@ -143,23 +175,43 @@ abstract public class JSONHelpers {
         return (float) json.optDouble(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> int getInt(final JSONObject json, P e)
-            throws JSONException {
-        return json.getInt(e.name());
+    public static <P extends Enum<P>> int getInt(final JSONObject json, P e) {
+        try {
+            return json.getInt(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
+    /**
+     * Returns the value mapped to {@code e} if it exists and is an {@code int} or can be coerced to
+     * an {@code int}. Returns 0 otherwise.
+     * @param json {@link JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     */
     public static <P extends Enum<P>> int optInt(final JSONObject json, P e) {
         return json.optInt(e.name());
     }
 
+    /**
+     * Returns the value mapped to {@code e} if it exists and is an {@code int} or can be coerced to
+     * an {@code int}. Returns {@code fallback} otherwise.
+     *
+     * @param json {@link JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param fallback Value to return if there is no {@code int} value mapped to {@code e}
+     */
     public static <P extends Enum<P>> int optInt(final JSONObject json, P e,
             int fallback) {
         return json.optInt(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, int value)
-            throws JSONException {
-        return json.put(e.name(), value);
+    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, int value) {
+        try {
+            return json.put(e.name(), value);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, int value) {
@@ -169,9 +221,12 @@ abstract public class JSONHelpers {
         return json;
     }
 
-    public static <P extends Enum<P>> long getLong(final JSONObject json, P e)
-            throws JSONException {
-        return json.getLong(e.name());
+    public static <P extends Enum<P>> long getLong(final JSONObject json, P e) {
+        try {
+            return json.getLong(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> long optLong(final JSONObject json, P e) {
@@ -183,9 +238,12 @@ abstract public class JSONHelpers {
         return json.optLong(e.name(), fallback);
     }
 
-    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, long value)
-            throws JSONException {
-        return json.put(e.name(), value);
+    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, long value) {
+        try {
+            return json.put(e.name(), value);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> JSONObject putDefault(final JSONObject json, P e, long value) {
@@ -229,15 +287,20 @@ abstract public class JSONHelpers {
         }
     }
 
-    public static <P extends Enum<P>, R extends Enum<R>> R getEnum(
-            final JSONObject json, P e, Class<R> r) throws JSONException {
+    public static <P extends Enum<P>, R extends Enum<R>> R getEnum(final JSONObject json,
+                                                                   P e, Class<R> r) {
         return getEnum(json, e, r, false);
     }
 
     @NonNull
-    public static <P extends Enum<P>, R extends Enum<R>> R getEnum(
-            JSONObject json, P e, Class<R> r, boolean uppercase) throws JSONException {
-        String value = json.getString(e.name());
+    public static <P extends Enum<P>, R extends Enum<R>> R getEnum(JSONObject json, P e, Class<R> r,
+                                                                   boolean uppercase) {
+        String value;
+        try {
+            value = json.getString(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
         if (uppercase) {
             value = value.toUpperCase();
         }
@@ -279,17 +342,21 @@ abstract public class JSONHelpers {
     }
 
     public static <P extends Enum<P>, V extends Enum<V>> JSONObject put(JSONObject json, P e,
-                                                                        V value) throws JSONException {
+                                                                        V value) {
         return put(json, e, value, false);
     }
 
     public static <P extends Enum<P>, V extends Enum<V>> JSONObject put(JSONObject json, P e,
-                                                                        V value, boolean lowerCase) throws JSONException {
+                                                                        V value, boolean lowerCase) {
         String strVal = value.name();
         if (lowerCase) {
             strVal = strVal.toLowerCase();
         }
-        return json.put(e.name(), strVal);
+        try {
+            return json.put(e.name(), strVal);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>, V extends Enum<V>> JSONObject putDefault(
@@ -308,9 +375,12 @@ abstract public class JSONHelpers {
         return json;
     }
 
-    public static <P extends Enum<P>> JSONObject getJSONObject(
-            final JSONObject json, P e) throws JSONException {
-        return json.getJSONObject(e.name());
+    public static <P extends Enum<P>> JSONObject getJSONObject( final JSONObject json, P e) {
+        try {
+            return json.getJSONObject(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> JSONObject optJSONObject(
@@ -339,9 +409,12 @@ abstract public class JSONHelpers {
         return jsonObject;
     }
 
-    public static <P extends Enum<P>> JSONArray getJSONArray(
-            final JSONObject json, P e) throws JSONException {
-        return json.getJSONArray(e.name());
+    public static <P extends Enum<P>> JSONArray getJSONArray(final JSONObject json, P e) {
+        try {
+            return json.getJSONArray(e.name());
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
     }
 
     public static <P extends Enum<P>> JSONArray optJSONArray(
@@ -371,7 +444,7 @@ abstract public class JSONHelpers {
         return jsonArray;
     }
 
-    public static <P extends Enum<P>> Point getPoint(final JSONObject json, P e) throws JSONException {
+    public static <P extends Enum<P>> Point getPoint(final JSONObject json, P e) {
         JSONObject value = getJSONObject(json, e);
         return asPoint(value);
     }
@@ -443,7 +516,7 @@ abstract public class JSONHelpers {
         return p;
     }
 
-    public static <P extends Enum<P>> PointF getPointF(final JSONObject json, P e) throws JSONException {
+    public static <P extends Enum<P>> PointF getPointF(final JSONObject json, P e) {
         JSONObject value = getJSONObject(json, e);
         return asPointF(value);
     }
@@ -515,7 +588,7 @@ abstract public class JSONHelpers {
         return p;
     }
 
-    public static <P extends Enum<P>> void put(JSONObject json, P e, PointF defPoint) {
+    public static <P extends Enum<P>> JSONObject put(JSONObject json, P e, PointF defPoint) {
         JSONObject defJson = new JSONObject();
         try {
             defJson.put("x", defPoint.x);
@@ -524,6 +597,7 @@ abstract public class JSONHelpers {
             throw new RuntimeException(e1.getLocalizedMessage(), e1);
         }
         safePut(json, e, defJson);
+        return json;
     }
 
     public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, PointF defPoint) {
@@ -975,10 +1049,8 @@ abstract public class JSONHelpers {
      * @param asset
      *            Name of the JSON file
      * @return New instance of {@link JSONObject}
-     * @throws JSONException
      */
-    public static JSONObject loadJSONAsset(Context context, final String asset)
-            throws JSONException {
+    public static JSONObject loadJSONAsset(Context context, final String asset) {
         return getJsonObject(Utility.readTextFile(context, asset));
     }
 
@@ -990,30 +1062,29 @@ abstract public class JSONHelpers {
      * @param file
      *            Relative path to file in the public directory.
      * @return New instance of {@link JSONObject}
-     * @throws JSONException
      */
-    public static JSONObject loadPublicJSONFile(final String publicDirectory, final String file)
-            throws JSONException {
+    public static JSONObject loadPublicJSONFile(final String publicDirectory, final String file) {
         final File dir = Environment.getExternalStoragePublicDirectory(publicDirectory);
         return loadJSONFile(dir, file);
     }
 
-    public static JSONObject loadJSONFile(Context context, final String file) throws JSONException {
+    public static JSONObject loadJSONFile(Context context, final String file) {
         return loadJSONFile(context.getFilesDir(), file);
     }
 
-    public static JSONObject loadJSONFile(Context context, final String directory, final String file) throws JSONException {
-        Log.d(TAG, "loadJSONFile(): Context.getDir(): %s", context.getDir(Environment.DIRECTORY_DOCUMENTS, Context.MODE_PRIVATE));
+    public static JSONObject loadJSONFile(Context context, final String directory, final String file) {
+        Log.d(TAG, "loadJSONFile(): Context.getDir(): %s",
+                context.getDir(Environment.DIRECTORY_DOCUMENTS, Context.MODE_PRIVATE));
         File dir = new File(context.getFilesDir(), directory);
         return loadJSONFile(dir, file);
     }
 
-    public static JSONObject loadJSONDocument(Context context, final String file) throws JSONException {
+    public static JSONObject loadJSONDocument(Context context, final String file) {
         return loadJSONFile(context, Environment.DIRECTORY_DOCUMENTS, file);
     }
 
     @NonNull
-    private static JSONObject loadJSONFile(File dir, String file) throws JSONException {
+    private static JSONObject loadJSONFile(File dir, String file) {
         String rawJson = null;
         if (dir.exists()) {
             final File f = new File(dir, file);
@@ -1036,9 +1107,8 @@ abstract public class JSONHelpers {
      * @param file
      *            Relative path to file in "Documents" directory.
      * @return New instance of {@link JSONObject}
-     * @throws JSONException
      */
-    public static JSONObject loadPublicJSONDocument(final String file) throws JSONException {
+    public static JSONObject loadPublicJSONDocument(final String file) {
         return loadPublicJSONFile(Environment.DIRECTORY_DOCUMENTS, file);
     }
 
@@ -1050,10 +1120,9 @@ abstract public class JSONHelpers {
      * @param file
      *            Relative path to file in the public directory.
      * @return New instance of {@link JSONObject}
-     * @throws JSONException
      */
     public static JSONObject loadExternalJSONFile(Context context, final String directory,
-                                                  final String file) throws JSONException {
+                                                  final String file) {
         final File dir = context.getExternalFilesDir(directory);
         return loadJSONFile(dir, file);
     }
@@ -1064,19 +1133,22 @@ abstract public class JSONHelpers {
      * @param file
      *            Relative path to file in "Documents" directory.
      * @return New instance of {@link JSONObject}
-     * @throws JSONException
      */
-    public static JSONObject loadExternalJSONDocument(Context context, final String file) throws JSONException {
+    public static JSONObject loadExternalJSONDocument(Context context, final String file) {
         return loadExternalJSONFile(context, Environment.DIRECTORY_DOCUMENTS, file);
     }
 
     @NonNull
-    private static JSONObject getJsonObject(String rawJson) throws JSONException {
+    private static JSONObject getJsonObject(String rawJson) {
         Log.v(TAG, "getJsonObject(): raw JSON: %s", rawJson);
         if (rawJson == null) {
             return new JSONObject();
         }
-        return new JSONObject(rawJson);
+        try {
+            return new JSONObject(rawJson);
+        } catch (JSONException e) {
+            throw new RuntimeException(e.getLocalizedMessage(), e);
+        }
     }
 
     /**

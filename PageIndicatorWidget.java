@@ -1,17 +1,23 @@
 package com.samsung.smcl.vr.widgets;
 
+import android.graphics.PointF;
+import android.support.annotation.NonNull;
+
 import com.samsung.smcl.utility.Log;
 
 import org.gearvrf.GVRContext;
+import org.json.JSONObject;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class PageIndicatorWidget extends CheckableGroup {
-    private Set<OnPageSelectedListener> mListeners = new LinkedHashSet<>();
+import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
 
-    private float mPageIndicatorButtonWidth,  mPageIndicatorButtonHeight;
+public class PageIndicatorWidget extends CheckableGroup {
+    private final Set<OnPageSelectedListener> mListeners = new LinkedHashSet<>();
+
+    private PointF mPageIndicatorButtonSize;
     private int mCurrentPage;
     private static final String TAG = PageIndicatorWidget.class.getSimpleName();
     private boolean mTouchEnabled;
@@ -20,28 +26,91 @@ public class PageIndicatorWidget extends CheckableGroup {
         void onPageSelected(final int pageId);
     }
 
+    public PageIndicatorWidget(GVRContext context, JSONObject properties) {
+        super(context, properties);
+        init();
+    }
+
+    public PageIndicatorWidget(GVRContext context, int numIndicators, int defaultPageId) {
+        this(context, packProperties(numIndicators, defaultPageId));
+        init();
+    }
+
     public PageIndicatorWidget(GVRContext context, int numIndicators, int defaultPageId,
                                float indicatorWidth, float indicatorHeight, boolean touchEnabled) {
-        super(context, 0, 0);
+        super(context, packProperties(numIndicators, defaultPageId, indicatorWidth, indicatorHeight,
+                touchEnabled));
+        init();
+    }
 
-        Log.d(TAG, "PageIndicatorWidget numIndicators = %d defaultPageId = %d", numIndicators, defaultPageId);
-        mPageIndicatorButtonWidth = indicatorWidth;
-        mPageIndicatorButtonHeight = indicatorHeight;
-        mTouchEnabled = touchEnabled;
-        getDefaultLayout().setDividerPadding(mPageIndicatorButtonHeight / 2, Layout.Axis.Y);
+    private static JSONObject packProperties(int numIndicators, int defaultPageId) {
+        final JSONObject buttons = packButtonProperties(numIndicators, defaultPageId);
+        final JSONObject properties = new JSONObject();
+        put(properties, Properties.buttons, buttons);
+        return properties;
+    }
 
-        if (numIndicators > 0) {
-            addIndicatorChildren(numIndicators);
-            check(defaultPageId);
+    private static JSONObject packProperties(int numIndicators, int defaultPageId,
+                                             float indicatorWidth, float indicatorHeight,
+                                             boolean touchEnabled) {
+        final JSONObject buttons = packButtonProperties(numIndicators, defaultPageId,
+                indicatorWidth, indicatorHeight, touchEnabled);
+        final JSONObject properties = new JSONObject();
+        put(properties, Properties.buttons, buttons);
+        return properties;
+    }
+
+    @NonNull
+    private static JSONObject packButtonProperties(int numIndicators, int defaultPageId) {
+        final JSONObject buttons = new JSONObject();
+        put(buttons, Properties.count, numIndicators);
+        put(buttons, Properties.selected_index, defaultPageId);
+        return buttons;
+    }
+
+    @NonNull
+    private static JSONObject packButtonProperties(int numIndicators, int defaultPageId,
+                                                   float indicatorWidth, float indicatorHeight,
+                                                   boolean touchEnabled) {
+        final JSONObject buttons = packButtonProperties(numIndicators, defaultPageId);
+        put(buttons, Widget.Properties.size, new PointF(indicatorWidth, indicatorHeight));
+        put(buttons, Properties.touch_enabled, touchEnabled);
+        return buttons;
+    }
+
+    private enum Properties {
+        buttons, count, padding, selected_index, touch_enabled
+    }
+
+    private void init() {
+        final JSONObject metadata = getObjectMetadata();
+        final JSONObject buttons;
+        buttons = getJSONObject(metadata, Properties.buttons);
+        mPageIndicatorButtonSize = optPointF(buttons, Widget.Properties.size, true);
+        mTouchEnabled = optBoolean(buttons, Properties.touch_enabled);
+
+        final float padding = optFloat(buttons, Properties.padding, mPageIndicatorButtonSize.y / 2);
+        getDefaultLayout().setDividerPadding(padding, Layout.Axis.Y);
+
+        final int count = optInt(buttons, Properties.count);
+        final int selectedIndex = optInt(buttons, Properties.selected_index);
+        Log.d(TAG, "init(%s): count = %d selectedIndex = %d", getName(), count, selectedIndex);
+        if (count > 0) {
+            addIndicatorChildren(count);
+            check(selectedIndex);
         }
-        setName("PageIndicatorWidget");
+
+        final String name = getName();
+        if (name == null || name.isEmpty()) {
+            setName("PageIndicatorWidget");
+        }
     }
 
     private void addIndicatorChildren(int numIndicators) {
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "addIndicatorChildren %d", numIndicators);
         while (numIndicators-- > 0) {
             PageIndicatorButton buttonWidget = new PageIndicatorButton(getGVRContext(),
-                    mPageIndicatorButtonWidth, mPageIndicatorButtonHeight);
+                    mPageIndicatorButtonSize);
             buttonWidget.setName("PageIndicatorButton." + getCheckableCount());
             addChild(buttonWidget, true);
         }
@@ -80,7 +149,7 @@ public class PageIndicatorWidget extends CheckableGroup {
         }
     }
 
-    public <T extends Widget & Checkable> boolean addOnPageSelectedListener(OnPageSelectedListener listener) {
+    public boolean addOnPageSelectedListener(OnPageSelectedListener listener) {
         final boolean added;
         synchronized (mListeners) {
             added = mListeners.add(listener);
@@ -121,34 +190,33 @@ public class PageIndicatorWidget extends CheckableGroup {
 
     public boolean setCurrentPage(final int page) {
         Log.d(TAG, "setPageId pageId = %d", page);
-        return page >= 0 && page < getCheckableCount() ? check(page) : false;
+        return (page >= 0 && page < getCheckableCount()) && check(page);
     }
 
     private class PageIndicatorButton extends CheckableButton {
+        @SuppressWarnings("unused")
         private final String TAG = PageIndicatorButton.class.getSimpleName();
-        float iWidth, iHeight;
+        private final PointF mSize;
 
-        private PageIndicatorButton(GVRContext context, final float width,
-                                    final float height) {
+        private PageIndicatorButton(GVRContext context, PointF size) {
             super(context, 0, 0);
-            iWidth = width;
-            iHeight = height;
+            mSize = size;
         }
 
         @Override
         protected Widget createGraphicWidget() {
-            return new PageIndicatorButton.Graphic(getGVRContext(), iWidth, iHeight);
+            return new PageIndicatorButton.Graphic(getGVRContext(), mSize);
         }
 
         private class Graphic extends Widget {
-            Graphic(GVRContext context, float width, float height) {
-                super(context, width, height);
+            Graphic(GVRContext context, PointF size) {
+                super(context, size.x, size.y);
             }
         }
 
         @Override
         protected boolean onTouch() {
-            return mTouchEnabled ? super.onTouch() : false;
+            return mTouchEnabled && super.onTouch();
         }
     }
 }

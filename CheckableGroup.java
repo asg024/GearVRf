@@ -19,6 +19,11 @@ public class CheckableGroup extends GroupWidget {
                                                            int checkableIndex);
     }
 
+    public CheckableGroup(GVRContext context, JSONObject properties) {
+        super(context, properties);
+        init();
+    }
+
     public CheckableGroup(GVRContext context, GVRSceneObject sceneObject) {
         super(context, sceneObject);
         init();

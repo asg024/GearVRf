@@ -251,22 +251,18 @@ public class Widget  implements Layout.WidgetContainer {
     private static JSONObject packageSceneObjectWithAttributes(GVRSceneObject sceneObject,
                                                                NodeEntry attributes)
             throws InstantiationException {
-        try {
-            final JSONObject json;
+        final JSONObject json;
 
-            if (attributes != null) {
-                json = attributes.toJSON();
-                put(json, Properties.preapply_attribs, true);
-            } else {
-                json = new JSONObject();
-            }
-
-            put(json, Properties.scene_object, sceneObject);
-
-            return json;
-        } catch (JSONException e) {
-            throw new InstantiationException(e.getLocalizedMessage());
+        if (attributes != null) {
+            json = attributes.toJSON();
+            put(json, Properties.preapply_attribs, true);
+        } else {
+            json = new JSONObject();
         }
+
+        put(json, Properties.scene_object, sceneObject);
+
+        return json;
     }
 
     // private static final String pattern = Widget.class.getSimpleName()
@@ -3215,11 +3211,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (rotation != null) {
             Vector3f scalars = asVector3f(rotation, new Vector3f(1, 1, 1));
             float angle;
-            try {
-                angle = getFloat(rotation, TransformProperties.angle);
-            } catch (JSONException e) {
-                throw new RuntimeException(e.getLocalizedMessage(), e);
-            }
+            angle = getFloat(rotation, TransformProperties.angle);
             if (hasVector3f(rotation, TransformProperties.pivot)) {
                 Vector3f pivot = optVector3f(rotation, TransformProperties.pivot);
                 rotateByAxisWithPivot(angle, scalars.x, scalars.y, scalars.z, pivot.x, pivot.y, pivot.z);
