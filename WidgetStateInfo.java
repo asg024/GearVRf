@@ -3,18 +3,9 @@ package com.samsung.smcl.vr.widgets;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.gearvrf.GVRAndroidResource;
-import org.gearvrf.GVRAndroidResource.TextureCallback;
-import org.gearvrf.GVRAssetLoader;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMaterial.GVRShaderType;
-import org.gearvrf.GVRShaders;
-import org.gearvrf.GVRTexture;
-import org.gearvrf.GVRTextureParameters;
-import org.gearvrf.GVRTextureParameters.TextureFilterType;
-import org.gearvrf.GVRTextureParameters.TextureWrapType;
-import org.gearvrf.asynchronous.GVRCompressedTexture;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -194,7 +185,7 @@ class WidgetStateInfo {
             }
         }
 
-        loadTexturesFromJSON(material, materialSpec);
+        TextureFactory.loadMaterialTextures(material, materialSpec);
 
         return material;
     }
@@ -215,175 +206,6 @@ class WidgetStateInfo {
         levelWidget.setChildrenFollowFocus(true);
         levelWidget.setChildrenFollowInput(true);
         return levelWidget;
-    }
-
-    private enum BitmapResourceType {
-        asset, file, resource
-    }
-
-    private enum BitmapProperties {
-        resource_type, type, id
-    }
-
-    private enum BitmapType {
-        compressed, uncompressed
-    }
-
-    private enum TextureType {
-        bitmap
-    }
-
-    static private void loadTexturesFromJSON(final GVRMaterial material,
-            final JSONObject materialSpec) throws JSONException, IOException {
-        final JSONObject mainTextureSpec = JSONHelpers
-                .optJSONObject(materialSpec, MaterialProperties.main_texture);
-        if (mainTextureSpec != null) {
-            loadOneTextureFromJSON(material, mainTextureSpec,
-                                   GVRShaders.MAIN_TEXTURE);
-        }
-
-        final JSONObject texturesSpec = JSONHelpers
-                .optJSONObject(materialSpec, MaterialProperties.textures);
-        if (texturesSpec != null) {
-            Iterator<String> iter = texturesSpec.keys();
-            while (iter.hasNext()) {
-                String key = iter.next();
-                final JSONObject textureSpec = texturesSpec.optJSONObject(key);
-                if (textureSpec != null) {
-                    loadOneTextureFromJSON(material, textureSpec, key);
-                }
-            }
-        }
-    }
-
-    static private void loadOneTextureFromJSON(final GVRMaterial material,
-            final JSONObject textureSpec, String key) throws JSONException,
-            IOException {
-        TextureType textureType = JSONHelpers.getEnum(textureSpec,
-                                                      BitmapProperties.type,
-                                                      TextureType.class);
-        switch (textureType) {
-            case bitmap:
-                loadBitmapTextureFromJSON(material, textureSpec, key);
-                break;
-            default:
-                throw Exceptions.RuntimeAssertion("Invalid texture type: %s",
-                                                  textureType);
-        }
-    }
-
-    static private void loadBitmapTextureFromJSON(final GVRMaterial material,
-            final JSONObject textureSpec, final String key)
-            throws JSONException, IOException {
-        GVRContext context = material.getGVRContext();
-        JSONObject bitmapSpec = JSONHelpers.getJSONObject(textureSpec, TextureType.bitmap);
-        String resourceType = bitmapSpec
-                .getString(BitmapProperties.resource_type.name());
-        String id = bitmapSpec.getString(BitmapProperties.id.name());
-        String type = bitmapSpec.getString(BitmapProperties.type.name());
-        final GVRAndroidResource resource;
-
-        switch (BitmapResourceType.valueOf(resourceType)) {
-            case asset:
-                resource = new GVRAndroidResource(context, id);
-                break;
-            case file:
-                resource = new GVRAndroidResource(id);
-                break;
-            case resource:
-                int resId = -1;
-                switch (BitmapType.valueOf(type)) {
-                    case uncompressed:
-                        resId = Helpers.getId(context.getContext(), id, "drawable");
-                        break;
-                    case compressed:
-                        resId = Helpers.getId(context.getContext(), id, "raw");
-                        Log.d(TAG, "loadBitmapTextureFromJSON compressed id = %s resId = %d", id, resId);
-                        break;
-                    default:
-                        break;
-                }
-                resource = new GVRAndroidResource(context, resId);
-                break;
-            default:
-                throw Exceptions
-                        .RuntimeAssertion("Invalid bitmap texture resource type: %s",
-                                          resourceType);
-        }
-
-        final GVRTextureParameters textureParams;
-        final JSONObject textureParamsSpec = JSONHelpers
-                .optJSONObject(textureSpec,
-                               TextureParametersProperties.texture_parameters);
-        if (textureParamsSpec != null) {
-            textureParams = textureParametersFromJSON(context,
-                                                      textureParamsSpec);
-        } else {
-            textureParams = null;
-        }
-
-        context.getAssetLoader().loadTexture(
-                resource, new TextureCallback() {
-                    @Override
-                    public void loaded(GVRTexture resource,
-                                       GVRAndroidResource androidResource) {
-                        material.setTexture(key, resource);
-                    }
-
-                    @Override
-                    public void failed(Throwable t, GVRAndroidResource androidResource) {
-                        t.printStackTrace();
-                        Log.e(TAG, t, "Failed to load texture '%s' from spec: %s", key,
-                                textureSpec);
-                    }
-
-                    @Override
-                    public boolean stillWanted(GVRAndroidResource androidResource) {
-                        return true;
-                    }
-                },
-                textureParams, GVRAssetLoader.DEFAULT_PRIORITY, GVRCompressedTexture.BALANCED);
-    }
-
-    private enum TextureParametersProperties {
-        texture_parameters, min_filter_type, mag_filter_type, wrap_s_type, wrap_t_type, anisotropic_value
-    }
-
-    static private GVRTextureParameters textureParametersFromJSON(GVRContext context,
-            final JSONObject textureParamsSpec) throws JSONException {
-        if (textureParamsSpec == null || textureParamsSpec.length() == 0) {
-            return null;
-        }
-
-        final GVRTextureParameters textureParameters = new GVRTextureParameters(
-                context);
-        final Iterator<String> iter = textureParamsSpec.keys();
-        while (iter.hasNext()) {
-            final String key = iter.next();
-            switch (TextureParametersProperties.valueOf(key)) {
-                case min_filter_type:
-                    textureParameters.setMinFilterType(TextureFilterType
-                            .valueOf(textureParamsSpec.getString(key)));
-                    break;
-                case mag_filter_type:
-                    textureParameters.setMagFilterType(TextureFilterType
-                            .valueOf(textureParamsSpec.getString(key)));
-                    break;
-                case wrap_s_type:
-                    textureParameters.setWrapSType(TextureWrapType
-                            .valueOf(textureParamsSpec.getString(key)));
-                    break;
-                case wrap_t_type:
-                    textureParameters.setWrapTType(TextureWrapType
-                            .valueOf(textureParamsSpec.getString(key)));
-                    break;
-                case anisotropic_value:
-                    textureParameters.setAnisotropicValue(textureParamsSpec
-                            .getInt(key));
-                    break;
-            }
-        }
-        return textureParameters;
     }
 
     final private Widget mLevelWidget;

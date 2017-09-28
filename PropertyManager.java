@@ -66,47 +66,47 @@ public class PropertyManager {
 
     /* package */
     @SuppressWarnings("unchecked")
-    private JSONObject getClassProperties(Class<?> clazz, String name) {
+    private UnmodifiableJSONObject getClassProperties(Class<?> clazz, String name) {
         final String canonicalName = getCanonicalName(clazz);
         // TODO: Why does caching class properties in mClassProperties not work?
-        JSONObject classProperties = buildClassProperties(clazz, name, canonicalName);
+        UnmodifiableJSONObject classProperties = buildClassProperties(clazz, name, canonicalName);
 
         return classProperties;
     }
 
-    private JSONObject buildClassProperties(Class<?> clazz, String name, String canonicalName) {
+    private UnmodifiableJSONObject buildClassProperties(Class<?> clazz, String name, String canonicalName) {
         // Recursively check for class properties up the class hierarchy
-        final JSONObject superProperties;
+        if (name == null || name.isEmpty()) {
+            name = clazz.getSimpleName();
+        }
+        final UnmodifiableJSONObject superProperties;
         final Class<?> superclass = clazz.getSuperclass();
         if (superclass != null) {
             superProperties = getClassProperties(superclass, name);
         } else {
-            superProperties = new JSONObject();
+            superProperties = new UnmodifiableJSONObject();
         }
         Log.d(TAG,
                 "buildClassProperties(%s): getting super properties for %s: %s",
                 name, canonicalName, superProperties);
 
-        JSONObject classProperties = mClassJson.optJSONObject(canonicalName);
+        UnmodifiableJSONObject classProperties = mClassJson.optJSONObject(canonicalName);
         Log.d(TAG,
                 "buildClassProperties(%s): getting class properties for %s: %s",
                 name, canonicalName, classProperties);
         if (classProperties == null) {
-            classProperties = new JSONObject();
+            classProperties = new UnmodifiableJSONObject();
         } else {
             Log.d(TAG, "buildClassProperties(%s): copy class properties for %s ...", name,
                     canonicalName);
-            classProperties = JSONHelpers.copy(classProperties);
+            classProperties = new UnmodifiableJSONObject(JSONHelpers.copy(classProperties));
         }
-        Log.d(TAG,
-                "buildClassProperties(%s): getting class properties for %s: %s",
-                name, canonicalName, classProperties);
 
-        JSONObject mergedProperties = JSONHelpers.merge(classProperties, superProperties);
+        JSONObject mergedProperties = JSONHelpers.merge(classProperties, superProperties, name);
         Log.d(TAG,
                 "buildClassProperties(%s): getting merged properties for %s: %s",
                 name, canonicalName, mergedProperties);
-        return mergedProperties;
+        return new UnmodifiableJSONObject(mergedProperties);
     }
 
     private static boolean isWidgetClass(Class<?> clazz) {
@@ -136,7 +136,7 @@ public class PropertyManager {
     }
 
     private final Map<Class<?>, String> mCanonicalNames = new HashMap<>();
-    private JSONObject mClassJson;
+    private UnmodifiableJSONObject mClassJson;
     private Map<Class<?>, JSONObject> mClassProperties = new HashMap<>();
     private JSONObject mInstanceJson;
 

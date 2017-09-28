@@ -397,6 +397,24 @@ abstract public class JSONHelpers {
     }
 
     /**
+     * Returns the value mapped by enum if it exists and is a {@link JSONObject}. If a value is not
+     * mapped by that enum, returns {@code fallback}.
+     *
+     * @param json {@link JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param fallback Value to return if there is no mapped data
+     * @return A {@code JSONObject} if the mapping exists; {@code defValue} otherwise
+     */
+    public static <P extends Enum<P>> JSONObject optJSONObject(final JSONObject json, P e,
+                                                               JSONObject fallback) {
+        JSONObject jsonObject = optJSONObject(json, e);
+        if (jsonObject == null) {
+            jsonObject = fallback;
+        }
+        return jsonObject;
+    }
+
+    /**
      * Returns the value mapped by enum if it exists and is a {@link JSONObject}. If the value does
      * not exist by that enum, and {@code emptyForNull} is {@code true}, returns
      * {@link #EMPTY_OBJECT}. Otherwise, returns {@code null}.
@@ -415,24 +433,6 @@ abstract public class JSONHelpers {
             jsonObject = EMPTY_OBJECT;
         }
         return jsonObject;
-    }
-
-    /**
-     * Returns the value mapped by enum if it exists and is a {@link JSONObject}. If a value is not
-     * mapped by that enum, returns {@code defValue}.
-     *
-     * @param json {@link JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
-     * @param defValue Value to return if there is no mapped data
-     * @return A {@code JSONObject} if the mapping exists; {@code defValue} otherwise
-     */
-    public static <P extends Enum<P>> JSONObject optJSONObject(final JSONObject json, P e,
-                                                               JSONObject defValue) {
-        JSONObject result = optJSONObject(json, e);
-        if (result == null) {
-            result = defValue;
-        }
-        return result;
     }
 
     public static <P extends Enum<P>> JSONArray getJSONArray(final JSONObject json, P e) {
@@ -1293,9 +1293,9 @@ abstract public class JSONHelpers {
             final Object value = src.opt(key);
             if (deep) {
                 if (value instanceof JSONObject) {
-                    safePut(dest, key, copy((JSONObject) value));
+                    safePut(dest, key, copy((JSONObject) value, deep));
                 } else if (value instanceof JSONArray) {
-                    safePut(dest, key, copy((JSONArray) value));
+                    safePut(dest, key, copy((JSONArray) value, deep));
                 } else {
                     safePut(dest, key, value);
                 }
@@ -1345,7 +1345,11 @@ abstract public class JSONHelpers {
      */
     public static JSONArray merge(JSONArray src, JSONArray dest,
             boolean overwrite) {
-        return merge(src, dest, overwrite, true);
+        return merge(src, dest, null, overwrite);
+    }
+
+    public static JSONArray merge(JSONArray src, JSONArray dest, String name, boolean overwrite) {
+        return merge(src, dest, name, overwrite, true);
     }
 
     /**
@@ -1372,15 +1376,27 @@ abstract public class JSONHelpers {
      * @return The modified {@code dest} array.
      */
     public static JSONArray merge(JSONArray src, JSONArray dest,
+                                  final boolean overwrite, boolean deep) {
+        return merge(src, dest, null, overwrite, deep);
+    }
+
+    public static JSONArray merge(JSONArray src, JSONArray dest, String name,
             final boolean overwrite, boolean deep) {
+        Log.d(TAG, "merge(%s), array: src: %s, dest: %s", name, src, dest);
         final int srcLen = src.length();
         final int destLen = dest.length();
         int i = 0;
         try {
             for (; i < srcLen && i < destLen; ++i) {
                 final Object destVal = dest.get(i);
-                if (destVal == null || destVal == JSONObject.NULL || overwrite) {
-                    Object value = src.get(i);
+                Object value = src.get(i);
+                if (destVal instanceof JSONObject && value instanceof JSONObject) {
+                    Log.d(TAG, "merge(%s), array: merging objects at %d", name, i);
+                    merge((JSONObject) value, (JSONObject) destVal, name, overwrite);
+                } else if (destVal instanceof JSONArray && value instanceof JSONArray) {
+                    Log.d(TAG, "merge(%s), array: merging arrays at %d", name, i);
+                    merge((JSONArray) value, (JSONArray) destVal, name, overwrite, deep);
+                } else if (destVal == null || overwrite) {
                     if (deep) {
                         if (value instanceof JSONObject) {
                             value = copy((JSONObject) value);
@@ -1389,6 +1405,9 @@ abstract public class JSONHelpers {
                         }
                     }
                     dest.put(i, value);
+                } else {
+                    Log.w(TAG, "merge(%s), array: mismatched value types at %d, can't merge; src %s, dest %s",
+                            name, i, value.getClass().getSimpleName(), destVal.getClass().getSimpleName());
                 }
             }
             for (; i < srcLen; ++i) {
@@ -1398,6 +1417,7 @@ abstract public class JSONHelpers {
             Log.e(TAG, e, "merge(): This shouldn't be able to happen! (at %d)",
                   i);
         }
+        Log.d(TAG, "merge(%s), array: result: %s", name, dest);
         return dest;
     }
 
@@ -1469,7 +1489,11 @@ abstract public class JSONHelpers {
      * @return The modified {@code dest} object
      */
     public static JSONObject merge(JSONObject src, JSONObject dest) {
-        return merge(src, dest, true);
+        return merge(src, dest, null);
+    }
+
+    public static JSONObject merge(JSONObject src, JSONObject dest, String name) {
+        return merge(src, dest, name, true);
     }
 
     /**
@@ -1493,23 +1517,31 @@ abstract public class JSONHelpers {
      *            If {@code true}, overwrites matching keys in {@code dest}
      * @return The modified {@code dest} object
      */
-    public static JSONObject merge(JSONObject src, JSONObject dest,
+    public static JSONObject merge(JSONObject src, JSONObject dest, String name,
             final boolean overwrite) {
+        Log.d(TAG, "merge(%s), object: src: %s, dest: %s", name, src, dest);
         final Iterator<String> keys = src.keys();
         while (keys.hasNext()) {
             final String key = keys.next();
             final Object value = src.opt(key);
             if (!dest.has(key)) {
+                Log.d(TAG, "merge(%s), object: no field '%s' in dest; putting %s", name, key, value);
                 safePut(dest, key, value);
             } else if (value instanceof JSONObject) {
-                mergeSubObject(dest, key, (JSONObject) value, overwrite);
+                Log.d(TAG, "merge(%s), object: object value for '%s', submerging %s", name, key, value);
+                mergeSubObject(dest, key, (JSONObject) value, name, overwrite);
             } else if (value instanceof JSONArray) {
-                mergeSubArray(dest, key, (JSONArray) value);
+                Log.d(TAG, "merge(%s), object: array value for '%s', submerging %s", name, key, value);
+                mergeSubArray(dest, key, (JSONArray) value, name, overwrite);
             } else if (overwrite) {
                 safePut(dest, key, value);
             }
         }
+        Log.d(TAG, "merge(%s), object: result: %s", name, dest);
         return dest;
+    }
+    public static JSONObject merge(JSONObject src, JSONObject dest, final boolean overwrite) {
+        return merge(src, dest, null, overwrite);
     }
 
     /**
@@ -1524,6 +1556,9 @@ abstract public class JSONHelpers {
      */
     public static JSONObject merge(JSONObject src, UnmodifiableJSONObject dest) {
         return merge(src, copy(dest));
+    }
+    public static JSONObject merge(JSONObject src, UnmodifiableJSONObject dest, String name) {
+        return merge(src, copy(dest), name);
     }
 
     /**
@@ -1549,20 +1584,22 @@ abstract public class JSONHelpers {
     }
 
     private static void mergeSubArray(JSONObject dest, final String key,
-            JSONArray value) {
+                                      JSONArray value, String name, boolean overwrite) {
         final JSONArray subArray = dest.optJSONArray(key);
         if (subArray != null) {
-            merge(value, subArray);
+            Log.d(TAG, "mergeSubArray(%s): merging %s into %s", name, value, subArray);
+            merge(value, subArray, name, overwrite);
         } else {
             safePut(dest, key, copy(value));
         }
     }
 
     private static void mergeSubObject(JSONObject dest, final String key,
-            JSONObject value, final boolean overwrite) {
+                                       JSONObject value, String name, final boolean overwrite) {
         final JSONObject subObject = dest.optJSONObject(key);
         if (subObject != null) {
-            merge(value, subObject, overwrite);
+            Log.d(TAG, "mergeSubObject(%s): merging %s into %s", name, value, subObject);
+            merge(value, subObject, name, overwrite);
         } else {
             safePut(dest, key, copy(value));
         }
