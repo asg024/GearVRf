@@ -5,6 +5,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.widget.TextView;
 
+import com.samsung.smcl.utility.Log;
+
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject;
@@ -12,6 +14,7 @@ import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.copy;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optPointF;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optString;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.put;
@@ -70,6 +73,7 @@ public class TextWidget extends Widget implements TextContainer {
     }
 
     private static JSONObject createPackagedTextView(GVRContext context, JSONObject properties) {
+        properties = copy(properties);
         PointF size = optPointF(properties, Widget.Properties.size, new PointF(0, 0));
         String text = optString(properties, TextContainer.Properties.text);
         GVRTextViewSceneObject textViewSceneObject =
@@ -186,7 +190,7 @@ public class TextWidget extends Widget implements TextContainer {
 
     @Override
     public void setTypeface(Typeface typeface) {
-        throw new UnsupportedOperationException("setTypeface() is not supported by TextWidget.TextParams; use LightTextWidget instead");
+        Log.w(TAG, "setTypeface() is not supported by TextWidget.TextParams; use LightTextWidget instead");
     }
 
     @Override
@@ -218,4 +222,6 @@ public class TextWidget extends Widget implements TextContainer {
     private final GVRTextViewSceneObject mTextViewSceneObject;
     private int mBackgroundColor;
     private int mTextColor;
+
+    private static final String TAG = TextWidget.class.getSimpleName();
 }

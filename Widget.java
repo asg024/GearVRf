@@ -15,7 +15,6 @@ import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
 import com.samsung.smcl.vr.gvrf_launcher.TouchManager;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRAssetLoader;
@@ -2720,15 +2719,13 @@ public class Widget  implements Layout.WidgetContainer {
             Log.d(Log.SUBSYSTEM.WIDGET, TAG,
                     "Widget(context, properties): setting up metadata for %s: %s",
                     getName(), metadata);
-            setupAttributes(metadata);
+            setupProperties(metadata);
             createChildren(context, mSceneObject);
             setupStatesAndLevels(metadata);
         } catch (Exception e) {
             Log.e(TAG, e, "Widget(): DANGER WILL ROBINSON DANGER");
             throw new RuntimeException(e.getLocalizedMessage(), e);
         }
-
-        mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
     }
 
     private GVRSceneObject getSceneObjectProperty(GVRContext context, final JSONObject properties) {
@@ -3133,7 +3130,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     public enum Properties {
         name, touchable, focusenabled, id, visibility, states, levels, level, model, selected,
-        scene_object, preapply_attribs, size, transform
+        scene_object, preapply_attribs, size, transform, viewport
     }
 
     public enum TransformProperties {
@@ -3174,40 +3171,40 @@ public class Widget  implements Layout.WidgetContainer {
         Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): merged metadata: %s", getName(), mMetadata);
     }
 
-    private void setupAttributes(JSONObject metaData) {
+    private void setupProperties(JSONObject properties) {
         final boolean hasRenderData = getRenderData() != null;
-        mIsTouchable = hasRenderData && optBoolean(metaData, Properties.touchable,
+        mIsTouchable = hasRenderData && optBoolean(properties, Properties.touchable,
                 mIsTouchable);
-        mFocusEnabled = optBoolean(metaData, Properties.focusenabled,
+        mFocusEnabled = optBoolean(properties, Properties.focusenabled,
                 mFocusEnabled);
-        mIsSelected = hasRenderData && optBoolean(metaData, Properties.selected, mIsSelected);
-        Visibility visibility = optEnum(metaData, Properties.visibility,
+        mIsSelected = hasRenderData && optBoolean(properties, Properties.selected, mIsSelected);
+        Visibility visibility = optEnum(properties, Properties.visibility,
                 mVisibility, true);
         setVisibility(visibility);
 
         // Set up transform positioning
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): %s", getName(), metaData);
-        Vector3f position = optVector3f(metaData, TransformProperties.position);
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): position: %s", getName(), position);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): %s", getName(), properties);
+        Vector3f position = optVector3f(properties, TransformProperties.position);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): position: %s", getName(), position);
         if (position != null) {
             setPosition(position.x, position.y, position.z);
         }
 
         // Set up transform scaling
-        if (hasVector3f(metaData, TransformProperties.scale)) {
-            Vector3f scale = optVector3f(metaData, TransformProperties.scale);
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): scale: %s", getName(), scale);
+        if (hasVector3f(properties, TransformProperties.scale)) {
+            Vector3f scale = optVector3f(properties, TransformProperties.scale);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): scale: %s", getName(), scale);
             if (scale != null) {
                 setScale(scale.x, scale.y, scale.z);
             }
-        } else if (hasNumber(metaData, TransformProperties.scale)) {
-            final float scale = optFloat(metaData, TransformProperties.scale, 1);
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupAttributes(%s): scale: %.2f", getName(), scale);
+        } else if (hasNumber(properties, TransformProperties.scale)) {
+            final float scale = optFloat(properties, TransformProperties.scale, 1);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): scale: %.2f", getName(), scale);
             setScale(scale);
         }
 
         // Set up transform rotation
-        JSONObject rotation = optJSONObject(metaData, TransformProperties.rotation);
+        JSONObject rotation = optJSONObject(properties, TransformProperties.rotation);
         if (rotation != null) {
             Vector3f scalars = asVector3f(rotation, new Vector3f(1, 1, 1));
             float angle;
@@ -3218,6 +3215,14 @@ public class Widget  implements Layout.WidgetContainer {
             } else {
                 rotateByAxis(angle, scalars.x, scalars.y, scalars.z);
             }
+        }
+
+        // Setup viewport
+        Vector3f viewport = optVector3f(properties, Properties.viewport);
+        if (viewport != null) {
+            mViewPort = new Vector3Axis(viewport);
+        } else {
+            mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
         }
     }
 

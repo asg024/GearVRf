@@ -251,6 +251,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         item.removeTouchListener(mOnTouchListener);
     }
 
+    public ListWidget(final GVRContext gvrContext, final JSONObject properties) {
+        super(gvrContext, properties);
+        init(gvrContext, null);
+    }
+
     /**
      * Construct a new {@code ListWidget} instance with  LinearLayout applied by default
      *
@@ -284,7 +289,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         setName("Content<" + getName() + ">");
         mContent.addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
         addChild(mContent);
-        onChanged(adapter);
+        if (adapter != null) {
+            onChanged(adapter);
+        }
     }
 
     private OnFocusListener mOnFocusListener = new OnFocusListener() {
