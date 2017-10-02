@@ -5,7 +5,11 @@ import org.gearvrf.animation.GVRRotationByAxisAnimation;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+
 public class RotationByAxisAnimation extends TransformAnimation {
+
+    public enum Properties { angle, x, y, z }
 
     public RotationByAxisAnimation(final Widget target, float duration,
             float angle, float x, float y, float z) {
@@ -19,11 +23,13 @@ public class RotationByAxisAnimation extends TransformAnimation {
 
     public RotationByAxisAnimation(final Widget target, final JSONObject params)
             throws JSONException {
-        this(target, (float) params.getDouble("duration"), //
-                (float) params.getDouble("angle"), //
-                (float) params.getDouble("x"), //
-                (float) params.getDouble("y"), //
-                (float) params.getDouble("z"));
+        super(target);
+        float duration = getFloat(params, Animation.Properties.duration);
+        mAngle = getFloat(params, Properties.angle);
+        mAxisX = getFloat(params, Properties.x);
+        mAxisY = getFloat(params, Properties.y);
+        mAxisZ = getFloat(params, Properties.z);
+        mAdapter = new Adapter(target, duration, mAngle, mAxisX, mAxisY, mAxisZ);
     }
 
     public float getAngle() {

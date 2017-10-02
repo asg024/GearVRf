@@ -5,7 +5,11 @@ import org.gearvrf.animation.GVRPositionAnimation;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+
 public class PositionAnimation extends TransformAnimation {
+
+    public enum Properties { x, y, z}
 
     public PositionAnimation(final Widget target, final float duration,
             final float x, final float y, final float z) {
@@ -18,10 +22,10 @@ public class PositionAnimation extends TransformAnimation {
 
     public PositionAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
-        this(target, (float) parameters.getDouble("duration"),
-                (float) parameters.getDouble("x"), //
-                (float) parameters.getDouble("y"), //
-                (float) parameters.getDouble("z"));
+        this(target, getFloat(parameters, Animation.Properties.duration),
+                getFloat(parameters, Properties.x), //
+                getFloat(parameters, Properties.y), //
+                getFloat(parameters, Properties.z));
     }
 
     public float getX() {

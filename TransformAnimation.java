@@ -5,6 +5,8 @@ import org.gearvrf.animation.GVRTransformAnimation;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+
 public abstract class TransformAnimation extends Animation {
 
     public TransformAnimation(Widget target, float duration) {
@@ -15,9 +17,7 @@ public abstract class TransformAnimation extends Animation {
 
     protected TransformAnimation(final Widget target, final JSONObject params)
             throws JSONException {
-        super(target);
-        mAdapter = new Adapter(target, (float) params.getDouble("duration"));
-        mTarget = target;
+        this(target, getFloat(params, Properties.duration));
     }
 
     protected class Orientation {

@@ -2,10 +2,17 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRTransformAnimation;
+import org.joml.Vector3f;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getVector3f;
+
 public class RotationByAxisWithPivotAnimation extends TransformAnimation {
+
+    public enum Properties { angle, axis, pivot }
+
     /**
      * Convenience method; assumes the pivot is at the origin (0, 0, 0).
      *
@@ -47,14 +54,20 @@ public class RotationByAxisWithPivotAnimation extends TransformAnimation {
 
     public RotationByAxisWithPivotAnimation(final Widget target,
             final JSONObject params) throws JSONException {
-        this(target, (float) params.getDouble("duration"), //
-                (float) params.getDouble("angle"), //
-                (float) params.getDouble("axis_x"), //
-                (float) params.getDouble("axis_y"), //
-                (float) params.getDouble("axis_z"), //
-                (float) params.getDouble("pivot_x"), //
-                (float) params.getDouble("pivot_y"), //
-                (float) params.getDouble("pivot_z"));
+        super(target);
+        float duration = getFloat(params, Animation.Properties.duration);
+        mAngle = getFloat(params, Properties.angle);
+        Vector3f axis = getVector3f(params, Properties.axis);
+        mAxisX = axis.x;
+        mAxisY = axis.y;
+        mAxisZ = axis.z;
+        Vector3f pivot = getVector3f(params, Properties.pivot);
+        mPivotX = pivot.x;
+        mPivotY = pivot.y;
+        mPivotZ = pivot.z;
+        mAdapter = new Adapter(target, duration, mAngle,
+                mAxisX, mAxisY, mAxisZ,
+                mPivotX, mPivotY, mPivotZ);
     }
 
     public float getAngle() {

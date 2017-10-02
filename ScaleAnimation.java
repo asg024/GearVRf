@@ -2,10 +2,16 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRScaleAnimation;
+import org.joml.Vector3f;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.hasFloat;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.hasVector3f;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.optVector3f;
+
 public class ScaleAnimation extends TransformAnimation {
+    public enum Properties { scale }
 
     public ScaleAnimation(final Widget widget, float duration, float scale) {
         super(widget);
@@ -25,19 +31,22 @@ public class ScaleAnimation extends TransformAnimation {
     public ScaleAnimation(final Widget target, final JSONObject params)
             throws JSONException {
         super(target);
-        if (params.has("scale")) {
+        if (hasFloat(params, Properties.scale)) {
             final float scale = (float) params.getDouble("scale");
             mScaleX = mScaleY = mScaleZ = scale;
             mAdapter = new Adapter(target,
                     (float) params.getDouble("duration"),
                     scale);
-        } else {
-            mScaleX = (float) params.getDouble("scale_x");
-            mScaleY = (float) params.getDouble("scale_y");
-            mScaleZ = (float) params.getDouble("scale_z");
+        } else if (hasVector3f(params, Properties.scale)) {
+            Vector3f scale = optVector3f(params, Properties.scale);
+            mScaleX = scale.x;
+            mScaleY = scale.y;
+            mScaleZ = scale.z;
             mAdapter = new Adapter(target,
                     (float) params.getDouble("duration"), mScaleX, mScaleY,
                     mScaleZ);
+        } else {
+            throw new JSONException("Bad parameters; expected 'scale' (float or Vector3f), got " + params);
         }
     }
 

@@ -14,6 +14,8 @@ import org.json.JSONObject;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+
 /**
  * A wrapper for {@link GVRAnimation} and derived classes. Client code can
  * derive directly from this class (or its descendants) and override
@@ -272,9 +274,11 @@ public abstract class Animation {
         return getAnimation().getElapsedTime();
     }
 
+    public enum Properties { duration }
+
     protected Animation(Widget target, JSONObject metadata)
             throws JSONException {
-        this(target, (float) metadata.getDouble("duration"));
+        this(target, getFloat(metadata, Properties.duration));
     }
 
     protected abstract void animate(Widget target, float ratio);

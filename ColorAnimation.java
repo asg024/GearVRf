@@ -10,7 +10,11 @@ import org.json.JSONObject;
 
 import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+
 public class ColorAnimation extends MaterialAnimation {
+
+    public enum Properties { color }
 
     public ColorAnimation(final Widget target, final float duration,
             final int color) {
@@ -26,8 +30,8 @@ public class ColorAnimation extends MaterialAnimation {
 
     public ColorAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
-        this(target, (float) parameters.getDouble("duration"), //
-                Helpers.getJSONColorGl(parameters, "color"));
+        this(target, getFloat(parameters, Animation.Properties.duration), //
+                Helpers.getJSONColorGl(parameters, Properties.color));
     }
 
     public float[] getColor() {

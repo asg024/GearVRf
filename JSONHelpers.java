@@ -1,6 +1,7 @@
 package com.samsung.smcl.vr.widgets;
 
 import java.io.File;
+import java.util.EnumSet;
 import java.util.Iterator;
 
 import org.joml.Vector3f;
@@ -383,8 +384,15 @@ abstract public class JSONHelpers {
         }
     }
 
-    public static <P extends Enum<P>> JSONObject optJSONObject(
-            final JSONObject json, P e) {
+    /**
+     * Returns the value mapped by enum if it exists and is a {@link JSONObject}. If the value does
+     * not exist returns {@code null}.
+     *
+     * @param json {@link JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @return A {@code JSONObject} if the mapping exists; {@code null} otherwise
+     */
+    public static <P extends Enum<P>> JSONObject optJSONObject(final JSONObject json, P e) {
         return json.optJSONObject(e.name());
     }
 
@@ -407,6 +415,24 @@ abstract public class JSONHelpers {
             jsonObject = EMPTY_OBJECT;
         }
         return jsonObject;
+    }
+
+    /**
+     * Returns the value mapped by enum if it exists and is a {@link JSONObject}. If a value is not
+     * mapped by that enum, returns {@code defValue}.
+     *
+     * @param json {@link JSONObject} to get data from
+     * @param e {@link Enum} labeling the data to get
+     * @param defValue Value to return if there is no mapped data
+     * @return A {@code JSONObject} if the mapping exists; {@code defValue} otherwise
+     */
+    public static <P extends Enum<P>> JSONObject optJSONObject(final JSONObject json, P e,
+                                                               JSONObject defValue) {
+        JSONObject result = optJSONObject(json, e);
+        if (result == null) {
+            result = defValue;
+        }
+        return result;
     }
 
     public static <P extends Enum<P>> JSONArray getJSONArray(final JSONObject json, P e) {
@@ -653,6 +679,13 @@ abstract public class JSONHelpers {
         return true;
     }
 
+    public static <P extends Enum<P>> Vector3f getVector3f(JSONObject json, P e) {
+        JSONObject value = getJSONObject(json, e);
+
+        // If there's no value, getJSONValue() will throw a RuntimeException
+        return asVector3f(value, null);
+    }
+
     public static <P extends Enum<P>> Vector3f optVector3f(JSONObject json, P e) {
         return optVector3f(json, e, null);
     }
@@ -665,17 +698,21 @@ abstract public class JSONHelpers {
 
     public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, Vector3f defVector) {
         if (json != null && !has(json, e)) {
-            JSONObject defJson = new JSONObject();
-            try {
-                defJson.put("x", defVector.x);
-                defJson.put("y", defVector.y);
-                defJson.put("z", defVector.z);
-            } catch (JSONException e1) {
-                throw new RuntimeException(e1.getLocalizedMessage(), e1);
-            }
-            safePut(json, e, defJson);
+            put(json, e, defVector);
         }
         return json;
+    }
+
+    public static <P extends Enum<P>> void put(JSONObject json, P e, Vector3f vector) {
+        JSONObject defJson = new JSONObject();
+        try {
+            defJson.put("x", vector.x);
+            defJson.put("y", vector.y);
+            defJson.put("z", vector.z);
+        } catch (JSONException e1) {
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
+        safePut(json, e, defJson);
     }
 
     public static Vector3f asVector3f(JSONObject value, Vector3f fallback) {
@@ -698,8 +735,14 @@ abstract public class JSONHelpers {
         }
         return v;
     }
+
     public static <P extends Enum<P>> boolean hasVector3f(final JSONObject json, P e) {
-        Object o = opt(json, e);
+        String name = e.name();
+        return hasVector3f(json, name);
+    }
+
+    public static boolean hasVector3f(JSONObject json, String name) {
+        Object o = json.opt(name);
         return o != null && o != JSONObject.NULL && o instanceof JSONObject &&
                 isVector3f((JSONObject) o);
     }
@@ -800,7 +843,7 @@ abstract public class JSONHelpers {
      *         {@code false} otherwise
      */
     public static boolean hasDouble(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Double.class);
+        return hasInstanceOf(json, key, Number.class);
     }
 
     public static <P extends Enum<P>> boolean hasDouble(final JSONObject json, P e) {
@@ -819,7 +862,7 @@ abstract public class JSONHelpers {
     }
 
     /**
-     * Check if the value at {@code key} is an {@link Integer}.
+     * Check if the value at {@code key} is an {@link Integer} or can be coerced to an {@code int}.
      *
      * @param json
      *            {@link JSONObject} to inspect
@@ -829,11 +872,21 @@ abstract public class JSONHelpers {
      *         {@code false} otherwise
      */
     public static boolean hasInt(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Integer.class);
+        return hasInt(json, key, true);
+    }
+
+    public static boolean hasInt(final JSONObject json, final String key, boolean allowCoercion) {
+        return (allowCoercion && hasInstanceOf(json, key, Number.class))
+                || hasInstanceOf(json, key, Integer.class);
     }
 
     public static <P extends Enum<P>> boolean hasInt(final JSONObject json, P e) {
-        return hasInt(json, e.name());
+        return hasInt(json, e.name(), true);
+    }
+
+    public static <P extends Enum<P>> boolean hasInt(final JSONObject json, P e,
+                                                     boolean allowCoercion) {
+        return hasInt(json, e.name(), allowCoercion);
     }
 
     /**
@@ -847,11 +900,21 @@ abstract public class JSONHelpers {
      *         {@code false} otherwise
      */
     public static boolean hasLong(final JSONObject json, final String key) {
-        return hasInstanceOf(json, key, Long.class);
+        return hasLong(json, key, true);
+    }
+
+    public static boolean hasLong(final JSONObject json, final String key, boolean allowCoercion) {
+        return (allowCoercion && hasInstanceOf(json, key, Number.class))
+                || hasInstanceOf(json, key, Long.class);
     }
 
     public static <P extends Enum<P>> boolean hasLong(final JSONObject json, P e) {
-        return hasLong(json, e.name());
+        return hasLong(json, e.name(), true);
+    }
+
+    public static <P extends Enum<P>> boolean hasLong(final JSONObject json, P e,
+                                                      boolean allowCoercion) {
+        return hasLong(json, e.name(), allowCoercion);
     }
 
     /**

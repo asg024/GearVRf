@@ -5,7 +5,11 @@ import org.gearvrf.animation.GVROpacityAnimation;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+
 public class OpacityAnimation extends MaterialAnimation {
+
+    public enum Properties { opacity }
 
     public OpacityAnimation(final Widget target, final float duration,
             final float opacity) {
@@ -16,8 +20,8 @@ public class OpacityAnimation extends MaterialAnimation {
 
     public OpacityAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
-        this(target, (float) parameters.getDouble("duration"),
-                (float) parameters.getDouble("opacity"));
+        this(target, getFloat(parameters, Animation.Properties.duration),
+                getFloat(parameters, Properties.opacity));
     }
 
     public float getOpacity() {

@@ -2,10 +2,16 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRRelativeMotionAnimation;
+import org.joml.Vector3f;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getFloat;
+import static com.samsung.smcl.vr.widgets.JSONHelpers.getVector3f;
+
 public class RelativeMotionAnimation extends TransformAnimation {
+
+    public enum Properties { delta }
 
     public RelativeMotionAnimation(final Widget widget, float duration, float deltaX, float deltaY, float deltaZ) {
         super(widget);
@@ -17,10 +23,13 @@ public class RelativeMotionAnimation extends TransformAnimation {
 
     public RelativeMotionAnimation(final Widget widget, final JSONObject params)
             throws JSONException {
-        this(widget, (float) params.getDouble("duration"), //
-                (float) params.getDouble("delta_x"), //
-                (float) params.getDouble("delta_y"), //
-                (float) params.getDouble("delta_z"));
+        super(widget);
+        float duration = getFloat(params, Animation.Properties.duration);
+        Vector3f vector = getVector3f(params, Properties.delta);
+        mDeltaX = vector.x;
+        mDeltaY = vector.y;
+        mDeltaZ = vector.z;
+        mAdapter = new Adapter(widget, duration, mDeltaX, mDeltaY, mDeltaZ);
     }
 
     public float getDeltaX() {

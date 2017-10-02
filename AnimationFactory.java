@@ -25,6 +25,8 @@ public class AnimationFactory {
     }
     // @formatter:on
 
+    public enum Properties { type }
+
     public static class Factory {
         public Factory(final JSONObject animSpec,
                 Class<? extends Animation> animClass)
@@ -35,10 +37,13 @@ public class AnimationFactory {
             mCtor = animClass.getConstructor(Widget.class, JSONObject.class);
         }
 
-        public Animation create(final Widget target)
-                throws InstantiationException, IllegalAccessException,
-                IllegalArgumentException, InvocationTargetException {
-            return mCtor.newInstance(target, mAnimSpec);
+        public Animation create(final Widget target) {
+            try {
+                return mCtor.newInstance(target, mAnimSpec);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e.getLocalizedMessage(), e);
+            }
         }
 
         private final Constructor<? extends Animation> mCtor;
@@ -79,37 +84,41 @@ public class AnimationFactory {
         }
     }
 
-    public static Factory makeFactory(final JSONObject animSpec)
-            throws JSONException, NoSuchMethodException {
-        String type = animSpec.getString("type").toUpperCase(Locale.ENGLISH);
+    public static Factory makeFactory(final JSONObject animSpec) {
         final Factory factory;
-        Log.d(TAG, "makeFactory(): making factory for '%s': %s", type, animSpec);
-        switch (Type.valueOf(type)) {
-            case COLOR:
-                factory = new Factory(animSpec, ColorAnimation.class);
-                break;
-            case OPACITY:
-                factory = new Factory(animSpec, OpacityAnimation.class);
-                break;
-            case POSITION:
-                factory = new Factory(animSpec, PositionAnimation.class);
-                break;
-            case RELATIVE_MOTION:
-                factory = new Factory(animSpec, RelativeMotionAnimation.class);
-                break;
-            case ROTATION_BY_AXIS:
-                factory = new Factory(animSpec, RotationByAxisAnimation.class);
-                break;
-            case ROTATION_BY_AXIS_WITH_PIVOT:
-                factory = new Factory(animSpec,
-                        RotationByAxisWithPivotAnimation.class);
-                break;
-            case SCALE:
-                factory = new Factory(animSpec, ScaleAnimation.class);
-                break;
-            default:
-                throw new RuntimeException("Invalid animation type specified: "
-                        + type);
+        try {
+            String type = animSpec.getString("type").toUpperCase(Locale.ENGLISH);
+            Log.d(TAG, "makeFactory(): making factory for '%s': %s", type, animSpec);
+            switch (Type.valueOf(type)) {
+                case COLOR:
+                    factory = new Factory(animSpec, ColorAnimation.class);
+                    break;
+                case OPACITY:
+                    factory = new Factory(animSpec, OpacityAnimation.class);
+                    break;
+                case POSITION:
+                    factory = new Factory(animSpec, PositionAnimation.class);
+                    break;
+                case RELATIVE_MOTION:
+                    factory = new Factory(animSpec, RelativeMotionAnimation.class);
+                    break;
+                case ROTATION_BY_AXIS:
+                    factory = new Factory(animSpec, RotationByAxisAnimation.class);
+                    break;
+                case ROTATION_BY_AXIS_WITH_PIVOT:
+                    factory = new Factory(animSpec,
+                            RotationByAxisWithPivotAnimation.class);
+                    break;
+                case SCALE:
+                    factory = new Factory(animSpec, ScaleAnimation.class);
+                    break;
+                default:
+                    throw new RuntimeException("Invalid animation type specified: "
+                            + type);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e.getLocalizedMessage(), e);
         }
         return factory;
     }
