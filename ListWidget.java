@@ -274,7 +274,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     private float mAnimationRate;
     private Easing mAnimationEasing;
 
-    private enum Properties { transition_animation, rate, easing }
+    public enum Properties { transition_animation, rate, easing }
 
     private void init(final GVRContext gvrContext, final Adapter adapter) {
         JSONObject properties = getObjectMetadata();
