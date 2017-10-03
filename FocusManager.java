@@ -16,7 +16,9 @@ import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 
 import java.lang.ref.WeakReference;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 /**
@@ -65,6 +67,10 @@ public class FocusManager {
         long getLongFocusTimeout();
     }
 
+    public interface FocusListener {
+        void onFocus(boolean focused);
+    }
+
     static public FocusManager get(Activity activity) {
         return ((Holder) activity).get(FocusManager.class);
     }
@@ -95,6 +101,17 @@ public class FocusManager {
         HolderHelper.register(holder, this);
     }
 
+    public boolean addFocusListener(FocusListener listener) {
+        synchronized (mFocusListeners) {
+            return mFocusListeners.add(listener);
+        }
+    }
+
+    public boolean removeFocusListener(FocusListener listener) {
+        synchronized (mFocusListeners) {
+            return mFocusListeners.remove(listener);
+        }
+    }
 
     /**
      * The focus manager will not hold strong references to the sceneObject and the
@@ -266,6 +283,7 @@ public class FocusManager {
             ret = mCurrentFocus.onFocus(false);
             mCurrentFocus = null;
             mCurrentFocusName = null;
+            notifyFocusListeners(false);
         }
         return ret;
     }
@@ -289,16 +307,30 @@ public class FocusManager {
                 }
                 postLongFocusRunnable(longFocusTimeout);
 
+                notifyFocusListeners(true);
                 return true;
             }
         }
         return false;
     }
 
+    private void notifyFocusListeners(boolean focused) {
+        synchronized (mFocusListeners) {
+            for (FocusListener listener : mFocusListeners) {
+                    try {
+                        listener.onFocus(focused);
+                    } catch (Throwable t) {
+                        Log.e(TAG, t, "");
+                    }
+                }
+        }
+    }
+
     private GVRContext mContext;
     private Focusable mCurrentFocus = null;
     private String mCurrentFocusName = "";
-    private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<GVRSceneObject, WeakReference<Focusable>>();
+    private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<>();
+    private Set<FocusListener> mFocusListeners = new LinkedHashSet<>();
 
     private final Runnable mLongFocusRunnable = new Runnable() {
 
