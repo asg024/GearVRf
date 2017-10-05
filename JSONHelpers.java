@@ -1236,6 +1236,13 @@ abstract public class JSONHelpers {
         return loadExternalJSONFile(context, Environment.DIRECTORY_DOCUMENTS, file);
     }
 
+    /**
+     * @return The full path to the application's private {@link Environment#DIRECTORY_DOCUMENTS} dir.
+     */
+    public static File getExternalJSONDocumentDirectory(Context context) {
+        return context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+    }
+
     @NonNull
     private static JSONObject getJsonObject(String rawJson) {
         Log.v(TAG, "getJsonObject(): raw JSON: %s", rawJson);

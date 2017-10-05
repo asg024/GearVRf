@@ -15,8 +15,12 @@ import org.gearvrf.asynchronous.GVRCompressedTexture;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Future;
 
 public class TextureFactory {
@@ -127,6 +131,11 @@ public class TextureFactory {
                 }
                 resource = new GVRAndroidResource(context, resId);
                 break;
+            case user:
+                File docDir = JSONHelpers.getExternalJSONDocumentDirectory(context.getContext());
+                File texturePath = new File(docDir, id);
+                resource = new GVRAndroidResource(texturePath);
+                break;
             default:
                 throw Exceptions
                         .RuntimeAssertion("Invalid bitmap texture resource type: %s",
@@ -185,7 +194,7 @@ public class TextureFactory {
     }
 
     private enum BitmapResourceType {
-        asset, file, resource
+        asset, file, resource, user
     }
 
     private enum BitmapProperties {
