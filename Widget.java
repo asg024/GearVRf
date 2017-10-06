@@ -8,9 +8,9 @@ import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.utility.UnmodifiableJSONObject;
 import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.FPSCounter;
-import com.samsung.smcl.utility.UnmodifiableJSONObject;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
 import com.samsung.smcl.vr.gvrf_launcher.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
@@ -1003,6 +1003,9 @@ public class Widget  implements Layout.WidgetContainer {
      *            Resource ID of the bitmap to create the texture from.
      */
     public void setTexture(final int bitmapId) {
+        if (bitmapId < 0)
+            return;
+
         final GVRAndroidResource resource = new GVRAndroidResource(
                 mContext.getContext(), bitmapId);
         setTexture(mContext.getAssetLoader().loadFutureTexture(resource));
