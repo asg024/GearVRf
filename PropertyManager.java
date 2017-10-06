@@ -40,7 +40,7 @@ public class PropertyManager {
 
     private JSONObject buildInstanceProperties(String name, Class<?> clazz) {
         final JSONObject properties = mInstanceJson.optJSONObject(name);
-        final JSONObject defaultMetadata = getClassProperties(clazz, name);
+        final UnmodifiableJSONObject defaultMetadata = getClassProperties(clazz, name);
 
         if (defaultMetadata == null) {
             if (properties == null) {
