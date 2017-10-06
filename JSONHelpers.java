@@ -626,7 +626,38 @@ abstract public class JSONHelpers {
         return json;
     }
 
+    /**
+     * Checks the supplied {@link JSONObject} for a value mapped by an enum; if it does not exist,
+     * or is not an object value, the specified default value will be mapped to the enum.  If the
+     * value does exist, but either 'x' or 'y' field is missing, the missing field(s) will be set
+     * using {@code defPoint}.  However, if the value exists and is a {@link Number}, it is
+     * interpreted as implicitly defining both the 'x' and 'y' fields, and the value is left as-is.
+     *
+     * @param json {@code JSONObject} to check for value
+     * @param e {@link Enum} mapping the value to check
+     * @param defPoint The value to use as default
+     * @return The {@code JSONObject} passed as '{@code json}', for call-chaining.
+     */
     public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, PointF defPoint) {
+        return putDefault(json, e, defPoint, true);
+    }
+
+    /**
+     * Checks the supplied {@link JSONObject} for a value mapped by an enum; if it does not exist,
+     * or is not an object value, the specified default value will be mapped to the enum.  If the
+     * value does exist, but either 'x' or 'y' field is missing, the missing field(s) will be set
+     * using {@code defPoint}.  However, if {@code allowImplicitPoint} is {@code true}, and the
+     * value exists and is a {@link Number}, then the value is left as-is.
+     *
+     * @param json {@code JSONObject} to check for value
+     * @param e {@link Enum} mapping the value to check
+     * @param defPoint The value to use as default
+     * @param allowImplicitPoint Whether to interpret a {@code Number} value as implicitly defining
+     *                           both fields of a {@code PointF}.
+     * @return The {@code JSONObject} passed as '{@code json}', for call-chaining.
+     */
+    public static <P extends Enum<P>> JSONObject putDefault(JSONObject json, P e, PointF defPoint,
+                                                            boolean allowImplicitPoint) {
         if (json != null) {
             JSONObject pointJson = optJSONObject(json, e);
             if (pointJson != null) {
@@ -642,7 +673,11 @@ abstract public class JSONHelpers {
                     throw new RuntimeException(e1);
                 }
             } else {
-                put(json, e, defPoint);
+                // Some properties allow a point to be implicitly specified with a single number,
+                // which is then used for both 'x' and 'y' values.
+                if (!(allowImplicitPoint && hasNumber(json, e))) {
+                    put(json, e, defPoint);
+                }
             }
         }
         return json;
