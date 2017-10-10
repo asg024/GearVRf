@@ -486,20 +486,21 @@ public class Widget  implements Layout.WidgetContainer {
         if (follow != mChildrenFollowFocus) {
             mChildrenFollowFocus = follow;
             final boolean focused = isFocused();
+            List<Widget> children = getChildren();
             if (focused && follow) {
-                for (Widget child : mChildren) {
+                for (Widget child : children) {
                     if (child.isFocusEnabled()) {
                         child.doOnFocus(true);
                     }
                 }
             } else if (focused && !follow) {
-                for (Widget child : mChildren) {
+                for (Widget child : children) {
                     if (child.isFocusEnabled() && !child.mFollowParentFocus) {
                         child.doOnFocus(false);
                     }
                 }
             }
-            for (Widget child : mChildren) {
+            for (Widget child : children) {
                 if (focused && child.isFocusEnabled()) {
                     if (follow) {
                         child.doOnFocus(true);
@@ -584,7 +585,7 @@ public class Widget  implements Layout.WidgetContainer {
     public void setChildrenFollowInput(final boolean follow) {
         if (follow != mChildrenFollowInput) {
             mChildrenFollowInput = follow;
-            for (Widget child : mChildren) {
+            for (Widget child : getChildren()) {
                 child.registerPickable();
             }
         }
@@ -1884,7 +1885,7 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public int getChildCount(boolean includeHidden) {
         int count = 0;
-        for (Widget child : mChildren) {
+        for (Widget child : getChildren()) {
             if (includeHidden || child.mVisibility == Visibility.VISIBLE) {
                 ++count;
                 count += child.getChildCount(includeHidden);
@@ -1925,7 +1926,7 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public List<ChildInfo> getChildInfo(boolean includeHidden) {
         List<ChildInfo> children = new ArrayList<>();
-        for (Widget child : mChildren) {
+        for (Widget child : getChildren()) {
             if (includeHidden || child.mVisibility == Visibility.VISIBLE) {
                 children.add(new ChildInfo(child.getName(), child
                         .getChildInfo(includeHidden)));
@@ -2854,7 +2855,7 @@ public class Widget  implements Layout.WidgetContainer {
         updateState();
         if (oldFocus != mIsFocused) {
             final boolean inFollowFocusGroup = isInFollowFocusGroup();
-            for (Widget child : mChildren) {
+            for (Widget child : getChildren()) {
                 if (child.mFocusEnabled
                         && child.isFocused() != focused
                         && (mChildrenFollowFocus || child.mFollowParentFocus || inFollowFocusGroup)) {
@@ -2885,7 +2886,7 @@ public class Widget  implements Layout.WidgetContainer {
         }
         onLongFocus();
         final boolean inFollowFocusGroup = isInFollowFocusGroup();
-        for (Widget child : mChildren) {
+        for (Widget child : getChildren()) {
             if (child.mFocusEnabled
                     && (mChildrenFollowFocus || child.mFollowParentFocus || inFollowFocusGroup)) {
                 child.doOnLongFocus();
@@ -2906,7 +2907,7 @@ public class Widget  implements Layout.WidgetContainer {
         final boolean acceptedTouch = onTouch();
         if (acceptedTouch) {
             final boolean inFollowInputGroup = isInFollowInputGroup();
-            for (Widget child : mChildren) {
+            for (Widget child : getChildren()) {
                 if (child.isTouchable()
                         && (mChildrenFollowInput
                                 || child.getFollowParentInput() || inFollowInputGroup)) {
@@ -2941,7 +2942,7 @@ public class Widget  implements Layout.WidgetContainer {
      */
     private static Widget findChildByNameInOneGroup(final String name,
             final Widget groupWidget, ArrayList<Widget> groupChildren) {
-        Collection<Widget> children = groupWidget.mChildren;
+        Collection<Widget> children = groupWidget.getChildren();
         for (Widget child : children) {
             if (child.getName() != null && child.getName().equals(name)) {
                 return child;
@@ -3017,7 +3018,7 @@ public class Widget  implements Layout.WidgetContainer {
         } else {
             final boolean childrenFollowEvent = handler
                     .getChildrenFollowEvent();
-            for (Widget child : mChildren) {
+            for (Widget child : getChildren()) {
                 if ((childrenFollowEvent || handler.followsParentEvent(child))
                         && (child.isSceneObject(sceneObject) || handler
                                 .handlesEvent(child, sceneObject))) {
@@ -3125,7 +3126,7 @@ public class Widget  implements Layout.WidgetContainer {
         // following this widget know
         if (currentFocusable != mFocusableImpl
                 || currentTouchHandler != mTouchHandler) {
-            for (Widget child : mChildren) {
+            for (Widget child : getChildren()) {
                 child.registerPickable();
             }
         }
@@ -3293,7 +3294,7 @@ public class Widget  implements Layout.WidgetContainer {
 
         boolean updateChildren = isInFollowStateGroup()
                 || getChildrenFollowState();
-        for (Widget child : mChildren) {
+        for (Widget child : getChildren()) {
             if (updateChildren || child.getFollowParentState()) {
                 child.updateState();
             }

@@ -690,6 +690,13 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
     }
 
+
+    public void stopScrolling() {
+        if (isScrolling()) {
+            mScroller.stopScrolling();
+        }
+    }
+
     //  Scrolling processor
     class ScrollingProcessor {
         private int mScrollToPosition = -1;
@@ -863,9 +870,13 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                                 FPSCounter.stopCheck("ScrollingAnimation");
                             }
                         });
-
             }
             FPSCounter.timeCheck("scroll mScrollToPosition [" + mScrollToPosition + "] <END>");
+        }
+
+        void stopScrolling() {
+            animationTracker.interruptAll();
+            finish(true);
         }
 
         void finish(boolean force) {
