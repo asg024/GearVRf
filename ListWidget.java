@@ -513,15 +513,19 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             }
 
             List<ListItemHostWidget> views = getAllHosts();
-            int count = 0;
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d]", measuredChildren.size(), views.size());
-            for (ListItemHostWidget host : views) {
-                if (!measuredChildren.contains(host)) {
-                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] %s recycling", host.getName(), host);
-                    recycle(host);
-                } else {
-                    count++;
+            int count = 0;
+            if (relaidout) {
+                for (ListItemHostWidget host : views) {
+                    if (!measuredChildren.contains(host)) {
+                        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] %s recycling", host.getName(), host);
+                        recycle(host);
+                    } else {
+                        count++;
+                    }
                 }
+            } else {
+                count =  views.size();
             }
 
             for (ListOnChangedListener listener : mOnChangedListeners) {
