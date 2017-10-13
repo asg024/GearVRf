@@ -9,6 +9,7 @@ import java.util.HashSet;
 
 import com.samsung.smcl.utility.Log;
 
+import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.widgets.LinearLayout.Gravity;
 
 /**
@@ -36,6 +37,7 @@ public class GridLayout extends OrientedLayout {
         protected SparseArray<CacheDataSet> mCaches = new SparseArray<CacheDataSet>();
         protected float mSize;
         protected boolean mForcePostMeasurement;
+        private final String TAG = Utility.tag(ChunkedLinearLayout.class);
 
 
         ChunkedLinearLayout() {

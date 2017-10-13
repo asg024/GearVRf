@@ -149,8 +149,10 @@ abstract public class Layout {
      * Invalidate layout setup.
      */
     public void invalidate() {
-        Log.d(TAG, "invalidate all [%d]", mMeasuredChildren.size());
-        mMeasuredChildren.clear();
+        synchronized (mMeasuredChildren) {
+            Log.d(TAG, "invalidate all [%d]", mMeasuredChildren.size());
+            mMeasuredChildren.clear();
+        }
     }
 
     /**
@@ -158,8 +160,10 @@ abstract public class Layout {
      * @param dataIndex data index
      */
     void invalidate(final int dataIndex) {
-        Log.d(TAG, "invalidate [%d]", dataIndex);
-        mMeasuredChildren.remove(dataIndex);
+        synchronized (mMeasuredChildren) {
+            Log.d(TAG, "invalidate [%d]", dataIndex);
+            mMeasuredChildren.remove(dataIndex);
+        }
     }
 
     public String getName() {
@@ -315,7 +319,9 @@ abstract public class Layout {
 
         Widget widget = mContainer.get(dataIndex);
         if (widget != null) {
-            mMeasuredChildren.add(dataIndex);
+            synchronized (mMeasuredChildren) {
+                mMeasuredChildren.add(dataIndex);
+            }
         }
         return widget;
     }
@@ -401,7 +407,12 @@ abstract public class Layout {
      * @return
      */
     synchronized protected boolean isChildMeasured(final int dataIndex) {
-        return mMeasuredChildren.contains(dataIndex);
+        boolean ret;
+        synchronized (mMeasuredChildren) {
+            ret = mMeasuredChildren.contains(dataIndex);
+        }
+
+        return ret;
     }
 
     /**
@@ -417,29 +428,33 @@ abstract public class Layout {
         if (centerDataIndex == -1) {
             centerDataIndex = 0;
         }
-        for (int i = centerDataIndex; i >= 0 && i < mContainer.size() && inBounds; ++i) {
-            if (!isChildMeasured(i)) {
-                Widget view = measureChild(i, false);
-                if (!mViewPort.isClippingEnabled()) {
-                    postMeasurement();
-                } else {
-                    inBounds = inViewPort(i);
-                    if (!inBounds) {
-                        invalidate(i);
-                    } else {
-                        inBounds = postMeasurement();
-                    }
-                }
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
-                                "isBounds = %b viewport = %s dataIndex = %d layout = %s",
-                        view == null ? "<null>" : view.getName(), inBounds, mViewPort,
-                        i, this);
 
-                if (view != null && inBounds) {
-                    if (measuredChildren != null) {
-                        measuredChildren.add(view);
-                    }
-                    changed = true;
+        for (int i = centerDataIndex; i >= 0 && i < mContainer.size() && inBounds; ++i) {
+            changed = !isChildMeasured(i);
+            Widget view = changed ? measureChild(i, false) : mContainer.get(i);
+
+            if (!mViewPort.isClippingEnabled()) {
+                if (changed) {
+                    postMeasurement();
+                }
+            } else {
+                inBounds = inViewPort(i);
+                if (!inBounds) {
+                    invalidate(i);
+                    changed = !changed;
+                } else if (changed) {
+                    inBounds = postMeasurement();
+                }
+            }
+
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
+                            "isBounds = %b viewport = %s dataIndex = %d layout = %s",
+                    view == null ? "<null>" : view.getName(), inBounds, mViewPort,
+                    i, this);
+
+            if (view != null && inBounds) {
+                if (measuredChildren != null) {
+                    measuredChildren.add(view);
                 }
             }
         }
@@ -560,10 +575,12 @@ abstract public class Layout {
      */
     protected void layoutChildren() {
 
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layoutChildren [%d] layout = %s",
-                mMeasuredChildren.size(), this);
-
-        Set<Integer> copySet = new HashSet<>(mMeasuredChildren);
+        Set<Integer> copySet;
+        synchronized (mMeasuredChildren) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layoutChildren [%d] layout = %s",
+                    mMeasuredChildren.size(), this);
+            copySet = new HashSet<>(mMeasuredChildren);
+        }
         for (int nextMeasured: copySet) {
             Widget child = mContainer.get(nextMeasured);
             if (child != null) {

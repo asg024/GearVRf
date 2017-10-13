@@ -513,7 +513,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             }
 
             List<ListItemHostWidget> views = getAllHosts();
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d]", measuredChildren.size(), views.size());
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d] relaidout = %b",
+                    measuredChildren.size(), views.size(), relaidout);
             int count = 0;
             if (relaidout) {
                 for (ListItemHostWidget host : views) {
@@ -707,6 +708,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         private Vector3Axis mScrollByOffset = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
         private SimpleAnimationTracker animationTracker = SimpleAnimationTracker.get(getGVRContext());
         private boolean mScrolling = false;
+        private boolean mForce = false;
 
         private class ScrollAnimation extends Animation {
             private final float mShiftBy;
@@ -857,7 +859,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 startShifting(builder, layout, zOffset, Axis.Z);
             }
             if (builder.isEmptySet()) {
-                finish(true);
+                stopScrolling();
             } else {
                 Animation animation = builder.build();
                 animation.setInterpolator(mAnimationEasing);
@@ -870,7 +872,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                         new Animation.OnFinish() {
                             @Override
                             public final void finished(Animation animation) {
-                                finish(false);
+                                finish();
                                 FPSCounter.stopCheck("ScrollingAnimation");
                             }
                         });
@@ -879,19 +881,25 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
 
         void stopScrolling() {
-            animationTracker.interruptAll();
-            finish(true);
+            mForce = true;
+            if (!animationTracker.interruptAll()) {
+                finish();
+            }
         }
 
-        void finish(boolean force) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "finish scrolling with force = %b", force);
+        void finish() {
+            if (!mScrolling) {
+                return;
+            }
+
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "finish scrolling with force = %b", mForce);
             FPSCounter.timeCheck("finish mScrollToPosition [" + mScrollToPosition + "] <START>");
 
             int pos = mPreferableCenterPosition;
             for (Layout layout: mContent.mLayouts) {
                 pos = layout.getCenterChild();
-                if (!force) {
-                    force = mScrollByOffset.isNaN() ?
+                if (!mForce) {
+                    mForce = mScrollByOffset.isNaN() ?
                             pos == mScrollToPosition :
 
                             (Utility.equal(mScrollByOffset.get(Axis.X), 0) ||
@@ -903,7 +911,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 }
             }
 
-            if (force) {
+            if (mForce) {
                 mPreferableCenterPosition = pos;
                 mTrimRequest = true;
                 mScroller = null;
@@ -913,6 +921,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 scroll();
             }
             FPSCounter.timeCheck("finish mScrollToPosition [" + mScrollToPosition + "] <END>");
+            mForce = false;
         }
     }
 
