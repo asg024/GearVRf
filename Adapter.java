@@ -1,12 +1,10 @@
 package com.samsung.smcl.vr.widgets;
 
-import org.gearvrf.GVRSceneObject;
-
 import android.database.DataSetObserver;
 
 /**
  * An version of {@link android.widget.Adapter} adapted for use with
- * {@link GVRSceneObject} as the "view".
+ * {@link Widget} as the "view".
  * <p>
  * While {@link #getView(int, Widget, GroupWidget) getView()} should
  * only be called from the GL thread, the remaining methods should be prepared
