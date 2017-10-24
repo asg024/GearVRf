@@ -86,24 +86,24 @@ public class PropertyManager {
         } else {
             superProperties = new UnmodifiableJSONObject();
         }
-        Log.d(TAG,
+        Log.d(Log.SUBSYSTEM.JSON, TAG,
                 "buildClassProperties(%s): getting super properties for %s: %s",
                 name, canonicalName, superProperties);
 
         UnmodifiableJSONObject classProperties = mClassJson.optJSONObject(canonicalName);
-        Log.d(TAG,
+        Log.d(Log.SUBSYSTEM.JSON, TAG,
                 "buildClassProperties(%s): getting class properties for %s: %s",
                 name, canonicalName, classProperties);
         if (classProperties == null) {
             classProperties = new UnmodifiableJSONObject();
         } else {
-            Log.d(TAG, "buildClassProperties(%s): copy class properties for %s ...", name,
+            Log.d(Log.SUBSYSTEM.JSON, TAG, "buildClassProperties(%s): copy class properties for %s ...", name,
                     canonicalName);
             classProperties = new UnmodifiableJSONObject(JSONHelpers.copy(classProperties));
         }
 
         JSONObject mergedProperties = JSONHelpers.merge(classProperties, superProperties, name);
-        Log.d(TAG,
+        Log.d(Log.SUBSYSTEM.JSON, TAG,
                 "buildClassProperties(%s): getting merged properties for %s: %s",
                 name, canonicalName, mergedProperties);
         return new UnmodifiableJSONObject(mergedProperties);
@@ -118,11 +118,11 @@ public class PropertyManager {
         JSONObject json = JSONHelpers.loadJSONAsset(context,
                 "default_metadata.json");
         JSONObject publicJson = JSONHelpers.loadExternalJSONDocument(context, "user_default_metadata.json");
-        Log.d(TAG, "loadClassProperties(): public: %s", publicJson);
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "loadClassProperties(): public: %s", publicJson);
 
         JSONHelpers.merge(publicJson, json);
 
-        Log.d(TAG, "loadClassProperties(): %s", json);
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "loadClassProperties(): %s", json);
         mClassJson = new UnmodifiableJSONObject(json.optJSONObject("objects"));
         return json;
     }
@@ -131,7 +131,7 @@ public class PropertyManager {
             throws JSONException {
         final JSONObject json = JSONHelpers.loadJSONAsset(context, "objects.json");
         mInstanceJson = new UnmodifiableJSONObject(json.optJSONObject("objects"));
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "loadInstanceProperties(): loaded object properties: %s",
+        Log.v(Log.SUBSYSTEM.JSON, TAG, "loadInstanceProperties(): loaded object properties: %s",
                 mInstanceJson);
     }
 

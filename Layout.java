@@ -423,49 +423,82 @@ abstract public class Layout {
      * create the list of the measured items
      */
     protected boolean measureUntilFull(int centerDataIndex, final Collection<Widget> measuredChildren) {
-        boolean inBounds = true;
-        boolean changed = false;
         if (centerDataIndex == -1) {
             centerDataIndex = 0;
         }
 
-        for (int i = centerDataIndex; i >= 0 && i < mContainer.size() && inBounds; ++i) {
-            changed = !isChildMeasured(i);
-            Widget view = changed ? measureChild(i, false) : mContainer.get(i);
+        boolean firstChildInBoundsFound = false;
+
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: centerDataIndex view = %d mContainer.size() = %d",
+                centerDataIndex, mContainer.size());
+
+        for (int i = centerDataIndex; i >= 0 && i < mContainer.size();) {
+            boolean inBounds = true;
+            boolean childChanged = !isChildMeasured(i);
+            Widget view = childChanged ? measureChild(i) : mContainer.get(i);
 
             if (!mViewPort.isClippingEnabled()) {
-                if (changed) {
+                if (childChanged) {
                     postMeasurement();
                 }
             } else {
                 inBounds = inViewPort(i);
                 if (!inBounds) {
-                    invalidate(i);
-                    changed = !changed;
-                } else if (changed) {
-                    inBounds = postMeasurement();
+                    if (childChanged) {
+                        invalidate(i);
+                    }
+                    childChanged = !childChanged;
                 }
             }
 
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: measureChild view = %s " +
-                            "isBounds = %b viewport = %s dataIndex = %d layout = %s",
-                    view == null ? "<null>" : view.getName(), inBounds, mViewPort,
-                    i, this);
+                            "isBounds = %b  dataIndex = %d childChanged = %b, viewport = %s",
+                    view == null ? "<null>" : view.getName(), inBounds,
+                    i, childChanged, mViewPort);
 
             if (view != null && inBounds) {
                 if (measuredChildren != null) {
                     measuredChildren.add(view);
                 }
             }
+
+            boolean directionIsChanged = changeDirection(i, centerDataIndex, inBounds);
+
+            i = getNextIndex(i, centerDataIndex, directionIsChanged);
+
+            firstChildInBoundsFound = firstChildInBoundsFound || inBounds;
+
+            if (directionIsChanged) {
+                inBounds = true;
+            }
+
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: directionIsChanged = %b inBounds = %b",
+                    directionIsChanged, inBounds);
+
+            if (mViewPort.isClippingEnabled() && childChanged) {
+                inBounds = postMeasurement();
+            }
+
+            if (firstChildInBoundsFound && !inBounds) {
+                break;
+            }
         }
-        return changed;
+        return true;
     }
 
-    /**
-     * Compute the offset and apply layout parameters to all measured items
-     * @return true if all items fit the container, false - otherwise
-     *
-     */
+    protected int getNextIndex(int currentIndex, int centerIndex, boolean changeDirection) {
+        return ++currentIndex;
+    }
+
+    protected boolean changeDirection(int currentIndex, int centerIndex, boolean inBounds) {
+        return false;
+    }
+
+        /**
+         * Compute the offset and apply layout parameters to all measured items
+         * @return true if all items fit the container, false - otherwise
+         *
+         */
     protected abstract boolean postMeasurement();
 
     /**
@@ -607,8 +640,7 @@ abstract public class Layout {
             private static final String pattern = "\nViewPortDimension: size = %f, shift = %f, clip = %b";
 
             public String toString() {
-                return super.toString() + String.format(pattern,
-                        size, shift, clipping);
+                return String.format(pattern, size, shift, clipping);
             }
 
             @Override
@@ -728,7 +760,7 @@ abstract public class Layout {
         private static final String pattern = "\nViewPort: x = %s, y = %s, z = %s";
 
         public String toString() {
-            return super.toString() + String.format(pattern,
+            return String.format(pattern,
                     m3Dimensions.get(Axis.X), m3Dimensions.get(Axis.Y), m3Dimensions.get(Axis.Z));
         }
     }

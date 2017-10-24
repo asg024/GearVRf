@@ -22,7 +22,6 @@ import java.util.Set;
 
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optEnum;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optFloat;
-import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONArray;
 import static com.samsung.smcl.vr.widgets.JSONHelpers.optJSONObject;
 
 // TODO: Add support for animation (in particular, we need to handle layout changes)
@@ -286,12 +285,12 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         Log.d(TAG, "init(%s): easing: %s", getName(), mAnimationEasing);
 
         mContent = new ContentWidget(gvrContext);
-        setName("Content<" + getName() + ">");
+        mContent.setName("Content<" + getName() + ">");
         mContent.addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
         addChild(mContent);
-        if (adapter != null) {
+//      if (adapter != null) {
             onChanged(adapter);
-        }
+  //      }
     }
 
     private OnFocusListener mOnFocusListener = new OnFocusListener() {
@@ -505,7 +504,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             int centerPosition = mPreferableCenterPosition;
             // scrolling is in progress, do not remeasure the layout!
             Collection<Widget> measuredChildren = new LinkedHashSet<>();
-            boolean relaidout = layout.measureUntilFull(centerPosition, measuredChildren);
+            layout.measureUntilFull(centerPosition, measuredChildren);
             centerPosition = layout.getCenterChild();
 
             for (Widget next: measuredChildren) {
@@ -513,20 +512,15 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             }
 
             List<ListItemHostWidget> views = getAllHosts();
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d] relaidout = %b",
-                    measuredChildren.size(), views.size(), relaidout);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d]", measuredChildren.size(), views.size());
             int count = 0;
-            if (relaidout) {
-                for (ListItemHostWidget host : views) {
-                    if (!measuredChildren.contains(host)) {
-                        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] %s recycling", host.getName(), host);
-                        recycle(host);
-                    } else {
-                        count++;
-                    }
+            for (ListItemHostWidget host : views) {
+                if (!measuredChildren.contains(host)) {
+                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] %s recycling", host.getName(), host);
+                    recycle(host);
+                } else {
+                    count++;
                 }
-            } else {
-                count =  views.size();
             }
 
             for (ListOnChangedListener listener : mOnChangedListeners) {
@@ -538,7 +532,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measure layout mPreferableCenterPosition = %d, newPosition = %d",
                     mPreferableCenterPosition, centerPosition);
 
-            return relaidout;
+            return true;
         }
 
         @Override
@@ -594,6 +588,13 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             return true;
         }
 
+        @Override
+        protected void onTransformChanged() {
+            super.onTransformChanged();
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mContent onTransformChanged: position = [%f, %f, %f]",
+                    getPositionX(), getPositionY(), getPositionZ());
+
+        }
     }
 
     private List<ListItemHostWidget> getAllHosts() {
@@ -742,7 +743,6 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                         target.translate(0, 0, -(mShiftedBy - shifted));
                         break;
                 }
-
             }
         }
 
@@ -815,12 +815,14 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 }
             }
 
-            if (isTransitionAnimationEnabled()) {
-                ScrollAnimation animation = new ScrollAnimation(ListWidget.this.mContent, layout, shiftBy, axis);
-                builder.add(animation);
-            } else {
-                layout.shiftBy(shiftBy, axis);
-                mContent.requestLayout();
+            if (!Utility.equal(shiftBy, 0)) {
+                if (isTransitionAnimationEnabled()) {
+                    ScrollAnimation animation = new ScrollAnimation(ListWidget.this.mContent, layout, shiftBy, axis);
+                    builder.add(animation);
+                } else {
+                    layout.shiftBy(shiftBy, axis);
+                    mContent.requestLayout();
+                }
             }
         }
 

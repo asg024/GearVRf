@@ -14,8 +14,8 @@ import java.util.List;
  * be specified by calling {@link LinearLayout#setGravity} or specify that the children fill up any remaining
  * space in the layout by setting gravity to FILL. The default gravity is {@link Gravity#CENTER}.
  *
- * The size of the layout determines the viewport size (virtual area used by the list rendering engine) if the
- * flag {@link Layout#mClippingEnabled} is set. Otherwise all items are rendered in the list even if they
+ * The size of the layout determines the viewport size (virtual area used by the list rendering engine) if
+ * {@link Layout#isClippingEnabled()}  is true. Otherwise all items are rendered in the list even if they
  * occupy larger space  than the container size is. The unlimited size can be specified for the layout. For
  * layout with unlimited size only {@link Gravity#CENTER} can be applied.
  */
@@ -397,66 +397,51 @@ public class LinearLayout extends OrientedLayout {
         return direction;
     }
 
+    // <<<<<< measureUntilFull helper methods
     @Override
-    protected boolean measureUntilFull(final int centerDataIndex, final Collection<Widget> measuredChildren) {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull centerDataIndex = %d", centerDataIndex);
-        // no preferred position, just feed all data starting from beginning.
-        if (centerDataIndex == -1) {
-            return super.measureUntilFull(centerDataIndex, measuredChildren);
+    protected boolean changeDirection(int currentIndex, int centerIndex, boolean inBounds) {
+        boolean changed = false;
+        if (mGravity == Gravity.CENTER &&
+                currentIndex <= centerIndex &&
+                currentIndex == 0 || !inBounds) {
+
+            changed = true;
         }
+        return changed;
+    }
 
-        boolean inBounds = true;
-        boolean leftPart = true;
-
+    @Override
+    protected int getNextIndex(int currentIndex, int centerIndex, boolean changeDirection) {
+        int sign = 1;
+        int i  = currentIndex;
         switch (mGravity) {
             case TOP:
             case LEFT:
             case FRONT:
             case FILL:
-                leftPart = false;
                 break;
             case BOTTOM:
             case RIGHT:
             case BACK:
-            case CENTER:
-                leftPart = true;
+                sign = -1;
                 break;
+            case CENTER:
+                sign = i > centerIndex ? 1 : -1;
             default:
                 break;
         }
-        boolean changed = false;
-        for (int i = centerDataIndex; i < mContainer.size() && i >= 0 && inBounds;) {
-            if (!isChildMeasured(i)) {
-                Widget view = measureChild(i);
 
-                inBounds = !isClippingEnabled() || inViewPort(i);
-
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull<Linear>: measureChild view = %s " +
-                                "isBounds = %b index = %d isViewPortEnabled() = %b layout = %s",
-                        view == null ? "null" : view.getName(), inBounds, i, isClippingEnabled(), this);
-
-                if (!inBounds) {
-                    invalidate(i);
-                } else if (view != null) {
-                    changed = true;
-                    if (measuredChildren != null) {
-                        measuredChildren.add(view);
-                    }
-                }
-            }
-            // finished left part, start to feed right part
-            if (mGravity == Gravity.CENTER &&
-                    leftPart &&
-                    (i == 0 || !inBounds)) {
-                i = centerDataIndex;
-                inBounds = true;
-                leftPart = false;
-            }
-
-            i += leftPart ? -1 : 1;
+        if (changeDirection) {
+            i = centerIndex;
+            sign *= -1;
         }
-        return changed;
+
+        i += sign;
+        return i;
     }
+
+    // >>>>>> measureUntilFull helper methods
+
 
     protected int getCenterChild(CacheDataSet cache) {
         if (cache.count() == 0)

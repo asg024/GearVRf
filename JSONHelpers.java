@@ -86,12 +86,12 @@ abstract public class JSONHelpers {
     }
 
     public static <P extends Enum<P>> boolean optBoolean(final JSONObject json,
-            P e) {
+                                                         P e) {
         return json.optBoolean(e.name());
     }
 
     public static <P extends Enum<P>> boolean optBoolean(final JSONObject json,
-            P e, boolean fallback) {
+                                                         P e, boolean fallback) {
         return json.optBoolean(e.name(), fallback);
     }
 
@@ -119,20 +119,20 @@ abstract public class JSONHelpers {
     }
 
     public static <P extends Enum<P>> double optDouble(final JSONObject json,
-            P e) {
+                                                       P e) {
         return json.optDouble(e.name());
     }
 
     public static <P extends Enum<P>> double optDouble(final JSONObject json,
-            P e, double fallback) {
+                                                       P e, double fallback) {
         return json.optDouble(e.name(), fallback);
     }
 
     /**
      * Maps {@code e} to {@code value}, clobbering any existing mapping with the same name.
      *
-     * @param json {@link JSONObject} to put data to
-     * @param e {@link Enum} labeling the data to put
+     * @param json  {@link JSONObject} to put data to
+     * @param e     {@link Enum} labeling the data to put
      * @param value A {@code double} value to put. If {@link Float#NaN NaN} or
      *              {@link Float#POSITIVE_INFINITY positive} or
      *              {@link Float#NEGATIVE_INFINITY negative} infinity is specified, no mapping will
@@ -167,12 +167,12 @@ abstract public class JSONHelpers {
     }
 
     public static <P extends Enum<P>> float optFloat(final JSONObject json,
-                                                       P e) {
+                                                     P e) {
         return (float) json.optDouble(e.name());
     }
 
     public static <P extends Enum<P>> float optFloat(final JSONObject json,
-                                                       P e, double fallback) {
+                                                     P e, double fallback) {
         return (float) json.optDouble(e.name(), fallback);
     }
 
@@ -187,8 +187,9 @@ abstract public class JSONHelpers {
     /**
      * Returns the value mapped to {@code e} if it exists and is an {@code int} or can be coerced to
      * an {@code int}. Returns 0 otherwise.
+     *
      * @param json {@link JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param e    {@link Enum} labeling the data to get
      */
     public static <P extends Enum<P>> int optInt(final JSONObject json, P e) {
         return json.optInt(e.name());
@@ -198,12 +199,12 @@ abstract public class JSONHelpers {
      * Returns the value mapped to {@code e} if it exists and is an {@code int} or can be coerced to
      * an {@code int}. Returns {@code fallback} otherwise.
      *
-     * @param json {@link JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json     {@link JSONObject} to get data from
+     * @param e        {@link Enum} labeling the data to get
      * @param fallback Value to return if there is no {@code int} value mapped to {@code e}
      */
     public static <P extends Enum<P>> int optInt(final JSONObject json, P e,
-            int fallback) {
+                                                 int fallback) {
         return json.optInt(e.name(), fallback);
     }
 
@@ -235,7 +236,7 @@ abstract public class JSONHelpers {
     }
 
     public static <P extends Enum<P>> long optLong(final JSONObject json, P e,
-            long fallback) {
+                                                   long fallback) {
         return json.optLong(e.name(), fallback);
     }
 
@@ -271,12 +272,12 @@ abstract public class JSONHelpers {
      * @return
      */
     public static <P extends Enum<P>> String optString(final JSONObject json,
-            P e) {
+                                                       P e) {
         return json.optString(e.name());
     }
 
     public static <P extends Enum<P>> String optString(final JSONObject json,
-            P e, String fallback) {
+                                                       P e, String fallback) {
         return json.optString(e.name(), fallback);
     }
 
@@ -376,7 +377,7 @@ abstract public class JSONHelpers {
         return json;
     }
 
-    public static <P extends Enum<P>> JSONObject getJSONObject( final JSONObject json, P e) {
+    public static <P extends Enum<P>> JSONObject getJSONObject(final JSONObject json, P e) {
         try {
             return json.getJSONObject(e.name());
         } catch (JSONException e1) {
@@ -389,7 +390,7 @@ abstract public class JSONHelpers {
      * not exist returns {@code null}.
      *
      * @param json {@link JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param e    {@link Enum} labeling the data to get
      * @return A {@code JSONObject} if the mapping exists; {@code null} otherwise
      */
     public static <P extends Enum<P>> JSONObject optJSONObject(final JSONObject json, P e) {
@@ -400,8 +401,8 @@ abstract public class JSONHelpers {
      * Returns the value mapped by enum if it exists and is a {@link JSONObject}. If a value is not
      * mapped by that enum, returns {@code fallback}.
      *
-     * @param json {@link JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json     {@link JSONObject} to get data from
+     * @param e        {@link Enum} labeling the data to get
      * @param fallback Value to return if there is no mapped data
      * @return A {@code JSONObject} if the mapping exists; {@code defValue} otherwise
      */
@@ -419,10 +420,10 @@ abstract public class JSONHelpers {
      * not exist by that enum, and {@code emptyForNull} is {@code true}, returns
      * {@link #EMPTY_OBJECT}. Otherwise, returns {@code null}.
      *
-     * @param json {@link JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json         {@link JSONObject} to get data from
+     * @param e            {@link Enum} labeling the data to get
      * @param emptyForNull {@code True} to return {@code EMPTY_OBJECT} if there is no mapped data,
-     *                                 {@code false} to return {@code null} in that case
+     *                     {@code false} to return {@code null} in that case
      * @return A {@code JSONObject} if the mapping exists; {@code EMPTY_OBJECT} if it doesn't and
      * {@code emptyForNull} is {@code true}; {@code null} otherwise
      */
@@ -454,10 +455,10 @@ abstract public class JSONHelpers {
      * exist by that enum, and {@code emptyForNull} is {@code true}, returns {@link #EMPTY_ARRAY}.
      * Otherwise, returns {@code null}.
      *
-     * @param json {@code JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json         {@code JSONObject} to get data from
+     * @param e            {@link Enum} labeling the data to get
      * @param emptyForNull {@code True} to return {@code EMPTY_ARRAY} if there is no mapped data,
-     *                                 {@code false} to return {@code null} in that case
+     *                     {@code false} to return {@code null} in that case
      * @return A {@code JSONObject} if the mapping exists; {@code EMPTY_ARRAY} if it doesn't and
      * {@code emptyForNull} is {@code true}; {@code null} otherwise
      */
@@ -480,7 +481,7 @@ abstract public class JSONHelpers {
      * "y" members into a {@link Point}.
      *
      * @param json {@code JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param e    {@link Enum} labeling the data to get
      * @return An instance of {@code Point} or {@null} if there is no object mapping for {@code e}.
      */
     public static <P extends Enum<P>> Point optPoint(final JSONObject json, P e) {
@@ -492,15 +493,15 @@ abstract public class JSONHelpers {
      * "y" members into a {@link Point}. The values in {@code fallback} are used if either field is
      * missing; if {@code fallback} is {@code null}, 0 (zero) is used.
      *
-     * @param json {@code JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json     {@code JSONObject} to get data from
+     * @param e        {@link Enum} labeling the data to get
      * @param fallback Default value to return if there is no mapping
      * @return An instance of {@code Point} or {@code fallback} if there is no object mapping for
      * {@code e}.
      */
     public static <P extends Enum<P>> Point optPoint(final JSONObject json, P e, Point fallback) {
         JSONObject value = optJSONObject(json, e);
-        Log.d(TAG, "optPoint(): raw: %s", value);
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "optPoint(): raw: %s", value);
         Point p = asPoint(value, fallback);
 
         return p;
@@ -515,7 +516,7 @@ abstract public class JSONHelpers {
         if (json != null && isPoint(json)) {
             int x = json.optInt("x", defValue != null ? defValue.x : 0);
             int y = json.optInt("y", defValue != null ? defValue.y : 0);
-            Log.d(TAG, "optPoint(): x: %d, y: %d", x, y);
+            Log.d(Log.SUBSYSTEM.JSON, TAG, "optPoint(): x: %d, y: %d", x, y);
             p = new Point(x, y);
         }
         return p;
@@ -527,10 +528,10 @@ abstract public class JSONHelpers {
      * {@code emptyForNull} is {@code true}, returns a default constructed {@code Point}. Otherwise,
      * returns {@code null}.
      *
-     * @param json {@code JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json         {@code JSONObject} to get data from
+     * @param e            {@link Enum} labeling the data to get
      * @param emptyForNull {@code True} to return a default constructed {@code Point} if there is no
-     *                                 mapped data, {@code false} to return {@code null} in that case
+     *                     mapped data, {@code false} to return {@code null} in that case
      * @return A {@code Point} if the mapping exists or {@code emptyForNull} is {@code true};
      * {@code null} otherwise
      */
@@ -552,9 +553,9 @@ abstract public class JSONHelpers {
      * "y" members into a {@link PointF}.
      *
      * @param json {@code JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param e    {@link Enum} labeling the data to get
      * @return An instance of {@code PointF} or {@code null} if there is no object mapping for
-     *          {@code e}.
+     * {@code e}.
      */
     public static <P extends Enum<P>> PointF optPointF(final JSONObject json, P e) {
         return optPointF(json, e, null);
@@ -565,8 +566,8 @@ abstract public class JSONHelpers {
      * "y" members into a {@link PointF}.  The values in {@code fallback} are used if either field
      * is missing; if {@code fallback} is {@code null}, {@link Float#NaN} is used.
      *
-     * @param json {@code JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json     {@code JSONObject} to get data from
+     * @param e        {@link Enum} labeling the data to get
      * @param fallback Default value to return if there is no mapping
      * @return An instance of {@code PointF} or {@code fallback} if there is no object mapping for
      * {@code e}.
@@ -588,7 +589,7 @@ abstract public class JSONHelpers {
             float x = (float) json.optDouble("x", fallback != null ? fallback.x : Float.NaN);
             float y = (float) json.optDouble("y", fallback != null ? fallback.y : Float.NaN);
 
-            p = new PointF(x,y);
+            p = new PointF(x, y);
         }
         return p;
     }
@@ -599,10 +600,10 @@ abstract public class JSONHelpers {
      * {@code emptyForNull} is {@code true}, returns a default constructed {@code Point}. Otherwise,
      * returns {@code null}.
      *
-     * @param json {@code JSONObject} to get data from
-     * @param e {@link Enum} labeling the data to get
+     * @param json         {@code JSONObject} to get data from
+     * @param e            {@link Enum} labeling the data to get
      * @param emptyForNull {@code True} to return a default constructed {@code Point} if there is no
-     *                                 mapped data, {@code false} to return {@code null} in that case
+     *                     mapped data, {@code false} to return {@code null} in that case
      * @return A {@code Point} if the mapping exists or {@code emptyForNull} is {@code true};
      * {@code null} otherwise
      */
@@ -633,8 +634,8 @@ abstract public class JSONHelpers {
      * using {@code defPoint}.  However, if the value exists and is a {@link Number}, it is
      * interpreted as implicitly defining both the 'x' and 'y' fields, and the value is left as-is.
      *
-     * @param json {@code JSONObject} to check for value
-     * @param e {@link Enum} mapping the value to check
+     * @param json     {@code JSONObject} to check for value
+     * @param e        {@link Enum} mapping the value to check
      * @param defPoint The value to use as default
      * @return The {@code JSONObject} passed as '{@code json}', for call-chaining.
      */
@@ -649,9 +650,9 @@ abstract public class JSONHelpers {
      * using {@code defPoint}.  However, if {@code allowImplicitPoint} is {@code true}, and the
      * value exists and is a {@link Number}, then the value is left as-is.
      *
-     * @param json {@code JSONObject} to check for value
-     * @param e {@link Enum} mapping the value to check
-     * @param defPoint The value to use as default
+     * @param json               {@code JSONObject} to check for value
+     * @param e                  {@link Enum} mapping the value to check
+     * @param defPoint           The value to use as default
      * @param allowImplicitPoint Whether to interpret a {@code Number} value as implicitly defining
      *                           both fields of a {@code PointF}.
      * @return The {@code JSONObject} passed as '{@code json}', for call-chaining.
@@ -693,7 +694,7 @@ abstract public class JSONHelpers {
      * <em>extends</em> {@code Point}.
      *
      * @param json {@code JSONObject} to check
-     * @param e {@link Enum} labeling the data to check
+     * @param e    {@link Enum} labeling the data to check
      * @return {@code True} if the mapping exists and meets the conditions above; {@code false}
      * otherwise.
      */
@@ -706,7 +707,7 @@ abstract public class JSONHelpers {
     public static boolean isPoint(JSONObject jo) {
         Object x = jo.opt("x");
         Object y = jo.opt("y");
-        Log.d(TAG, "isPoint(): x: %s, y: %s", x, y);
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "isPoint(): x: %s, y: %s", x, y);
         if (x == null && y == null) return false;
         if (x != null && !(x instanceof Number)) return false;
         if (y != null && !(y instanceof Number)) return false;
@@ -786,7 +787,7 @@ abstract public class JSONHelpers {
         Object x = jo.opt("x");
         Object y = jo.opt("y");
         Object z = jo.opt("z");
-        Log.d(TAG, "isVector3f(): x: %s, y: %s, z: %s", x, y, z);
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "isVector3f(): x: %s, y: %s, z: %s", x, y, z);
         if (x == null && y == null && z == null) return false;
         if (x != null && !(x instanceof Number)) return false;
         if (y != null && !(y instanceof Number)) return false;
@@ -810,12 +811,10 @@ abstract public class JSONHelpers {
     /**
      * Check if the value at {@code key} is a {@link Boolean}.
      *
-     * @param json
-     *            {@link JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@link JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is a {@code Boolean};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasBoolean(final JSONObject json, final String key) {
         return hasInstanceOf(json, key, Boolean.class);
@@ -829,15 +828,12 @@ abstract public class JSONHelpers {
      * Check if the value at {@code key} is a {@link Boolean} or can,
      * optionally, be coerced into a {@code Boolean}.
      *
-     * @param json
-     *            {@link JSONObject} to inspect
-     * @param key
-     *            Item in object to check
-     * @param coerce
-     *            If {@code true}, check if the value can be coerced to
-     *            {@code Boolean}
+     * @param json   {@link JSONObject} to inspect
+     * @param key    Item in object to check
+     * @param coerce If {@code true}, check if the value can be coerced to
+     *               {@code Boolean}
      * @return {@code True} if the item exists and is a {@code Boolean};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasBoolean(final JSONObject json, final String key,
                                      final boolean coerce) {
@@ -870,12 +866,10 @@ abstract public class JSONHelpers {
     /**
      * Check if the value at {@code key} is a {@link Double}.
      *
-     * @param json
-     *            {@link JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@link JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is a {@code Double};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasDouble(final JSONObject json, final String key) {
         return hasInstanceOf(json, key, Number.class);
@@ -899,12 +893,10 @@ abstract public class JSONHelpers {
     /**
      * Check if the value at {@code key} is an {@link Integer} or can be coerced to an {@code int}.
      *
-     * @param json
-     *            {@link JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@link JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is an {@code Integer};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasInt(final JSONObject json, final String key) {
         return hasInt(json, key, true);
@@ -927,12 +919,10 @@ abstract public class JSONHelpers {
     /**
      * Check if the value at {@code key} is a {@link Long}.
      *
-     * @param json
-     *            {@code JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@code JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is a {@code Long};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasLong(final JSONObject json, final String key) {
         return hasLong(json, key, true);
@@ -955,12 +945,10 @@ abstract public class JSONHelpers {
     /**
      * Check if the value at {@code key} is a {@link Number}.
      *
-     * @param json
-     *            {@link JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@link JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is a {@code Number};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasNumber(final JSONObject json, final String key) {
         return hasInstanceOf(json, key, Number.class);
@@ -974,15 +962,12 @@ abstract public class JSONHelpers {
      * Check if the value at {@code key} is a {@link Number} or can, optionally,
      * be coerced into a {@code Number}.
      *
-     * @param json
-     *            {@code JSONObject} to inspect
-     * @param key
-     *            Item in object to check
-     * @param coerce
-     *            If {@code true}, check if the value can be coerced to a
-     *            {@code Number}
+     * @param json   {@code JSONObject} to inspect
+     * @param key    Item in object to check
+     * @param coerce If {@code true}, check if the value can be coerced to a
+     *               {@code Number}
      * @return {@code True} if the item exists and is a {@code Number};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasNumber(final JSONObject json, final String key,
                                     final boolean coerce) {
@@ -1005,8 +990,8 @@ abstract public class JSONHelpers {
                 Double.valueOf(s);
                 return true;
             } catch (NumberFormatException e) {
-                Log.e(TAG, e,
-                      "hasNumber(): failed to coerce value at '%s' (%s)", key, o);
+                Log.e(Log.SUBSYSTEM.JSON, TAG, e,
+                        "hasNumber(): failed to coerce value at '%s' (%s)", key, o);
             }
         }
         return false;
@@ -1016,12 +1001,10 @@ abstract public class JSONHelpers {
      * Check if the specified {@link JSONObject} has a {@code String} at
      * {@code key}.
      *
-     * @param json
-     *            {@code JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@code JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is a {@code String};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasString(final JSONObject json, final String key) {
         return hasInstanceOf(json, key, String.class);
@@ -1037,12 +1020,10 @@ abstract public class JSONHelpers {
      * If the item is not naturally an {@code Enum}, checks to see if it is a {@link String} with
      * one of the {@code Enum's} {@linkplain Enum#valueOf(Class, String) values}.
      *
-     * @param json
-     *            {@code JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@code JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is an {@code Enum};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static <P extends Enum<P>> boolean hasEnum(final JSONObject json,
                                                       final String key, final Class<? extends Enum> enumType) {
@@ -1061,9 +1042,9 @@ abstract public class JSONHelpers {
                 Enum.valueOf(enumType, s);
                 return true;
             } catch (IllegalArgumentException e) {
-                Log.e(TAG, e,
-                      "hasEnum(): failed to coerce value at '%s' to %s (%s)",
-                      key, enumType.getSimpleName(), o);
+                Log.e(Log.SUBSYSTEM.JSON, TAG, e,
+                        "hasEnum(): failed to coerce value at '%s' to %s (%s)",
+                        key, enumType.getSimpleName(), o);
             }
         }
         return false;
@@ -1078,12 +1059,10 @@ abstract public class JSONHelpers {
      * Check if the specified {@link JSONObject} has a {@code JSONArray} at
      * {@code key}.
      *
-     * @param json
-     *            {@code JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@code JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is a {@code JSONArray};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasJSONArray(final JSONObject json, final String key) {
         return hasInstanceOf(json, key, JSONArray.class);
@@ -1097,12 +1076,10 @@ abstract public class JSONHelpers {
      * Check if the specified {@link JSONObject} has a {@code JSONObject} at
      * {@code key}.
      *
-     * @param json
-     *            {@code JSONObject} to inspect
-     * @param key
-     *            Item in object to check
+     * @param json {@code JSONObject} to inspect
+     * @param key  Item in object to check
      * @return {@code True} if the item exists and is a {@code JSONObject};
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public static boolean hasJSONObject(final JSONObject json, final String key) {
         return hasInstanceOf(json, key, JSONObject.class);
@@ -1116,14 +1093,11 @@ abstract public class JSONHelpers {
      * Check if the {@link JSONObject} has an item at {@code key} that is an
      * instance of {@code type}.
      *
-     * @param json
-     *            {@code JSONObject} to inspect
-     * @param key
-     *            Item in object to check
-     * @param type
-     *            Type to check the item against
+     * @param json {@code JSONObject} to inspect
+     * @param key  Item in object to check
+     * @param type Type to check the item against
      * @return {@code True} if the item exists and is of the specified
-     *         {@code type}; {@code false} otherwise
+     * {@code type}; {@code false} otherwise
      */
     public static boolean hasInstanceOf(final JSONObject json, final String key,
                                         Class<?> type) {
@@ -1142,10 +1116,8 @@ abstract public class JSONHelpers {
     /**
      * Load a JSON file from the application's "asset" directory.
      *
-     * @param context
-     *            Valid {@link Context}
-     * @param asset
-     *            Name of the JSON file
+     * @param context Valid {@link Context}
+     * @param asset   Name of the JSON file
      * @return New instance of {@link JSONObject}
      */
     public static JSONObject loadJSONAsset(Context context, final String asset) {
@@ -1155,10 +1127,8 @@ abstract public class JSONHelpers {
     /**
      * Load a JSON file from one of the public directories defined by {@link Environment}.
      *
-     * @param publicDirectory
-     *            One of the {@code DIRECTORY_*} constants defined by {@code Environment}.
-     * @param file
-     *            Relative path to file in the public directory.
+     * @param publicDirectory One of the {@code DIRECTORY_*} constants defined by {@code Environment}.
+     * @param file            Relative path to file in the public directory.
      * @return New instance of {@link JSONObject}
      */
     public static JSONObject loadPublicJSONFile(final String publicDirectory, final String file) {
@@ -1171,7 +1141,7 @@ abstract public class JSONHelpers {
     }
 
     public static JSONObject loadJSONFile(Context context, final String directory, final String file) {
-        Log.d(TAG, "loadJSONFile(): Context.getDir(): %s",
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "loadJSONFile(): Context.getDir(): %s",
                 context.getDir(Environment.DIRECTORY_DOCUMENTS, Context.MODE_PRIVATE));
         File dir = new File(context.getFilesDir(), directory);
         return loadJSONFile(dir, file);
@@ -1188,12 +1158,13 @@ abstract public class JSONHelpers {
             final File f = new File(dir, file);
             if (f.exists()) {
                 rawJson = Utility.readTextFile(f);
-                Log.d(TAG, "loadJSONFile(): %s", f.getPath());
+                Log.d(Log.SUBSYSTEM.JSON, TAG, "loadJSONFile(): %s", f.getPath());
             } else {
                 Log.w(TAG, "loadJSONFile(): file %s doesn't exists", f.getPath());
             }
         } else {
-            Log.w(TAG, "loadJSONFile(): directory %s doesn't exists", dir.getPath());
+            Log.w(Log.SUBSYSTEM.JSON,
+                    TAG, "loadJSONFile(): directory %s doesn't exists", dir.getPath());
         }
 
         return getJsonObject(rawJson);
@@ -1202,8 +1173,7 @@ abstract public class JSONHelpers {
     /**
      * Load a JSON file from {@link Environment#DIRECTORY_DOCUMENTS}.
      *
-     * @param file
-     *            Relative path to file in "Documents" directory.
+     * @param file Relative path to file in "Documents" directory.
      * @return New instance of {@link JSONObject}
      */
     public static JSONObject loadPublicJSONDocument(final String file) {
@@ -1213,10 +1183,8 @@ abstract public class JSONHelpers {
     /**
      * Load a JSON file from a private application directory as defined by {@link Environment}.
      *
-     * @param directory
-     *            One of the {@code DIRECTORY_*} constants defined by {@code Environment}.
-     * @param file
-     *            Relative path to file in the public directory.
+     * @param directory One of the {@code DIRECTORY_*} constants defined by {@code Environment}.
+     * @param file      Relative path to file in the public directory.
      * @return New instance of {@link JSONObject}
      */
     public static JSONObject loadExternalJSONFile(Context context, final String directory,
@@ -1228,8 +1196,7 @@ abstract public class JSONHelpers {
     /**
      * Load a JSON file from the application's private {@link Environment#DIRECTORY_DOCUMENTS}.
      *
-     * @param file
-     *            Relative path to file in "Documents" directory.
+     * @param file Relative path to file in "Documents" directory.
      * @return New instance of {@link JSONObject}
      */
     public static JSONObject loadExternalJSONDocument(Context context, final String file) {
@@ -1245,7 +1212,7 @@ abstract public class JSONHelpers {
 
     @NonNull
     private static JSONObject getJsonObject(String rawJson) {
-        Log.v(TAG, "getJsonObject(): raw JSON: %s", rawJson);
+        Log.v(Log.SUBSYSTEM.JSON, TAG, "getJsonObject(): raw JSON: %s", rawJson);
         if (rawJson == null) {
             return new JSONObject();
         }
@@ -1261,8 +1228,7 @@ abstract public class JSONHelpers {
      * <p>
      * Equivalent to calling {@link #copy(JSONArray, boolean) copy(src, true)}.
      *
-     * @param src
-     *            {@code JSONArray} to copy
+     * @param src {@code JSONArray} to copy
      * @return A new {@code JSONArray} copied from {@code src}
      */
     public static JSONArray copy(final JSONArray src) {
@@ -1277,11 +1243,9 @@ abstract public class JSONHelpers {
     /**
      * Copies {@code src} into a new {@link JSONArray}.
      *
-     * @param src
-     *            {@code JSONArray} to copy
-     * @param deep
-     *            {@code True} to perform a deep copy, {@code false} to perform
-     *            a shallow copy
+     * @param src  {@code JSONArray} to copy
+     * @param deep {@code True} to perform a deep copy, {@code false} to perform
+     *             a shallow copy
      * @return A new {@code JSONArray} copied from {@code src}
      */
     public static JSONArray copy(final JSONArray src, final boolean deep) {
@@ -1309,8 +1273,7 @@ abstract public class JSONHelpers {
      * <p>
      * Equivalent to calling {@link #copy(JSONObject, boolean) copy(src, true)}.
      *
-     * @param src
-     *            {@code JSONObject} to copy
+     * @param src {@code JSONObject} to copy
      * @return A new {@code JSONObject} copied from {@code src}
      */
     public static JSONObject copy(final JSONObject src) {
@@ -1320,11 +1283,9 @@ abstract public class JSONHelpers {
     /**
      * Copies {@code src} into a new {@link JSONObject}.
      *
-     * @param src
-     *            {@code JSONObject} to copy
-     * @param deep
-     *            {@code True} to perform a deep copy, {@code false} to perform
-     *            a shallow copy
+     * @param src  {@code JSONObject} to copy
+     * @param deep {@code True} to perform a deep copy, {@code false} to perform
+     *             a shallow copy
      * @return A new {@code JSONObject} copied from {@code src}
      */
     public static JSONObject copy(final JSONObject src, final boolean deep) {
@@ -1357,10 +1318,8 @@ abstract public class JSONHelpers {
      * {@code src} is longer than {@dest}, this turns {@dest} into a copy of
      * {@src}.
      *
-     * @param src
-     *            {@code JSONArray} to merge from
-     * @param dest
-     *            {@code JSONArray} to merge to
+     * @param src  {@code JSONArray} to merge from
+     * @param dest {@code JSONArray} to merge to
      * @return The modified {@code dest} array.
      */
     public static JSONArray merge(final JSONArray src, final JSONArray dest) {
@@ -1377,16 +1336,13 @@ abstract public class JSONHelpers {
      * {@code dest}; if enabled and {@code src} is longer than {@dest}, this
      * turns {@dest} into a copy of {@src}.
      *
-     * @param src
-     *            {@code JSONArray} to merge from
-     * @param dest
-     *            {@code JSONArray} to merge to
-     * @param overwrite
-     *            If {@code true}, overwrites non-null values in {@code dest}
+     * @param src       {@code JSONArray} to merge from
+     * @param dest      {@code JSONArray} to merge to
+     * @param overwrite If {@code true}, overwrites non-null values in {@code dest}
      * @return The modified {@code dest} array.
      */
     public static JSONArray merge(JSONArray src, JSONArray dest,
-            boolean overwrite) {
+                                  boolean overwrite) {
         return merge(src, dest, null, overwrite);
     }
 
@@ -1406,15 +1362,11 @@ abstract public class JSONHelpers {
      * Optionally, {@link JSONObject} and {@link JSONArray} values are
      * {@linkplain #copy(JSONObject) deep copied}.
      *
-     * @param src
-     *            {@code JSONArray} to merge from
-     * @param dest
-     *            {@code JSONArray} to merge to
-     * @param overwrite
-     *            If {@code true}, overwrites non-null values in {@code dest}
-     * @param deep
-     *            If {@code true}, makes deep copies of any {@code JSONObject}
-     *            and {@code JSONArray} values
+     * @param src       {@code JSONArray} to merge from
+     * @param dest      {@code JSONArray} to merge to
+     * @param overwrite If {@code true}, overwrites non-null values in {@code dest}
+     * @param deep      If {@code true}, makes deep copies of any {@code JSONObject}
+     *                  and {@code JSONArray} values
      * @return The modified {@code dest} array.
      */
     public static JSONArray merge(JSONArray src, JSONArray dest,
@@ -1423,8 +1375,8 @@ abstract public class JSONHelpers {
     }
 
     public static JSONArray merge(JSONArray src, JSONArray dest, String name,
-            final boolean overwrite, boolean deep) {
-        Log.d(TAG, "merge(%s), array: src: %s, dest: %s", name, src, dest);
+                                  final boolean overwrite, boolean deep) {
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), array: src: %s, dest: %s", name, src, dest);
         final int srcLen = src.length();
         final int destLen = dest.length();
         int i = 0;
@@ -1433,10 +1385,10 @@ abstract public class JSONHelpers {
                 final Object destVal = dest.get(i);
                 Object value = src.get(i);
                 if (destVal instanceof JSONObject && value instanceof JSONObject) {
-                    Log.d(TAG, "merge(%s), array: merging objects at %d", name, i);
+                    Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), array: merging objects at %d", name, i);
                     merge((JSONObject) value, (JSONObject) destVal, name, overwrite);
                 } else if (destVal instanceof JSONArray && value instanceof JSONArray) {
-                    Log.d(TAG, "merge(%s), array: merging arrays at %d", name, i);
+                    Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), array: merging arrays at %d", name, i);
                     merge((JSONArray) value, (JSONArray) destVal, name, overwrite, deep);
                 } else if (destVal == null || overwrite) {
                     if (deep) {
@@ -1448,7 +1400,7 @@ abstract public class JSONHelpers {
                     }
                     dest.put(i, value);
                 } else {
-                    Log.w(TAG, "merge(%s), array: mismatched value types at %d, can't merge; src %s, dest %s",
+                    Log.w(Log.SUBSYSTEM.JSON, TAG, "merge(%s), array: mismatched value types at %d, can't merge; src %s, dest %s",
                             name, i, value.getClass().getSimpleName(), destVal.getClass().getSimpleName());
                 }
             }
@@ -1456,10 +1408,10 @@ abstract public class JSONHelpers {
                 dest.put(src.get(i));
             }
         } catch (JSONException e) {
-            Log.e(TAG, e, "merge(): This shouldn't be able to happen! (at %d)",
-                  i);
+            Log.e(Log.SUBSYSTEM.JSON, TAG, e, "merge(): This shouldn't be able to happen! (at %d)",
+                    i);
         }
-        Log.d(TAG, "merge(%s), array: result: %s", name, dest);
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), array: result: %s", name, dest);
         return dest;
     }
 
@@ -1467,14 +1419,12 @@ abstract public class JSONHelpers {
      * Merges values from {@code src} into a copy of {@code dest}.
      * See {@link #merge(JSONArray, JSONArray)}.
      *
-     * @param src
-     *            {@code JSONArray} to merge from
-     * @param dest
-     *            {@code JSONArray} to merge to
+     * @param src  {@code JSONArray} to merge from
+     * @param dest {@code JSONArray} to merge to
      * @return The modified {@code dest} array.
      */
     public static JSONArray merge(final JSONArray src,
-            final UnmodifiableJSONArray dest) {
+                                  final UnmodifiableJSONArray dest) {
         return merge(src, copy(dest));
     }
 
@@ -1482,16 +1432,13 @@ abstract public class JSONHelpers {
      * Merges values from {@code src} into a copy of {@code dest}.
      * See {@link #merge(JSONArray, JSONArray, boolean)}.
      *
-     * @param src
-     *            {@code JSONArray} to merge from
-     * @param dest
-     *            {@code JSONArray} to merge to
-     * @param overwrite
-     *            If {@code true}, overwrites non-null values in {@code dest}
+     * @param src       {@code JSONArray} to merge from
+     * @param dest      {@code JSONArray} to merge to
+     * @param overwrite If {@code true}, overwrites non-null values in {@code dest}
      * @return The modified {@code dest} array.
      */
     public static JSONArray merge(JSONArray src, UnmodifiableJSONArray dest,
-            boolean overwrite) {
+                                  boolean overwrite) {
         return merge(src, copy(dest), overwrite);
     }
 
@@ -1499,19 +1446,15 @@ abstract public class JSONHelpers {
      * Merges values from {@code src} into a copy of {@code dest}.
      * See {@link #merge(JSONArray, JSONArray, boolean, boolean)}.
      *
-     * @param src
-     *            {@code JSONArray} to merge from
-     * @param dest
-     *            {@code JSONArray} to merge to
-     * @param overwrite
-     *            If {@code true}, overwrites non-null values in {@code dest}
-     * @param deep
-     *            If {@code true}, makes deep copies of any {@code JSONObject}
-     *            and {@code JSONArray} values
+     * @param src       {@code JSONArray} to merge from
+     * @param dest      {@code JSONArray} to merge to
+     * @param overwrite If {@code true}, overwrites non-null values in {@code dest}
+     * @param deep      If {@code true}, makes deep copies of any {@code JSONObject}
+     *                  and {@code JSONArray} values
      * @return The modified {@code dest} array.
      */
     public static JSONArray merge(JSONArray src, UnmodifiableJSONArray dest,
-            boolean overwrite, boolean deep) {
+                                  boolean overwrite, boolean deep) {
         return merge(src, copy(dest), overwrite, deep);
     }
 
@@ -1524,10 +1467,8 @@ abstract public class JSONHelpers {
      * Equivalent to {@link #merge(JSONObject, JSONObject, boolean) merge(src,
      * dest, true)}.
      *
-     * @param src
-     *            {@code JSONObject} to merge from
-     * @param dest
-     *            {@code JSONObject} to merge to
+     * @param src  {@code JSONObject} to merge from
+     * @param dest {@code JSONObject} to merge to
      * @return The modified {@code dest} object
      */
     public static JSONObject merge(JSONObject src, JSONObject dest) {
@@ -1551,37 +1492,35 @@ abstract public class JSONHelpers {
      * Any {@code JSONObject} or {@code JSONArray} values that are not merged
      * will be {@linkplain #copy(JSONObject, boolean) deep copied}.
      *
-     * @param src
-     *            {@code JSONObject} to merge from
-     * @param dest
-     *            {@code JSONObject} to merge to
-     * @param overwrite
-     *            If {@code true}, overwrites matching keys in {@code dest}
+     * @param src       {@code JSONObject} to merge from
+     * @param dest      {@code JSONObject} to merge to
+     * @param overwrite If {@code true}, overwrites matching keys in {@code dest}
      * @return The modified {@code dest} object
      */
     public static JSONObject merge(JSONObject src, JSONObject dest, String name,
-            final boolean overwrite) {
-        Log.d(TAG, "merge(%s), object: src: %s, dest: %s", name, src, dest);
+                                   final boolean overwrite) {
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), object: src: %s, dest: %s", name, src, dest);
         final Iterator<String> keys = src.keys();
         while (keys.hasNext()) {
             final String key = keys.next();
             final Object value = src.opt(key);
             if (!dest.has(key)) {
-                Log.d(TAG, "merge(%s), object: no field '%s' in dest; putting %s", name, key, value);
+                Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), object: no field '%s' in dest; putting %s", name, key, value);
                 safePut(dest, key, value);
             } else if (value instanceof JSONObject) {
-                Log.d(TAG, "merge(%s), object: object value for '%s', submerging %s", name, key, value);
+                Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), object: object value for '%s', submerging %s", name, key, value);
                 mergeSubObject(dest, key, (JSONObject) value, name, overwrite);
             } else if (value instanceof JSONArray) {
-                Log.d(TAG, "merge(%s), object: array value for '%s', submerging %s", name, key, value);
+                Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), object: array value for '%s', submerging %s", name, key, value);
                 mergeSubArray(dest, key, (JSONArray) value, name, overwrite);
             } else if (overwrite) {
                 safePut(dest, key, value);
             }
         }
-        Log.d(TAG, "merge(%s), object: result: %s", name, dest);
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "merge(%s), object: result: %s", name, dest);
         return dest;
     }
+
     public static JSONObject merge(JSONObject src, JSONObject dest, final boolean overwrite) {
         return merge(src, dest, null, overwrite);
     }
@@ -1589,16 +1528,15 @@ abstract public class JSONHelpers {
     /**
      * Recursively merges values from {@code src} into a copy of {@code dest}.
      *
-     * @param src
-     *            {@code JSONObject} to merge from
-     * @param dest
-     *            {@code JSONObject} to merge to
+     * @param src  {@code JSONObject} to merge from
+     * @param dest {@code JSONObject} to merge to
      * @return A copy of {@code dest} with {@code src} merged in
      * @see #merge(JSONObject, JSONObject)
      */
     public static JSONObject merge(JSONObject src, UnmodifiableJSONObject dest) {
         return merge(src, copy(dest));
     }
+
     public static JSONObject merge(JSONObject src, UnmodifiableJSONObject dest, String name) {
         return merge(src, copy(dest), name);
     }
@@ -1607,17 +1545,14 @@ abstract public class JSONHelpers {
      * Recursively merges values from {@code src} into a copy of {@code dest},
      * optionally overwriting values of matching keys.
      *
-     * @param src
-     *            {@code JSONObject} to merge from
-     * @param dest
-     *            {@code JSONObject} to merge to
-     * @param overwrite
-     *            If {@code true}, overwrites matching keys in {@code dest}
+     * @param src       {@code JSONObject} to merge from
+     * @param dest      {@code JSONObject} to merge to
+     * @param overwrite If {@code true}, overwrites matching keys in {@code dest}
      * @return A copy of {@code dest} with {@code src} merged in
      * @see #merge(JSONObject, JSONObject, boolean)
      */
     public static JSONObject merge(JSONObject src, UnmodifiableJSONObject dest,
-            boolean overwrite) {
+                                   boolean overwrite) {
         return merge(src, copy(dest), overwrite);
     }
 
@@ -1629,7 +1564,7 @@ abstract public class JSONHelpers {
                                       JSONArray value, String name, boolean overwrite) {
         final JSONArray subArray = dest.optJSONArray(key);
         if (subArray != null) {
-            Log.d(TAG, "mergeSubArray(%s): merging %s into %s", name, value, subArray);
+            Log.d(Log.SUBSYSTEM.JSON, TAG, "mergeSubArray(%s): merging %s into %s", name, value, subArray);
             merge(value, subArray, name, overwrite);
         } else {
             safePut(dest, key, copy(value));
@@ -1640,7 +1575,7 @@ abstract public class JSONHelpers {
                                        JSONObject value, String name, final boolean overwrite) {
         final JSONObject subObject = dest.optJSONObject(key);
         if (subObject != null) {
-            Log.d(TAG, "mergeSubObject(%s): merging %s into %s", name, value, subObject);
+            Log.d(Log.SUBSYSTEM.JSON, TAG, "mergeSubObject(%s): merging %s into %s", name, value, subObject);
             merge(value, subObject, name, overwrite);
         } else {
             safePut(dest, key, copy(value));
@@ -1655,18 +1590,14 @@ abstract public class JSONHelpers {
      * littering the code and keeps the call stack clean of
      * {@code JSONException} throw declarations.
      *
-     * @param dest
-     *            {@link JSONObject} to call {@code put()} on
-     * @param key
-     *            The {@code key} parameter for {@code put()}
-     * @param value
-     *            The {@code value} parameter for {@code put()}
-     * @throws RuntimeException
-     *             If either {@code key} or {@code value} turn out to
-     *             <em>not</em> be safe.
+     * @param dest  {@link JSONObject} to call {@code put()} on
+     * @param key   The {@code key} parameter for {@code put()}
+     * @param value The {@code value} parameter for {@code put()}
+     * @throws RuntimeException If either {@code key} or {@code value} turn out to
+     *                          <em>not</em> be safe.
      */
     private static void safePut(JSONObject dest, final String key,
-            final Object value) {
+                                final Object value) {
         try {
             dest.put(key, value);
         } catch (JSONException e) {

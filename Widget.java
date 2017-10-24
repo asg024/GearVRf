@@ -2636,8 +2636,8 @@ public class Widget  implements Layout.WidgetContainer {
     protected boolean removeChild(final Widget child,
             final GVRSceneObject childRootSceneObject, boolean preventLayout) {
         final boolean removed = mChildren.remove(child);
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild [%s] %b", child, removed);
 
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild [%s] %b", child, removed);
         if (removed) {
             Log.d(TAG, "removeChild(): '%s' removed", child.getName());
             if (childRootSceneObject.getParent() != getSceneObject()) {
@@ -2733,30 +2733,30 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private GVRSceneObject getSceneObjectProperty(GVRContext context, final JSONObject properties) {
-        Log.d(TAG, "getSceneObjectProperty(%s): called ", getName());
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): called ", getName());
         GVRSceneObject sceneObject = opt(properties, Properties.scene_object, GVRSceneObject.class);
         if (sceneObject == null) {
             if (hasJSONObject(properties, Properties.model)) {
                 JSONObject modelSpec = optJSONObject(properties, Properties.model);
-                Log.d(TAG, "getSceneObjectProperty(%s): model specified: %s", getName(), modelSpec);
+                Log.d(Log.SUBSYSTEM.JSON, TAG, "getSceneObjectProperty(%s): model specified: %s", getName(), modelSpec);
                 String id = getString(modelSpec, Properties.id);
                 sceneObject = loadSceneObjectFromModel(context, id);
             } else if (hasFloat(properties, Properties.size)) {
                 float size = optFloat(properties, Properties.size);
-                Log.d(TAG, "getSceneObjectProperty(%s): single size: %.2f", getName(), size);
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): single size: %.2f", getName(), size);
                 sceneObject = makeQuad(context, size, size);
             } else if (hasPoint(properties, Properties.size)) {
                 PointF size = optPointF(properties, Properties.size);
-                Log.d(TAG, "getSceneObjectProperty(%s): point size: %s", getName(), size);
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): point size: %s", getName(), size);
                 sceneObject = makeQuad(context, size.x, size.y);
             } else {
-                Log.d(TAG, "getSceneObjectProperty(%s): empty object!", getName());
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): empty object!", getName());
                 // TODO: Ideally, we wouldn't create a mesh here, but if we don't, things hang
                 sceneObject = new GVRSceneObject(context, 0, 0);
                 setupDefaultMaterial(context, sceneObject);
             }
         } else {
-            Log.d(TAG, "getSceneObjectProperty(%s): got a scene object: %s", getName(), sceneObject);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): got a scene object: %s", getName(), sceneObject);
         }
         // TODO: Add support for specifying mesh
         // TODO: Add support for specifying a primitive (quad, rounded_quad, sphere, cylinder, etc.)
@@ -3149,7 +3149,7 @@ public class Widget  implements Layout.WidgetContainer {
             Log.v(Log.SUBSYSTEM.WIDGET, TAG, "loadAnimations(): loaded animation metadata: %s",
                     animationMetadata);
         } else {
-            Log.w(TAG, "loadAnimations(): no animations.json");
+            Log.w(Log.SUBSYSTEM.JSON, TAG, "loadAnimations(): no animations.json");
         }
     }
 
@@ -3259,20 +3259,20 @@ public class Widget  implements Layout.WidgetContainer {
         JSONArray levelsArray = optJSONArray(metaData, Properties.levels);
 
         if (levelsArray != null) {
-            Log.d(TAG, "setupLevels(): for %s", getName());
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupLevels(): for %s", getName());
             for (int i = 0; i < levelsArray.length(); ++i) {
                 mLevelInfo.add(new WidgetState(this, levelsArray
                         .getJSONObject(i)));
             }
         } else {
-            Log.d(TAG, "setupLevels(): No levels metadata for %s", getName());
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupLevels(): No levels metadata for %s", getName());
         }
     }
 
     private void setupStates(JSONObject metadata) throws JSONException,
             NoSuchMethodException {
         JSONObject states = optJSONObject(metadata, Properties.states);
-        Log.d(TAG, "setupStates(): for '%s': %s", getName(), states);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupStates(): for '%s': %s", getName(), states);
         mLevelInfo.add(new WidgetState(this, states));
     }
 
@@ -3287,7 +3287,7 @@ public class Widget  implements Layout.WidgetContainer {
             state = getState();
         }
 
-        Log.d(TAG, "updateState(): %s for '%s'", state, getName());
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "updateState(): %s for '%s'", state, getName());
         if (!mLevelInfo.isEmpty() && mLevel >= 0) {
             mLevelInfo.get(mLevel).setState(this, state);
         }
