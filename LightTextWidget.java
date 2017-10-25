@@ -2,6 +2,8 @@ package com.samsung.smcl.vr.widgets;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
+import org.gearvrf.GVRTexture;
+import org.gearvrf.GVRTextureParameters;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONObject;
 
@@ -17,6 +19,8 @@ import android.widget.TextView;
 
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
+
+import java.util.concurrent.Future;
 
 import static com.samsung.smcl.vr.widgets.JSONHelpers.*;
 
@@ -231,8 +235,18 @@ public class LightTextWidget extends Widget implements TextContainer {
             canvas.drawText(text, x, y, mTextPaint);
         }
 
-        // apply texture
-        setTexture(Helpers.getFutureBitmapTexture(getGVRContext(), bitmap));
+        Future<GVRTexture> texture = Helpers.getFutureBitmapTexture(getGVRContext(), bitmap);
+        // Apply trilinear and anisotropic filtering
+        GVRTextureParameters textureParameters = new GVRTextureParameters(getGVRContext());
+        textureParameters.setMinFilterType(GVRTextureParameters.TextureFilterType.GL_LINEAR_MIPMAP_LINEAR);
+        textureParameters.setAnisotropicValue(4);
+        try {
+            texture.get().updateTextureParameters(textureParameters);
+        }
+        catch(Exception e){
+            Log.e(TAG, "InterruptedException, ExecutionException");
+        }
+        setTexture(texture);
     }
 
     public Drawable getBackGround() {
