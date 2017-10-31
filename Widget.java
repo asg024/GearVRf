@@ -278,7 +278,7 @@ public class Widget  implements Layout.WidgetContainer {
         final GVRAssetLoader loader = context.getAssetLoader();
         final EnumSet<GVRImportSettings> settings = GVRImportSettings.getRecommendedSettings();
         try {
-            Log.d(TAG, "loadSceneObjectFromModel(): attemping to load '%s'", modelFile);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "loadSceneObjectFromModel(): attemping to load '%s'", modelFile);
             return loader.loadModel(modelFile, settings, true, null);
         } catch (IOException e) {
             Log.e(TAG, e, "loadSceneObjectFromModel(): failed to load model for Widget: %s", modelFile);
@@ -509,7 +509,7 @@ public class Widget  implements Layout.WidgetContainer {
                     }
                 }
 
-                Log.d(TAG,
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG,
                       "setChildrenFollowFocus(%s): calling registerPickable",
                       getName());
                 child.registerPickable();
@@ -545,7 +545,7 @@ public class Widget  implements Layout.WidgetContainer {
     public void setFollowParentFocus(final boolean follow) {
         if (follow != mFollowParentFocus) {
             mFollowParentFocus = follow;
-            Log.d(TAG, "setFollowParentFocus(%s): calling registerPickable",
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setFollowParentFocus(%s): calling registerPickable",
                   getName());
             registerPickable();
         }
@@ -825,7 +825,7 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public void setLevel(int level) {
         if (level >= 0 && mLevel != level && level < mLevelInfo.size()) {
-            Log.d(TAG, "setLevel(%d): clearing level: %d", level, mLevel);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setLevel(%d): clearing level: %d", level, mLevel);
             if (mLevel >= 0) {
                 mLevelInfo.get(mLevel).setState(this, null);
             }
@@ -1096,7 +1096,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private void updateViewPort(float size, Layout.Axis axis) {
-        Log.d(TAG, "Widget[%s] setViewPort : viewport = %s size = %f", this, mViewPort, size);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "Widget[%s] setViewPort : viewport = %s size = %f", this, mViewPort, size);
         if (mViewPort.get(axis) != size) {
             mViewPort.set(size, axis);
             for (Layout layout : mLayouts) {
@@ -1742,7 +1742,7 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public boolean setVisibility(final Visibility visibility) {
         if (visibility != mVisibility) {
-            Log.d(TAG, "setVisibility(%s) for %s", visibility, getName());
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setVisibility(%s) for %s", visibility, getName());
             updateVisibility(visibility);
             mVisibility = visibility;
             return true;
@@ -1759,7 +1759,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private void updateVisibility(final Visibility visibility) {
-        Log.d(TAG, "change visibility for widget<%s> to visibility = %s",
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "change visibility for widget<%s> to visibility = %s",
                 getName(), visibility);
         if (mParent != null) {
             final GVRSceneObject parentSceneObject = mParent
@@ -2368,11 +2368,11 @@ public class Widget  implements Layout.WidgetContainer {
     /* package */
     void createChildren(final GVRContext context,
             final GVRSceneObject sceneObject) throws InstantiationException {
-        Log.d(TAG, "createChildren(%s): creating children", getName());
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating children", getName());
         List<GVRSceneObject> children = sceneObject.getChildren();
-        Log.d(TAG, "createChildren(%s): child count: %d", getName(), children.size());
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): child count: %d", getName(), children.size());
         for (GVRSceneObject sceneObjectChild : children) {
-            Log.d(TAG, "createChildren(%s): creating child '%s'", getName(),
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating child '%s'", getName(),
                   sceneObjectChild.getName());
             final Widget child = createChild(context, sceneObjectChild);
             if (child != null) {
@@ -2639,9 +2639,9 @@ public class Widget  implements Layout.WidgetContainer {
 
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild [%s] %b", child, removed);
         if (removed) {
-            Log.d(TAG, "removeChild(): '%s' removed", child.getName());
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild(): '%s' removed", child.getName());
             if (childRootSceneObject.getParent() != getSceneObject()) {
-                Log.e(TAG,
+                Log.e(Log.SUBSYSTEM.WIDGET, TAG,
                       "removeChild(): '%s' is not a child of '%s' GVRSceneObject!",
                       child.getName(), getName());
             }
@@ -2738,7 +2738,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (sceneObject == null) {
             if (hasJSONObject(properties, Properties.model)) {
                 JSONObject modelSpec = optJSONObject(properties, Properties.model);
-                Log.d(Log.SUBSYSTEM.JSON, TAG, "getSceneObjectProperty(%s): model specified: %s", getName(), modelSpec);
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): model specified: %s", getName(), modelSpec);
                 String id = getString(modelSpec, Properties.id);
                 sceneObject = loadSceneObjectFromModel(context, id);
             } else if (hasFloat(properties, Properties.size)) {
@@ -2844,7 +2844,7 @@ public class Widget  implements Layout.WidgetContainer {
             }
         }
         final boolean tookFocus = onFocus(focused);
-        Log.d(TAG, "doOnFocus(%s): tookFocus: %b", getName(), tookFocus);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "doOnFocus(%s): tookFocus: %b", getName(), tookFocus);
         if (focused) {
             // onFocus() can refuse to take focus
             mIsFocused = tookFocus;
@@ -3012,7 +3012,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (getSceneObject() == sceneObject) {
             final boolean handlesEvent = !handler.followsParentEvent(this)
                     && !handler.isInFollowEventGroup();
-            Log.d(TAG, "handlesEventFor(%s): handles '%s' for scene object %s",
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "handlesEventFor(%s): handles '%s' for scene object %s",
                   getName(), handler.getName(), sceneObject.getName());
             return handlesEvent;
         } else {
@@ -3022,7 +3022,7 @@ public class Widget  implements Layout.WidgetContainer {
                 if ((childrenFollowEvent || handler.followsParentEvent(child))
                         && (child.isSceneObject(sceneObject) || handler
                                 .handlesEvent(child, sceneObject))) {
-                    Log.d(TAG,
+                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
                           "handlesEventFor(%s): handles '%s' for child '%s'",
                           getName(), handler.getName(), child.getName());
                     return true;
@@ -3109,13 +3109,13 @@ public class Widget  implements Layout.WidgetContainer {
             if (mFocusEnabled) {
                 focusManager.register(getSceneObject(), mFocusableImpl);
             } else {
-                Log.d(TAG, "registerPickable(): '%s' is not focus-enabled",
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(): '%s' is not focus-enabled",
                       getName());
                 focusManager.unregister(getSceneObject(), needsOwnFocusable);
             }
         } else {
             touchManager.removeHandlerFor(getSceneObject());
-            Log.d(TAG,
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG,
                   "registerPickable(): unregistering '%s'; focus-enabled: %b",
                   getName(), mFocusEnabled);
             focusManager.unregister(getSceneObject(), needsOwnFocusable);
@@ -3234,7 +3234,7 @@ public class Widget  implements Layout.WidgetContainer {
         final boolean hasStates = has(metaData, Properties.states);
         final boolean hasLevels = has(metaData, Properties.levels);
         final boolean hasLevel = has(metaData, Properties.level);
-        Log.d(TAG,
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG,
                 "setupStatesAndLevels(): for '%s'; states: %b, levels %b, level %b",
                 getName(), hasStates, hasLevels, hasLevel);
         if (hasStates) {

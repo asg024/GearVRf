@@ -43,12 +43,13 @@ public class LayoutScroller {
 	    float getViewPortWidth();
         float getViewPortHeight();
         float getViewPortDepth();
-	    boolean scrollToPosition(final int pos);
-	    boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset);
+	    boolean scrollToPosition(final int pos, final OnScrollListener listener);
+	    boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset,
+                               final OnScrollListener listener);
 	    void registerDataSetObserver(final DataSetObserver observer);
         void unregisterDataSetObserver(final DataSetObserver observer);
         int getCurrentPosition();
-	}
+    }
 
 	protected DataSetObserver mObserver = new DataSetObserver() {
 	    @Override
@@ -156,7 +157,7 @@ public class LayoutScroller {
         }
 
 // TODO: Think about Z-scrolling
-        mScrollable.scrollByOffset(xOffset, yOffset, Float.NaN);
+        mScrollable.scrollByOffset(xOffset, yOffset, Float.NaN, mInternalScrollListener);
 
         return scrolled;
     }
@@ -209,7 +210,7 @@ public class LayoutScroller {
                 pageNumber, mPageCount);
 
         if (mSupportScrollByPage &&
-                (mScrollOver || (pageNumber >= 1 && pageNumber <= mPageCount))) {
+                (mScrollOver || (pageNumber >= 0 && pageNumber <= mPageCount - 1))) {
             scrollToItem(getFirstItemIndexOnPage(pageNumber));
         } else {
             Log.w(TAG, "Pagination is not enabled!");
@@ -241,10 +242,10 @@ public class LayoutScroller {
 
     public int getCurrentPage() {
         int currentPage = 1;
+        int count = mScrollable.getScrollingItemsCount();
         if (mSupportScrollByPage && mCurrentItemIndex >= 0 &&
-                mCurrentItemIndex < mScrollable.getScrollingItemsCount()) {
-            currentPage = (int) Math.ceil(
-            (float)(mCurrentItemIndex + 1)/(float)mPageSize);
+                mCurrentItemIndex < count) {
+            currentPage = (Math.min(mCurrentItemIndex + mPageSize - 1, count - 1)/mPageSize);
         }
         return currentPage;
     }
@@ -252,7 +253,7 @@ public class LayoutScroller {
     private int getFirstItemIndexOnPage(final int pageNumber) {
         int index = 0;
         if (mSupportScrollByPage) {
-            index = ((pageNumber - 1) * mPageSize);
+            index = (pageNumber * mPageSize);
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getFirstItemIndexOnPage = %d", index);
         }
         return index;
@@ -281,35 +282,36 @@ public class LayoutScroller {
         return pos;
     }
 
+    private OnScrollListener mInternalScrollListener = new OnScrollListener() {
+        @Override
+        public void onScrollStarted(int startPosition) {
+            for (OnScrollListener listener: mOnScrollListeners) {
+                listener.onScrollStarted(startPosition);
+            }
+        }
+
+        @Override
+        public void onScrollFinished(int finalPosition) {
+            mCurrentItemIndex = finalPosition;
+            for (OnScrollListener listener: mOnScrollListeners) {
+                listener.onScrollFinished(mCurrentItemIndex);
+            }
+
+            int curPage = getCurrentPage();
+            for (OnPageChangedListener listener: mOnPageChangedListeners) {
+                listener.pageChanged(curPage);
+            }
+        }
+    };
+
     private boolean scrollToPosition(int newPosition) {
         boolean scrolled = false;
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPosition() mCurrentItemIndex=%d newPosition = %d",
                 mCurrentItemIndex, newPosition);
 
         if (newPosition != mCurrentItemIndex) {
-            int prevPage = getCurrentPage();
-
-            for (OnScrollListener listener: mOnScrollListeners) {
-                listener.onScrollStarted(mCurrentItemIndex);
-            }
             int pos = getValidPosition(newPosition);
-
-            scrolled = mScrollable.scrollToPosition(pos);
-
-            if (scrolled) {
-                mCurrentItemIndex = pos;
-            }
-            for (OnScrollListener listener: mOnScrollListeners) {
-                listener.onScrollFinished(mCurrentItemIndex);
-            }
-
-            int curPage =  getCurrentPage();
-            if (curPage != prevPage) {
-                for (OnPageChangedListener listener: mOnPageChangedListeners) {
-                    listener.pageChanged(curPage - 1);
-                }
-            }
-
+            scrolled = mScrollable.scrollToPosition(pos, mInternalScrollListener);
         }
 
         return scrolled;

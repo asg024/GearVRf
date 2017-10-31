@@ -224,7 +224,7 @@ public class LinearLayout extends OrientedLayout {
 
         }
 
-        Log.d(TAG, "getStartingOffset(): totalSize: %5.4f, dimension: %5.4f, startingOffset: %5.4f",
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getStartingOffset(): totalSize: %5.4f, dimension: %5.4f, startingOffset: %5.4f",
               totalSize, axisSize, startingOffset);
 
         return startingOffset;
@@ -672,7 +672,7 @@ public class LinearLayout extends OrientedLayout {
 
     @Override
     protected void invalidate(final int dataIndex) {
-        Log.d(TAG, "invalidate item [%d]", dataIndex);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "invalidate item [%d]", dataIndex);
         invalidateCache(dataIndex);
         super.invalidate(dataIndex);
     }

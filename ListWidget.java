@@ -5,6 +5,7 @@ import android.database.DataSetObserver;
 import com.samsung.smcl.utility.Log;
 import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.FPSCounter;
+import com.samsung.smcl.vr.gvrf_launcher.MainThread;
 import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 import com.samsung.smcl.vr.widgets.Layout.Axis;
 import com.samsung.smcl.vr.widgets.Layout.Direction;
@@ -674,25 +675,43 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     /**
      * This method is called if the data set has been scrolled.
      */
-    protected void onScrollImpl(final Vector3Axis offset) {
+    protected void onScrollImpl(final Vector3Axis offset, final LayoutScroller.OnScrollListener listener) {
         if (!isScrolling()) {
-            mScroller = new ScrollingProcessor(offset);
+            mScroller = new ScrollingProcessor(offset, listener);
             mScroller.scroll();
         }
     }
 
     ScrollingProcessor mScroller = null;
-    protected void onScrollImpl(final int scrollToPosition) {
+    protected void onScrollImpl(final int scrollToPosition, final LayoutScroller.OnScrollListener listener) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onScrollImpl(): scrollToPosition = %d animated = %b",
               scrollToPosition, isTransitionAnimationEnabled());
 
         if (isTransitionAnimationEnabled()) {
             if (!isScrolling()) {
-                mScroller = new ScrollingProcessor(scrollToPosition);
+                mScroller = new ScrollingProcessor(scrollToPosition, listener);
                 mScroller.scroll();
             }
         } else {
+            MainThread.get(getGVRContext()).
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null) {
+                                listener.onScrollStarted(getCurrentPosition());
+                            }
+                        }
+                    });
             onChangedImpl(scrollToPosition);
+            MainThread.get(getGVRContext()).
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null) {
+                                listener.onScrollFinished(getCurrentPosition());
+                            }
+                        }
+                    });
         }
     }
 
@@ -709,6 +728,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         private Vector3Axis mScrollByOffset = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
         private SimpleAnimationTracker animationTracker = SimpleAnimationTracker.get(getGVRContext());
         private boolean mScrolling = false;
+        private LayoutScroller.OnScrollListener mListener;
         private boolean mForce = false;
 
         private class ScrollAnimation extends Animation {
@@ -750,11 +770,13 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             return mScrolling;
         }
 
-        ScrollingProcessor(final int pos) {
+        ScrollingProcessor(final int pos, final LayoutScroller.OnScrollListener listener) {
+            mListener = listener;
             mScrollToPosition = pos;
         }
 
-        ScrollingProcessor(final Vector3Axis offset) {
+        ScrollingProcessor(final Vector3Axis offset, final LayoutScroller.OnScrollListener listener) {
+            mListener = listener;
             mScrollByOffset = offset;
         }
 
@@ -834,6 +856,17 @@ public class ListWidget extends GroupWidget implements ScrollableList {
             FPSCounter.timeCheck("scroll mScrollToPosition [" + mScrollToPosition + "] <START>");
 
             AnimationSet.Builder builder = new AnimationSet.Builder(ListWidget.this.mContent);
+            if (!mScrolling) {
+                MainThread.get(getGVRContext()).
+                        runOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (mListener != null) {
+                                    mListener.onScrollStarted(getCurrentPosition());
+                                }
+                            }
+                        });
+            }
             mScrolling = true;
 
 
@@ -919,6 +952,16 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 mScroller = null;
                 mScrolling = false;
                 mContent.requestLayout();
+                MainThread.get(getGVRContext()).
+                        runOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+
+                                if (mListener != null) {
+                                    mListener.onScrollFinished(mPreferableCenterPosition);
+                                }
+                            }
+                        });
             } else {
                 scroll();
             }
@@ -1345,7 +1388,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     //  =================== Scrolling <start> =========================
 
     @Override
-    public boolean scrollToPosition(final int dataIndex) {
+    public boolean scrollToPosition(final int dataIndex,
+                                    final LayoutScroller.OnScrollListener listener) {
         if (isScrolling()) {
             return false;
         }
@@ -1354,7 +1398,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         boolean scrolled = false;
         if (dataIndex >= 0 && dataIndex < getScrollingItemsCount()) {
-            onScrollImpl(dataIndex);
+            onScrollImpl(dataIndex, listener);
             scrolled = true;
         } else {
             Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Scroll out of bounds pos = [%d] getDataCount() = [%d]",
@@ -1392,7 +1436,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         Vector3Axis deltaOffset = requiredOffset.delta(currentOffset);
 
         scrollByOffset(deltaOffset.get(Axis.X),
-                       deltaOffset.get(Axis.Y), deltaOffset.get(Axis.Z));
+                       deltaOffset.get(Axis.Y), deltaOffset.get(Axis.Z), null);
     }
 
     /**
@@ -1404,7 +1448,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
      *            The amount to scroll, in degrees.
      */
     @Override
-    public boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset) {
+    public boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset,
+                                  final LayoutScroller.OnScrollListener listener) {
         if (isScrolling()) {
             return false;
         }
@@ -1417,7 +1462,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollBy(%s): offset %s", getName(), offset);
 
-        onScrollImpl(offset);
+        onScrollImpl(offset, listener);
         return true;
     }
 

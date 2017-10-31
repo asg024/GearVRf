@@ -443,7 +443,7 @@ public class MultiPageWidget extends ListWidget {
 
     /**
      * Set the max number of visible views in the list
-     * It will automatically enable viewport flag {@link Layout#mClippingEnabled}
+     * It will automatically enable viewport flag {@link Layout#isClippingEnabled()}
      * The existing viewport set for ListWidget will be overridden  based on the viewCount
      * @param pageCount
      */
@@ -832,15 +832,16 @@ public class MultiPageWidget extends ListWidget {
     }
 
     @Override
-    public boolean scrollToPosition(int pos) {
+    public boolean scrollToPosition(int pos, final LayoutScroller.OnScrollListener listener) {
         // needs to be reimplemented to work with items not pages
-        return  MultiPageWidget.super.scrollToPosition(pos);
+        return  MultiPageWidget.super.scrollToPosition(pos, listener);
     }
 
     @Override
-    public boolean scrollByOffset(float xOffset, float yOffset, float zOffset) {
+    public boolean scrollByOffset(float xOffset, float yOffset, float zOffset,
+                                  final LayoutScroller.OnScrollListener listener) {
         // needs to be reimplemented to work with items not pages
-        return  MultiPageWidget.super.scrollByOffset(xOffset, yOffset, zOffset);
+        return  MultiPageWidget.super.scrollByOffset(xOffset, yOffset, zOffset, listener);
     }
 
     // provides the scrollableList implementation for page scrolling
@@ -869,13 +870,14 @@ public class MultiPageWidget extends ListWidget {
             }
 
             @Override
-            public boolean scrollToPosition(int pos) {
-                return  MultiPageWidget.super.scrollToPosition(pos);
+            public boolean scrollToPosition(int pos, final LayoutScroller.OnScrollListener listener) {
+                return  MultiPageWidget.super.scrollToPosition(pos, listener);
             }
 
             @Override
-            public boolean scrollByOffset(float xOffset, float yOffset, float zOffset) {
-                return  MultiPageWidget.super.scrollByOffset(xOffset, yOffset, zOffset);
+            public boolean scrollByOffset(float xOffset, float yOffset, float zOffset,
+                                          final LayoutScroller.OnScrollListener listener) {
+                return  MultiPageWidget.super.scrollByOffset(xOffset, yOffset, zOffset, listener);
             }
 
             @Override

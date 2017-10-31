@@ -150,7 +150,7 @@ abstract public class Layout {
      */
     public void invalidate() {
         synchronized (mMeasuredChildren) {
-            Log.d(TAG, "invalidate all [%d]", mMeasuredChildren.size());
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "invalidate all [%d]", mMeasuredChildren.size());
             mMeasuredChildren.clear();
         }
     }
@@ -161,7 +161,7 @@ abstract public class Layout {
      */
     void invalidate(final int dataIndex) {
         synchronized (mMeasuredChildren) {
-            Log.d(TAG, "invalidate [%d]", dataIndex);
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "invalidate [%d]", dataIndex);
             mMeasuredChildren.remove(dataIndex);
         }
     }
