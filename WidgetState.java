@@ -123,6 +123,7 @@ class WidgetState {
             mStates.put(state, new WidgetStateInfo(parent, stateSpec));
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e(TAG, e, "loadState()");
             throw RuntimeAssertion(e,
                                       "Failed to load state '%s' for '%s'",
                                       state, parent.getName());

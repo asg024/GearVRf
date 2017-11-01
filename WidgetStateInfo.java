@@ -84,6 +84,7 @@ class WidgetStateInfo {
                     mAnimation.start();
                 } catch (Exception e) {
                     e.printStackTrace();
+                    Log.e(TAG, e, "set()");
                 }
             }
         } else {

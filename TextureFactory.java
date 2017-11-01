@@ -33,6 +33,7 @@ public class TextureFactory {
             return loader.getTexture();
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e(TAG, e, "loadTexture()");
             throw new RuntimeException(e.getLocalizedMessage(), e);
         }
     }
@@ -44,6 +45,7 @@ public class TextureFactory {
             return loader.getTexture();
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e(TAG, e, "loadFutureTexture()");
             throw new RuntimeException(e.getLocalizedMessage(), e);
         }
     }
@@ -53,6 +55,7 @@ public class TextureFactory {
             loadTexturesFromJSON(material, textureSpec);
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e(TAG, e, "loadMaterialTextures()");
             throw new RuntimeException(e.getLocalizedMessage(), e);
         }
     }

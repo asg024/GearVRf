@@ -370,6 +370,7 @@ public abstract class Animation {
                     listener.finished(Animation.this);
                 } catch (Exception e) {
                     e.printStackTrace();
+                    Log.e(TAG, e, "OnFinishManager.finished()");
                 }
             }
         }

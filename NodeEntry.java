@@ -100,6 +100,7 @@ public class NodeEntry {
             return new JSONObject(properties).putOpt("name", getName());
         } catch (JSONException e) {
             e.printStackTrace();
+            Log.e(TAG, e, "toJSON()");
             throw new RuntimeAssertion("NodeEntry.toJSON() failed for '%s'", this);
         }
     }

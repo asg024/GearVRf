@@ -40,6 +40,7 @@ public class WidgetFactory {
                         .forName(className);
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
+                Log.e(TAG, e, "createWidget()");
                 throw new InstantiationException(e.getLocalizedMessage());
             }
         }
@@ -246,6 +247,7 @@ public class WidgetFactory {
         } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
             e.printStackTrace();
+            Log.e(TAG, e, "createWidget()");
             throw new InstantiationException(e.getLocalizedMessage());
         }
     }
