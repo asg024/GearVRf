@@ -475,7 +475,7 @@ abstract public class Layout {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureUntilFull: directionIsChanged = %b inBounds = %b",
                     directionIsChanged, inBounds);
 
-            if (mViewPort.isClippingEnabled() && childChanged) {
+            if (mViewPort.isClippingEnabled() && childChanged && inBounds) {
                 inBounds = postMeasurement();
             }
 
