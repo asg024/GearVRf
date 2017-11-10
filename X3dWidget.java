@@ -1,9 +1,14 @@
 package com.samsung.smcl.vr.widgets;
 
 
+import android.view.InputDevice;
+import android.view.MotionEvent;
+
 import com.samsung.smcl.utility.Log;
+import com.samsung.smcl.vr.gvrf_launcher.InputWrangler;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRDrawFrameListener;
 import org.gearvrf.GVRSceneObject;
 
 import java.util.List;
@@ -12,7 +17,7 @@ public class X3dWidget extends Widget {
     private static final String TAG = X3dWidget.class.getSimpleName();
     private List<String> clickableNodes;
     private OnNodeClickListener nodeClickListener;
-    OnTouchListener touchListener = new OnTouchListener() {
+    private OnTouchListener touchListener = new OnTouchListener() {
         @Override
         public boolean onTouch(Widget widget) {
             if (clickableNodes.contains(widget.getName())) {
@@ -25,6 +30,35 @@ public class X3dWidget extends Widget {
         }
     };
 
+    private GVRDrawFrameListener drawFrameListener = new GVRDrawFrameListener() {
+        @Override
+        public void onDrawFrame(float v) {
+            long now = System.currentTimeMillis();
+            MotionEvent event = MotionEvent.obtain(now, now, MotionEvent.ACTION_HOVER_MOVE, 1,
+                    new MotionEvent.PointerProperties[]{new MotionEvent.PointerProperties()},
+                    new MotionEvent.PointerCoords[]{new MotionEvent.PointerCoords()},
+                    0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+            InputWrangler.get(getGVRContext()).pickGazeEvent(event);
+        }
+    };
+
+    private OnFocusListener focusListener = new OnFocusListener() {
+        @Override
+        public boolean onFocus(Widget widget, boolean focused) {
+            if (focused) {
+                getGVRContext().registerDrawFrameListener(drawFrameListener);
+            } else {
+                getGVRContext().unregisterDrawFrameListener(drawFrameListener);
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onLongFocus(Widget widget) {
+            return false;
+        }
+    };
+
     public X3dWidget(GVRContext context, GVRSceneObject sceneObject) throws InstantiationException {
         super(context, sceneObject, null);
 
@@ -32,6 +66,7 @@ public class X3dWidget extends Widget {
         getGVRContext().getMainScene().bindShaders(sceneObject);
 
         setName(TAG);
+        addFocusListener(focusListener);
     }
 
     /**
