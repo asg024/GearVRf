@@ -17,7 +17,7 @@ class WidgetState {
         NORMAL, FOCUSED, SELECTED, PRESSED, CHECKED, DISABLED
     }
 
-    public WidgetState(final Widget parent, final JSONObject stateSpec) {
+    WidgetState(final Widget parent, final JSONObject stateSpec) {
         Log.d(TAG, "WidgetState(): states for '%s': %s", parent.getName(), stateSpec);
         if (check(stateSpec, true)) {
             // One or more states are explicitly specified
@@ -34,11 +34,11 @@ class WidgetState {
         }
     }
 
-    public WidgetState.State getState() {
+    WidgetState.State getState() {
         return mState;
     }
 
-    public void setState(final Widget widget, final WidgetState.State state) {
+    void setState(final Widget widget, final WidgetState.State state) {
         Log.d(TAG, "setState(%s): state is %s, setting to %s", widget.getName(), mState, state);
         if (state != mState) {
             final WidgetState.State nextState = getNextState(state);
@@ -131,7 +131,7 @@ class WidgetState {
     }
 
     private WidgetState.State mState = null;
-    private final Map<WidgetState.State, WidgetStateInfo> mStates = new HashMap<WidgetState.State, WidgetStateInfo>();
+    private final Map<WidgetState.State, WidgetStateInfo> mStates = new HashMap<>();
 
     private final static String TAG = WidgetState.class.getSimpleName();
 }

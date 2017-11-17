@@ -20,7 +20,7 @@ class WidgetStateInfo {
         scene_object, material, animation, id
     }
 
-    public WidgetStateInfo(Widget parent, JSONObject info)
+    WidgetStateInfo(Widget parent, JSONObject info)
             throws JSONException, NoSuchMethodException, IOException {
         Widget levelWidget = null;
         GVRMaterial material = null;
@@ -52,7 +52,7 @@ class WidgetStateInfo {
         mMaterial = material;
     }
 
-    public void set(Widget widget, boolean set) {
+    void set(Widget widget, boolean set) {
         if (set) {
             Log.d(TAG, "set(%s): setting state ...", widget.getName());
             if (mLevelWidget != null) {

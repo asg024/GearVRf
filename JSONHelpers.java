@@ -3,6 +3,7 @@ package com.samsung.smcl.vr.widgets;
 import java.io.File;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.Locale;
 
 import org.joml.Vector3f;
 import org.json.JSONArray;
@@ -64,7 +65,7 @@ abstract public class JSONHelpers {
 
     public static final <P extends Enum<P>> JSONObject put(JSONObject json, P e, Object value) {
         try {
-            return json.put(e.name(), value);
+            return json.put(e.name().toLowerCase(Locale.ENGLISH), value);
         } catch (JSONException e1) {
             throw new RuntimeException(e1.getLocalizedMessage(), e1);
         }
@@ -682,6 +683,18 @@ abstract public class JSONHelpers {
             }
         }
         return json;
+    }
+
+    public static <P extends Enum<P>> PointF removePointF(JSONObject json, P e) {
+        final Object remove = json.remove(e.name());
+        if (remove instanceof JSONObject && isPoint((JSONObject) remove)) {
+            return asPointF((JSONObject) remove);
+        } else if (remove instanceof PointF) {
+            return (PointF) remove;
+        } else if (remove instanceof Point) {
+            return new PointF(((Point) remove).x, ((Point) remove).y);
+        }
+        return null;
     }
 
     /**
