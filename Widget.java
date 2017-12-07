@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PointF;
+import android.opengl.GLES30;
 import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 
@@ -24,12 +25,15 @@ import org.gearvrf.GVRImportSettings;
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMaterial.GVRShaderType;
 import org.gearvrf.GVRMesh;
+import org.gearvrf.GVRPhongShader;
 import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRRenderData.GVRRenderingOrder;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
+import org.gearvrf.scene_objects.GVRCubeSceneObject;
 import org.gearvrf.scene_objects.GVRModelSceneObject;
+import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.joml.Vector3f;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,6 +44,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -899,6 +904,9 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public void setName(String name) {
         mName = name;
+        if (mSceneObject != null) {
+            mSceneObject.setName(name);
+        }
     }
 
     public String getMetadata() {
@@ -937,6 +945,50 @@ public class Widget  implements Layout.WidgetContainer {
             return renderData.getRenderingOrder();
         }
         return -1;
+    }
+
+    private boolean mClippingEnabled;
+    public void enableClipRegion() {
+        if (mClippingEnabled) {
+            Log.w(TAG, "Clipping has been enabled already for %s!", getName());
+            return;
+        }
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "enableClipping for %s [%f, %f, %f]",
+                getName(), getViewPortWidth(), getViewPortHeight(), getViewPortDepth());
+
+        mClippingEnabled = true;
+
+        GVRTexture texture = mContext.getAssetLoader().loadTexture(new GVRAndroidResource(mContext, R.drawable.yellow));
+
+        GVRSceneObject clippingObj = new GVRSceneObject(mContext, getViewPortWidth(), getViewPortHeight(), texture);
+        clippingObj.setName("clippingObj");
+        clippingObj.getRenderData()
+                .setRenderingOrder(GVRRenderData.GVRRenderingOrder.STENCIL)
+                .setStencilTest(true)
+                .setStencilFunc(GLES30.GL_ALWAYS, 1, 0xFF)
+                .setStencilOp(GLES30.GL_KEEP, GLES30.GL_KEEP, GLES30.GL_REPLACE)
+                .setStencilMask(0xFF);
+
+        mSceneObject.addChildObject(clippingObj);
+
+        for (Widget child : getChildren()) {
+            setObjectClipped(child);
+        }
+    }
+
+    private static void setObjectClipped(Widget widget) {
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setObjectClipped for %s", widget.getName());
+
+        widget.getRenderData()
+                .setStencilTest(true)
+                .setStencilFunc(GLES30.GL_EQUAL, 1, 0xFF)
+                .setStencilMask(0x00);
+
+        widget.mClippingEnabled = true;
+
+        for (Widget child : widget.getChildren()) {
+            setObjectClipped(child);
+        }
     }
 
     /**
@@ -991,6 +1043,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (material != null) {
             material.setMainTexture(texture);
             material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+            Log.w(TAG, "setTexture(%s): texture = %s!", getName(), texture);
         } else {
             Log.w(TAG, "setTexture(%s): material is null!", getName());
         }
@@ -2349,6 +2402,11 @@ public class Widget  implements Layout.WidgetContainer {
                 listener.onChildWidgetAdded(this, child);
             }
         }
+
+        if (mClippingEnabled) {
+            setObjectClipped(child);
+        }
+
         return added;
     }
 
@@ -2698,6 +2756,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @param copyProperties Properties which are passed in from client code are copied so that they
      *                       cannot be modified after we receive them.
      */
+
     private Widget(final GVRContext context, @NonNull JSONObject properties, boolean copyProperties) {
         if (properties != null) {
             if (copyProperties) {
@@ -2714,7 +2773,7 @@ public class Widget  implements Layout.WidgetContainer {
             final JSONObject metadata = getObjectMetadata();
             mSceneObject = getSceneObjectProperty(context, metadata);
 
-	        Log.v(Log.SUBSYSTEM.WIDGET, TAG,
+            Log.v(Log.SUBSYSTEM.WIDGET, TAG,
     	            "Widget(context, properties): %s (%s) width = %f height = %f depth = %f",
     	            getName(), mSceneObject.getName(), getWidth(), getHeight(), getDepth());
 
@@ -2743,11 +2802,11 @@ public class Widget  implements Layout.WidgetContainer {
                 sceneObject = loadSceneObjectFromModel(context, id);
             } else if (hasFloat(properties, Properties.size)) {
                 float size = optFloat(properties, Properties.size);
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): single size: %.2f", getName(), size);
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): specified only size: %f", getName(), size);
                 sceneObject = makeQuad(context, size, size);
             } else if (hasPoint(properties, Properties.size)) {
                 PointF size = optPointF(properties, Properties.size);
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): point size: %s", getName(), size);
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): specified size: %s", getName(), size);
                 sceneObject = makeQuad(context, size.x, size.y);
             } else {
                 Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): empty object!", getName());
@@ -2757,6 +2816,10 @@ public class Widget  implements Layout.WidgetContainer {
             }
         } else {
             Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): got a scene object: %s", getName(), sceneObject);
+        }
+
+        if (sceneObject != null  && mName != null) {
+            sceneObject.setName(mName);
         }
         // TODO: Add support for specifying mesh
         // TODO: Add support for specifying a primitive (quad, rounded_quad, sphere, cylinder, etc.)
@@ -3509,6 +3572,27 @@ public class Widget  implements Layout.WidgetContainer {
         for (Layout layout : mLayouts) {
             invalidateLayout(layout, child);
         }
+    }
+
+    private static void getGvrfHierarchy(GVRSceneObject sceneObject, String space) {
+        if (sceneObject == null) return;
+
+        GVRRenderData rd = sceneObject.getRenderData();
+        if (rd != null) {
+            Log.d(TAG, space + "%s [%s]", sceneObject.getName(), rd.getRenderingOrder());
+        }
+        Iterable<GVRSceneObject> i = sceneObject.children();
+        if (i != null) {
+            Iterator<GVRSceneObject> it = i.iterator();
+            while (it.hasNext()) {
+                getGvrfHierarchy(it.next(), space + "  ");
+            }
+        }
+    }
+
+    public void printGvrfHierarchy() {
+        Log.d(TAG, "========= GVRF Hierarchy for %s =========", getName());
+        getGvrfHierarchy(mSceneObject, "");
     }
 
     private final GVRSceneObject mSceneObject;
