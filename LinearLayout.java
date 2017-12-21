@@ -243,6 +243,12 @@ public class LinearLayout extends OrientedLayout {
         return mCache.getDataOffset(dataIndex);
     }
 
+    @Override
+    public void dump() {
+        super.dump();
+        dumpCaches();
+    }
+
     protected void dumpCaches() {
         if (mCache != null) {
             mCache.dump();
@@ -251,7 +257,9 @@ public class LinearLayout extends OrientedLayout {
 
     @Override
     protected void layoutChildren() {
-        dumpCaches();
+        if (Log.isEnabled(Log.SUBSYSTEM.LAYOUT)) {
+            dumpCaches();
+        }
         super.layoutChildren();
     }
 

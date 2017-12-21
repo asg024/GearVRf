@@ -429,8 +429,10 @@ public class GridLayout extends OrientedLayout {
 
     @Override
     protected void layoutChildren() {
-        mRowLayout.dumpCaches();
-        mColumnLayout.dumpCaches();
+        if (Log.isEnabled(Log.SUBSYSTEM.LAYOUT)) {
+            mRowLayout.dumpCaches();
+            mColumnLayout.dumpCaches();
+        }
         super.layoutChildren();
     }
 

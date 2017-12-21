@@ -94,6 +94,10 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         }
     }
 
+    public boolean isOuterPaddingEnabled() {
+        return mOuterPaddingEnabled;
+    }
+
     protected OrientedLayout(final OrientedLayout rhs) {
         super(rhs);
         mOrientation = rhs.mOrientation;

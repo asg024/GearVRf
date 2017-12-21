@@ -142,16 +142,16 @@ class LinearCacheDataSet implements CacheDataSet {
     }
 
     synchronized public void dump() {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "\n==== DUMP CACHE start ======\nCache size = %d " +
+        Log.d(TAG, "\n==== DUMP CACHE start ======\nCache size = %d " +
                         "totalSize = %f totalPadding = %f mOuterPaddingEnabled = %b",
                 count(), mTotalSize, mTotalPadding, mOuterPaddingEnabled);
 
         for (int pos = 0; pos < count(); ++pos) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "data[%d, %d]: %s", mIdsSet.get(pos), pos,
+            Log.d(TAG, "data[%d, %d]: %s", mIdsSet.get(pos), pos,
                     mCacheDataSet.valueAt(pos));
         }
 
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "\n==== DUMP CACHE end ======\n");
+        Log.d(TAG, "\n==== DUMP CACHE end ======\n");
     }
 
     @Override

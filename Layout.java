@@ -88,6 +88,10 @@ abstract public class Layout {
     Layout() {
     }
 
+    public void dump() {
+        Log.d(TAG, "==== DUMP LAYOUT ===== \n %s", toString());
+    }
+
     protected Layout(final Layout rhs) {
         this();
         mViewPort = rhs.mViewPort;

@@ -3463,6 +3463,14 @@ public class Widget  implements Layout.WidgetContainer {
         return applied;
     }
 
+    public void dump() {
+        Log.d(TAG, "===== DUMP WIDGET ===== \n %s [%f, %f, %f]", toString(),
+                getLayoutWidth(), getLayoutHeight(), getLayoutDepth());
+        for (Layout l:  mLayouts) {
+            l.dump();
+        }
+    }
+
     /**
      * Check if specified {@link Layout} has been applied.
      * @param layout
@@ -3540,6 +3548,8 @@ public class Widget  implements Layout.WidgetContainer {
             public void run() {
                 if (mLayouts.contains(layout)) {
                     layout.invalidate();
+                    onTransformChanged();
+                    requestLayout();
                 }
             }
         });
@@ -3556,6 +3566,8 @@ public class Widget  implements Layout.WidgetContainer {
                 if (dataIndex != -1) {
                     if (mLayouts.contains(layout)) {
                         layout.invalidate(dataIndex);
+                        onTransformChanged();
+                        requestLayout();
                     }
                 }
             }
