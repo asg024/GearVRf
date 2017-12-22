@@ -3566,8 +3566,8 @@ public class Widget  implements Layout.WidgetContainer {
                 if (dataIndex != -1) {
                     if (mLayouts.contains(layout)) {
                         layout.invalidate(dataIndex);
-                        onTransformChanged();
-                        requestLayout();
+                        //onTransformChanged();
+                        //requestLayout();
                     }
                 }
             }
