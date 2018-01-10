@@ -331,7 +331,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     private OnTouchListener mOnTouchListener = new OnTouchListener() {
         @Override
-        public boolean onTouch(Widget widget) {
+        public boolean onTouch(Widget widget, final float[] coords) {
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch(%s) widget= %s mSelectOnTouchEnabled=%b ",
                     getName(), widget, mSelectOnTouchEnabled);
             Widget parent = widget.getParent();

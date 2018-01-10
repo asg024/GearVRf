@@ -19,7 +19,7 @@ public class X3dWidget extends Widget {
     private OnNodeClickListener nodeClickListener;
     private OnTouchListener touchListener = new OnTouchListener() {
         @Override
-        public boolean onTouch(Widget widget) {
+        public boolean onTouch(Widget widget, final float[] coords) {
             if (clickableNodes.contains(widget.getName())) {
                 if (nodeClickListener != null) {
                     nodeClickListener.onClick(widget.getName());

@@ -172,12 +172,13 @@ public class Widget  implements Layout.WidgetContainer {
          *
          * @param widget
          *            {@link Widget} target by touch event.
-         *
+         * @param coords GVRF raw coordinates
+
          * @return {@code True} to indicate that no further processing of the
          *         touch event should take place; {@code false} to allow further
          *         processing.
          */
-        boolean onTouch(Widget widget);
+        boolean onTouch(Widget widget, final float[] coords);
     }
 
     /**
@@ -2957,12 +2958,12 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    private boolean doOnTouch() {
+    private boolean doOnTouch(final float[] coords) {
         OnTouchListener[] listenersCopy = new OnTouchListener[mTouchListeners.size()];
         mTouchListeners.toArray(listenersCopy);
 
         for (OnTouchListener listener : listenersCopy) {
-            if (listener.onTouch(this)) {
+            if (listener.onTouch(this, coords)) {
                 return true;
             }
         }
@@ -2974,7 +2975,7 @@ public class Widget  implements Layout.WidgetContainer {
                 if (child.isTouchable()
                         && (mChildrenFollowInput
                                 || child.getFollowParentInput() || inFollowInputGroup)) {
-                    child.doOnTouch();
+                    child.doOnTouch(coords);
                 }
             }
         }
@@ -3399,14 +3400,14 @@ public class Widget  implements Layout.WidgetContainer {
                         .isInFollowStateGroup());
     }
 
-    private final class OnTouchImpl implements TouchManager.OnBackKey {
+    private final class OnTouchImpl implements TouchManager.OnTouch {
         @Override
-        public boolean touch(GVRSceneObject sceneObject) {// , float[] hit) {
-            return doOnTouch();
+        public boolean touch(GVRSceneObject sceneObject, final float[] coords) {// , float[] hit) {
+            return doOnTouch(coords);
         }
 
         @Override
-        public boolean onBackKey(GVRSceneObject sceneObject) {
+        public boolean onBackKey(GVRSceneObject sceneObject, final float[] coords) {
             return doOnBackKey();
         }
 
