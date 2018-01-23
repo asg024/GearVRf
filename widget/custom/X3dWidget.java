@@ -1,0 +1,107 @@
+package com.samsung.smcl.vr.widgets.widget.custom;
+
+
+import android.view.InputDevice;
+import android.view.MotionEvent;
+
+import com.samsung.smcl.vr.widgets.log.Log;
+import com.samsung.smcl.vr.gvrf_launcher.InputWrangler;
+import com.samsung.smcl.vr.widgets.widget.GroupWidget;
+import com.samsung.smcl.vr.widgets.widget.Widget;
+
+import org.gearvrf.GVRContext;
+import org.gearvrf.GVRDrawFrameListener;
+import org.gearvrf.GVRSceneObject;
+
+import java.util.List;
+
+public class X3dWidget extends Widget {
+    private static final String TAG = X3dWidget.class.getSimpleName();
+    private List<String> clickableNodes;
+    private OnNodeClickListener nodeClickListener;
+    private OnTouchListener touchListener = new OnTouchListener() {
+        @Override
+        public boolean onTouch(Widget widget, final float[] coords) {
+            if (clickableNodes.contains(widget.getName())) {
+                if (nodeClickListener != null) {
+                    nodeClickListener.onClick(widget.getName());
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+
+    private GVRDrawFrameListener drawFrameListener = new GVRDrawFrameListener() {
+        @Override
+        public void onDrawFrame(float v) {
+            long now = System.currentTimeMillis();
+            MotionEvent event = MotionEvent.obtain(now, now, MotionEvent.ACTION_HOVER_MOVE, 1,
+                    new MotionEvent.PointerProperties[]{new MotionEvent.PointerProperties()},
+                    new MotionEvent.PointerCoords[]{new MotionEvent.PointerCoords()},
+                    0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+            InputWrangler.get(getGVRContext()).pickGazeEvent(event);
+        }
+    };
+
+    private OnFocusListener focusListener = new OnFocusListener() {
+        @Override
+        public boolean onFocus(Widget widget, boolean focused) {
+            if (focused) {
+                getGVRContext().registerDrawFrameListener(drawFrameListener);
+            } else {
+                getGVRContext().unregisterDrawFrameListener(drawFrameListener);
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onLongFocus(Widget widget) {
+            return false;
+        }
+    };
+
+    public X3dWidget(GVRContext context, GVRSceneObject sceneObject) throws InstantiationException {
+        super(context, sceneObject, null);
+
+        // c.f. Mihail's comment @http://mcl-redmine.sisa.samsung.com/redmine/issues/21474
+        getGVRContext().getMainScene().bindShaders(sceneObject);
+
+        setName(TAG);
+        addFocusListener(focusListener);
+    }
+
+    /**
+     * Register the list of nodes interested to listen for click events.
+     *
+     * @param clickableNodes list of clickable nodes
+     * @param clickListener  listener callback to call when a node is clicked
+     */
+    public void setClickableNodes(List<String> clickableNodes, OnNodeClickListener clickListener) {
+        if (clickableNodes == null || clickableNodes.size() == 0) {
+            return;
+        }
+
+        this.clickableNodes = clickableNodes;
+        this.nodeClickListener = clickListener;
+
+        for (String name: clickableNodes) {
+            Widget child = findChildByName(name);
+            child.addTouchListener(touchListener);
+            child.setTouchable(true);
+            Log.d(TAG, "Registered click events for X3D node - " + child.getName());
+        }
+    }
+
+    /**
+     * Interface definition for a callback to be invoked when a node is clicked.
+     */
+    public interface OnNodeClickListener {
+        /**
+         * Called when a registered node has been clicked.
+         *
+         * @param node The node that was clicked.
+         */
+        void onClick(String node);
+    }
+}
