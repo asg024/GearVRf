@@ -13,7 +13,6 @@ import com.samsung.smcl.vr.gvrf_launcher.R;
 
 import com.samsung.smcl.vr.widgets.log.Log;
 import com.samsung.smcl.vr.widgets.main.WidgetLib;
-import com.samsung.smcl.vr.widgets.main.MainScene;
 
 import com.samsung.smcl.vr.widgets.thread.FPSCounter;
 
@@ -45,6 +44,7 @@ import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
 import org.gearvrf.scene_objects.GVRModelSceneObject;
 
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -72,7 +72,7 @@ public class Widget  implements Layout.WidgetContainer {
      * to load metadata for {@code Widgets}, as well as animation and material
      * specs.
      *
-     * @param context
+     * @param gvrContext
      *            A valid Android {@link Context}.
      * @throws JSONException
      *             if the {@code objects.json} file is invalid JSON
@@ -1277,7 +1277,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return 'X' component of the widget's position.
      */
     public float getPositionX() {
-        return getTransform().getPositionX();
+        return mTransformCache.getPosX();
     }
 
     /**
@@ -1286,7 +1286,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return 'Y' component of the widget's position.
      */
     public float getPositionY() {
-        return getTransform().getPositionY();
+        return mTransformCache.getPosY();
     }
 
     /**
@@ -1295,7 +1295,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return 'Z' component of the widget's position.
      */
     public float getPositionZ() {
-        return getTransform().getPositionZ();
+        return mTransformCache.getPosZ();
     }
 
     /**
@@ -1368,7 +1368,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return 'W' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationW() {
-        return getTransform().getRotationW();
+        return mTransformCache.getRotW();
     }
 
     /**
@@ -1377,7 +1377,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return 'X' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationX() {
-        return getTransform().getRotationX();
+        return mTransformCache.getRotX();
     }
 
     /**
@@ -1386,7 +1386,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return 'Y' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationY() {
-        return getTransform().getRotationY();
+        return mTransformCache.getRotY();
     }
 
     /**
@@ -1395,7 +1395,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return 'Z' component of the widget's rotation, treated as a quaternion.
      */
     public float getRotationZ() {
-        return getTransform().getRotationZ();
+        return mTransformCache.getRotZ();
     }
 
     /**
@@ -1404,7 +1404,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return The widget's current rotation around the 'Y' axis, in degrees.
      */
     public float getRotationYaw() {
-        return getTransform().getRotationYaw();
+        return mTransformCache.getYaw();
     }
 
     /**
@@ -1413,7 +1413,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return The widget's rotation around the 'X' axis, in degrees.
      */
     public float getRotationPitch() {
-        return getTransform().getRotationPitch();
+        return mTransformCache.getPitch();
     }
 
     /**
@@ -1422,7 +1422,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return The widget's rotation around the 'Z' axis, in degrees.
      */
     public float getRotationRoll() {
-        return getTransform().getRotationRoll();
+        return mTransformCache.getRoll();
     }
 
     /**
@@ -1551,7 +1551,18 @@ public class Widget  implements Layout.WidgetContainer {
      *         OpenGL-compatible column-major format.
      */
     public float[] getModelMatrix() {
-        return getTransform().getModelMatrix();
+        return getMatrix4f().get(new float[16]);
+    }
+
+    private Matrix4f getMatrix4f() {
+        // We do this business here instead of in TransformCache because the hierarchy is in Widget;
+        // creating a parallel hierarchy in TransformCache is ... gross.
+        final Matrix4f m = mTransformCache.getMatrix4f();
+        final Widget parent = getParent();
+        if (parent != null) {
+            parent.getMatrix4f().mul(m, m);
+        }
+        return m;
     }
 
     /**
@@ -1567,6 +1578,9 @@ public class Widget  implements Layout.WidgetContainer {
             throw new IllegalArgumentException("Size not equal to 16.");
         }
         getTransform().setModelMatrix(mat);
+        if (mTransformCache.setModelMatrix(mat)) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1584,7 +1598,9 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public void translate(float x, float y, float z) {
         getTransform().translate(x, y, z);
-        checkTransformChanged();
+        if (mTransformCache.translate(x, y, z)) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1607,9 +1623,12 @@ public class Widget  implements Layout.WidgetContainer {
      * @param z
      *            'Z' component of the axis.
      */
+    @SuppressWarnings("unused")
     public void setRotationByAxis(float angle, float x, float y, float z) {
         getTransform().setRotationByAxis(angle, x, y, z);
-        checkTransformChanged();
+        if (mTransformCache.setRotationByAxis(angle, x, y, z)) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1626,7 +1645,9 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public void rotate(float w, float x, float y, float z) {
         getTransform().rotate(w, x, y, z);
-        checkTransformChanged();
+        if (mTransformCache.rotate(w, x, y, z)) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1651,7 +1672,9 @@ public class Widget  implements Layout.WidgetContainer {
     public void rotateWithPivot(float w, float x, float y, float z,
             float pivotX, float pivotY, float pivotZ) {
         getTransform().rotateWithPivot(w, x, y, z, pivotX, pivotY, pivotZ);
-        checkTransformChanged();
+        if (mTransformCache.rotateWithPivot(w, x, y, z, pivotX, pivotY, pivotZ)) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1668,7 +1691,9 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public void rotateByAxis(float angle, float x, float y, float z) {
         getTransform().rotateByAxis(angle, x, y, z);
-        checkTransformChanged();
+        if (mTransformCache.rotateByAxis(angle, x, y, z)) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1694,7 +1719,10 @@ public class Widget  implements Layout.WidgetContainer {
             float axisZ, float pivotX, float pivotY, float pivotZ) {
         getTransform().rotateByAxisWithPivot(angle, axisX, axisY, axisZ,
                                              pivotX, pivotY, pivotZ);
-        checkTransformChanged();
+        if (mTransformCache.rotateByAxisWithPivot(angle, axisX, axisY, axisZ,
+                pivotX, pivotY, pivotZ)) {
+            onTransformChanged();
+        }
     }
 
     /**
@@ -1706,7 +1734,9 @@ public class Widget  implements Layout.WidgetContainer {
      */
     public void reset() {
         getTransform().reset();
-        checkTransformChanged();
+        if (mTransformCache.reset()) {
+            onTransformChanged();
+        }
     }
 
     public void setColor(final int color) {
