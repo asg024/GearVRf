@@ -3,13 +3,14 @@ package com.samsung.smcl.vr.widgets.widget.layout;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.Utility;
 
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.view.animation.LinearInterpolator;
 import android.widget.Scroller;
+
+import com.samsung.smcl.vr.widgets.log.Log;
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
 
 public class LayoutScroller {
 
@@ -148,11 +149,11 @@ public class LayoutScroller {
                 velocityX, velocityY, velocityZ,
                 xOffset, yOffset);
 
-        if (Utility.equal(xOffset, 0)) {
+        if (equal(xOffset, 0)) {
             xOffset = Float.NaN;
         }
 
-        if (Utility.equal(yOffset, 0)) {
+        if (equal(yOffset, 0)) {
             yOffset = Float.NaN;
         }
 

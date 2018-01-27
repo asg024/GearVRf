@@ -3,13 +3,17 @@ package com.samsung.smcl.vr.widgets.widget.properties;
 import java.io.File;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.gearvrf.utility.Colors;
 import org.joml.Vector3f;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Environment;
@@ -17,7 +21,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.Utility;
+
+import static org.gearvrf.utility.TextFile.readTextFile;
 
 abstract public class JSONHelpers {
 
@@ -1131,7 +1136,7 @@ abstract public class JSONHelpers {
      * @return New instance of {@link JSONObject}
      */
     public static JSONObject loadJSONAsset(Context context, final String asset) {
-        return getJsonObject(Utility.readTextFile(context, asset));
+        return getJsonObject(com.samsung.smcl.vr.widgets.main.Utility.readTextFile(context, asset));
     }
 
     /**
@@ -1167,7 +1172,7 @@ abstract public class JSONHelpers {
         if (dir.exists()) {
             final File f = new File(dir, file);
             if (f.exists()) {
-                rawJson = Utility.readTextFile(f);
+                rawJson = readTextFile(f);
                 Log.d(Log.SUBSYSTEM.JSON, TAG, "loadJSONFile(): %s", f.getPath());
             } else {
                 Log.w(TAG, "loadJSONFile(): file %s doesn't exists", f.getPath());
@@ -1626,6 +1631,225 @@ abstract public class JSONHelpers {
         }
         safePut(dest, name, value);
     }
+
+
+    /**
+     * Attempts to get a color formatted as an integer with ARGB ordering.  If the specified field
+     * doesn't exist, returns {@code defColor}.
+     *
+     * @param json {@link JSONObject} to get the color from
+     * @param elementName Name of the color element
+     * @param defColor Color to return if the element doesn't exist
+     * @return An ARGB formatted integer
+     */
+    public static int getJSONColor(final JSONObject json, String elementName, int defColor) {
+        try {
+            return getJSONColor(json, elementName);
+        } catch (JSONException e) {
+            return defColor;
+        }
+    }
+
+    /**
+     * Gets a color formatted as an integer with ARGB ordering.
+     *
+     * @param json {@link JSONObject} to get the color from
+     * @param elementName Name of the color element
+     * @return An ARGB formatted integer
+     * @throws JSONException
+     */
+    public static int getJSONColor(final JSONObject json, String elementName) throws JSONException {
+        Object raw = json.get(elementName);
+        return convertJSONColor(raw);
+    }
+
+    public static <P extends Enum<P>> int getJSONColor(final JSONObject json, P e) throws JSONException {
+        Object raw = JSONHelpers.get(json, e);
+        return convertJSONColor(raw);
+    }
+
+    public static <P extends Enum<P>> int getJSONColor(final JSONObject json, P e, int defColor) {
+        try {
+            return getJSONColor(json, e);
+        } catch (JSONException e1) {
+            return defColor;
+        } catch (RuntimeException e2) {
+            if (e2.getCause() instanceof  JSONException) {
+                return defColor;
+            }
+            throw e2;
+        }
+    }
+
+    private static final int ALPHA_MASK = 0xf000;
+    private static final int R_MASK = 0x0f00;
+    private static final int ALPHA_R_MASK = ALPHA_MASK | R_MASK;
+    private static final int G_MASK = 0x00f0;
+    private static final int R_G_MASK = R_MASK | G_MASK;
+    private static final int B_MASK = 0x000f;
+    private static final int G_B_MASK = G_MASK | B_MASK;
+
+    private static int convertJSONColor(Object raw) throws JSONException {
+        final int r;
+        final int g;
+        final int b;
+        final int a;
+
+        if (raw instanceof String) {
+            final String s = (String) raw;
+
+            // CSS style color specification
+            if (s.startsWith("#")) {
+                Matcher m = sColorStringPattern.matcher(s);
+                if (!m.find()) {
+                    throw new JSONException("String format of color element not valid: " + s);
+                }
+                String cstr = m.group(1);
+                final int length = cstr.length();
+                int color = Integer.parseInt(cstr, 16);
+                // Convert the short CSS form to the long form
+                if (length == 3 || length == 4) {
+                    color = ((color & ALPHA_MASK) << 16) | ((color & ALPHA_R_MASK) << 12) |
+                            ((color & R_G_MASK) << 8) | ((color & G_B_MASK) << 4) |
+                            ((color & B_MASK));
+                }
+                Log.d(Log.SUBSYSTEM.JSON, TAG, "getJSONColor(): string matching '%s' (%s): 0x%x", s, cstr, raw);
+                return color;
+            }
+
+            try {
+                COLOR_NAMES colorName = COLOR_NAMES.valueOf(s.toUpperCase(Locale.getDefault()));
+                return colorName.color;
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+                Log.e(TAG, e, "convertJSONColor()");
+                throw new JSONException("Not a valid color name: " + s);
+            }
+        }
+
+        if (raw instanceof Integer) {
+            int c = (Integer) raw;
+            return c;
+        } else if (raw instanceof JSONArray) {
+            final JSONArray jsonArray = (JSONArray) raw;
+
+            r = jsonArray.getInt(0);
+            g = jsonArray.getInt(1);
+            b = jsonArray.getInt(2);
+            if (jsonArray.length() > 3) {
+                a = jsonArray.getInt(3);
+            } else {
+                a = 0xFF;
+            }
+        } else if (raw instanceof JSONObject) {
+            final JSONObject jsonObject = (JSONObject) raw;
+            r = jsonObject.getInt("r");
+            g = jsonObject.getInt("g");
+            b = jsonObject.getInt("b");
+            a = jsonObject.optInt("a", 0xFF);
+        } else {
+            throw new JSONException("Object format of color element not valid!");
+        }
+
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "getJSONColor(): r: %d, g: %d, b: %d, a: %d", r, g, b, a);
+        return Color.argb(a, r, g, b);
+    }
+
+    public static <P extends Enum<P>> float[] getJSONColorGl(final JSONObject json, P e) {
+        try {
+            return getJSONColorGl(json, e.name());
+        } catch (JSONException e1) {
+            e1.printStackTrace();
+            Log.e(TAG, e1, "getJSONColorGl()");
+            throw new RuntimeException(e1.getLocalizedMessage(), e1);
+        }
+    }
+
+    /**
+     * Gets a color formatted as an array of float in [r, g, b, a] order, with each component value
+     * ranging from 0.0 to 1.0 -- the OpenGL format.
+     *
+     * @param json {@link JSONObject} to get the color from
+     * @param elementName Name of the color element
+     * @return An [r, g, b, a] formatted array of float
+     * @throws JSONException
+     */
+    public static float[] getJSONColorGl(final JSONObject json, String elementName) throws JSONException {
+        final float r;
+        final float g;
+        final float b;
+        final float a;
+
+        Object raw = json.get(elementName);
+        if (raw instanceof String) {
+            final String s = (String) raw;
+            Matcher m = sColorStringPattern.matcher(s);
+            if (!m.find()) {
+                throw new JSONException("String format of color element '"
+                        + elementName + "' not valid: " + s);
+            }
+            final String cstr = m.group(1);
+            raw = Integer.parseInt(cstr, 16);
+            Log.d(Log.SUBSYSTEM.JSON, TAG, "getJSONColor(): string matching '%s' (%s): 0x%x", s, cstr, raw);
+        }
+
+        if (raw instanceof Integer) {
+            int c = (Integer) raw;
+            if (c > 0xFFFFFF) {
+                a = Color.alpha(c);
+            } else {
+                a = 0;
+            }
+            r = Colors.byteToGl(Color.red(c));
+            g = Colors.byteToGl(Color.green(c));
+            b = Colors.byteToGl(Color.blue(c));
+        } else if (raw instanceof JSONArray) {
+            final JSONArray jsonArray = (JSONArray) raw;
+            r = (float) jsonArray.getDouble(0);
+            g = (float) jsonArray.getDouble(1);
+            b = (float) jsonArray.getDouble(2);
+            if (jsonArray.length() > 3) {
+                a = (float) jsonArray.getDouble(3);
+            } else {
+                a = 0;
+            }
+        } else if (raw instanceof JSONObject) {
+            final JSONObject jsonObject = (JSONObject) raw;
+            r = (float) jsonObject.getDouble("r");
+            g = (float) jsonObject.getDouble("g");
+            b = (float) jsonObject.getDouble("b");
+            a = (float) jsonObject.optDouble("a", 0);
+        } else {
+            throw new JSONException("Format of color element '" + elementName
+                    + "' not valid!");
+        }
+
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "getJSONColorGl(): r: %.2f, g: %.2f, b: %.2f, a: %.2f", r, g, b, a);
+        return new float[] { r, g, b, a };
+    }
+
+    private static final Pattern sColorStringPattern = Pattern.compile("^#((?:[0-9a-fA-F]{3,4})|(?:[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?))$");
+    private enum COLOR_NAMES {
+        BLACK(Color.BLACK),
+        BLUE(Color.BLUE),
+        CYAN(Color.CYAN),
+        DKGRAY(Color.DKGRAY),
+        GRAY(Color.GRAY),
+        GREEN(Color.GREEN),
+        LTGRAY(Color.LTGRAY),
+        MAGENTA(Color.MAGENTA),
+        RED(Color.RED),
+        TRANSPARENT(Color.TRANSPARENT),
+        WHITE(Color.WHITE),
+        YELLOW(Color.YELLOW);
+
+        COLOR_NAMES(int color) {
+            this.color = color;
+        }
+
+        public final int color;
+    }
+
 
     private static final String TAG = JSONHelpers.class.getSimpleName();
 }

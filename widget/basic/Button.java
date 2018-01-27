@@ -19,11 +19,7 @@ import com.samsung.smcl.vr.widgets.widget.NodeEntry;
 import com.samsung.smcl.vr.widgets.widget.layout.Layout;
 import com.samsung.smcl.vr.widgets.widget.layout.OrientedLayout;
 
-import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.copy;
-import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optBoolean;
-import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optDouble;
-import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optEnum;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optPointF;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.put;
 

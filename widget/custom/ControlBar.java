@@ -2,7 +2,6 @@ package com.samsung.smcl.vr.widgets.widget.custom;
 
 import android.graphics.PointF;
 
-import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.widgets.widget.GroupWidget;
 import com.samsung.smcl.vr.widgets.widget.layout.Layout;
 import com.samsung.smcl.vr.widgets.widget.basic.LightTextWidget;
@@ -16,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.*;
+import static org.gearvrf.utility.Log.tag;
 
 public class ControlBar extends GroupWidget {
     public enum Properties {
@@ -30,7 +30,7 @@ public class ControlBar extends GroupWidget {
     public static final float BAR_SIZE = 1.2f;
     private final PointF mDimensions;
     private PointF mControlDimensions;
-    private static final String TAG = Utility.tag(ControlBar.class);
+    private static final String TAG = tag(ControlBar.class);
     private int mBgResId = -1;
     private static final float CONTROL_PADDING_Z = 0.05f;
     private boolean mIsExtendableSize;

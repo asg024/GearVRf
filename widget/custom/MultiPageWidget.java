@@ -4,7 +4,6 @@ import android.database.DataSetObserver;
 
 import com.samsung.smcl.vr.widgets.adapter.Adapter;
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.widgets.widget.GroupWidget;
 import com.samsung.smcl.vr.widgets.widget.ListWidget;
 import com.samsung.smcl.vr.widgets.widget.Widget;
@@ -20,6 +19,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.gearvrf.utility.Log.tag;
 
 /**
  * The list of the items combined into the multiple pages.
@@ -43,7 +44,7 @@ import java.util.Set;
  */
 public class MultiPageWidget extends ListWidget {
 
-    private static final String TAG = Utility.tag(MultiPageWidget.class);
+    private static final String TAG = tag(MultiPageWidget.class);
     /**
      * Adapter associated with the items in the pages
      */
@@ -190,7 +191,7 @@ public class MultiPageWidget extends ListWidget {
     }
 
     protected static class SelectingAdapter implements Adapter {
-        private final static String TAG = Utility.tag(SelectingAdapter.class);
+        private final static String TAG = tag(SelectingAdapter.class);
 
         private final Adapter mAdapter;
         private int mStart, mEnd;

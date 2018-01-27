@@ -6,18 +6,21 @@ import java.util.Iterator;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMaterial.GVRShaderType;
+import org.gearvrf.utility.Exceptions;
+import static org.gearvrf.utility.Log.tag;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.samsung.smcl.utility.Exceptions;
-import com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers;
-import com.samsung.smcl.vr.widgets.widget.properties.TextureFactory;
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
+
 import com.samsung.smcl.vr.widgets.widget.Widget.Visibility;
 import com.samsung.smcl.vr.widgets.widget.animation.Animation;
 import com.samsung.smcl.vr.widgets.widget.animation.AnimationFactory;
+
+import com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers;
+import com.samsung.smcl.vr.widgets.widget.properties.TextureFactory;
+import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.getJSONColorGl;
 
 class WidgetStateInfo {
     public enum Properties {
@@ -156,25 +159,22 @@ class WidgetStateInfo {
                     }
                     break;
                 case color:
-                    final float[] color = Helpers.getJSONColorGl(materialSpec,
+                    final float[] color = getJSONColorGl(materialSpec,
                                                                key);
                     material.setColor(color[0], color[1], color[2]);
                     break;
                 case ambient_color:
-                    final float[] ambientColor = Helpers
-                            .getJSONColorGl(materialSpec, key);
+                    final float[] ambientColor = getJSONColorGl(materialSpec, key);
                     material.setAmbientColor(ambientColor[0], ambientColor[1],
                                              ambientColor[2], ambientColor[3]);
                     break;
                 case diffuse_color:
-                    final float[] diffuseColor = Helpers
-                            .getJSONColorGl(materialSpec, key);
+                    final float[] diffuseColor = getJSONColorGl(materialSpec, key);
                     material.setDiffuseColor(diffuseColor[0], diffuseColor[1],
                                              diffuseColor[2], diffuseColor[3]);
                     break;
                 case specular_color:
-                    final float[] specularColor = Helpers
-                            .getJSONColorGl(materialSpec, key);
+                    final float[] specularColor = getJSONColorGl(materialSpec, key);
                     material.setSpecularColor(specularColor[0],
                                               specularColor[1],
                                               specularColor[2],
@@ -218,5 +218,5 @@ class WidgetStateInfo {
     final private GVRMaterial mMaterial;
     private Animation mAnimation;
 
-    private static final String TAG = Utility.tag(WidgetStateInfo.class);
+    private static final String TAG = tag(WidgetStateInfo.class);
 }

@@ -2,26 +2,32 @@ package com.samsung.smcl.vr.widgets.widget.custom;
 
 import android.graphics.Color;
 
+import static com.samsung.smcl.vr.widgets.main.TextureFutureHelper.getFutureColorBitmapTexture;
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
+
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 import com.samsung.smcl.vr.widgets.adapter.Adapter;
 import com.samsung.smcl.vr.widgets.adapter.BaseAdapter;
+
 import com.samsung.smcl.vr.widgets.widget.GroupWidget;
-import com.samsung.smcl.vr.widgets.widget.layout.Layout;
-import com.samsung.smcl.vr.widgets.widget.layout.basic.LinearLayout;
 import com.samsung.smcl.vr.widgets.widget.ListWidget;
-import com.samsung.smcl.vr.widgets.widget.layout.OrientedLayout;
 import com.samsung.smcl.vr.widgets.widget.Widget;
+
+import com.samsung.smcl.vr.widgets.widget.layout.Layout;
+import com.samsung.smcl.vr.widgets.widget.layout.OrientedLayout;
+
+import com.samsung.smcl.vr.widgets.widget.layout.basic.LinearLayout;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRTexture;
+import static org.gearvrf.utility.Log.tag;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+
 
 public class MultiPageStack extends MultiPageWidget {
     private static final float DEFAULT_PAGE_PADDING_Z = 5;
@@ -75,7 +81,7 @@ public class MultiPageStack extends MultiPageWidget {
                 break;
         }
         if (layout != null) {
-            if (!Utility.equal(layout.getDividerPadding(axis), padding)) {
+            if (!equal(layout.getDividerPadding(axis), padding)) {
                 layout.setDividerPadding(padding, axis);
 
                 if (layout.getOrientationAxis() == axis) {
@@ -105,12 +111,12 @@ public class MultiPageStack extends MultiPageWidget {
         }
     }
 
-    private static final String TAG = Utility.tag(MultiPageStack.class);
+    private static final String TAG = tag(MultiPageStack.class);
 }
 
 
 class PageAdapter extends BaseAdapter {
-    private static final String TAG = Utility.tag(PageAdapter.class);
+    private static final String TAG = tag(PageAdapter.class);
     private int mPageCount;
     private final GVRContext mGvrContext;
     private final float mPageWidth, mPageHeight;
@@ -144,7 +150,7 @@ class PageAdapter extends BaseAdapter {
 
         mPageBgTextures = new ArrayList<>(mPageGrayColors.length);
         for (int color: mPageGrayColors){
-            mPageBgTextures.add(Helpers.getFutureColorBitmapTexture(mGvrContext, color));
+            mPageBgTextures.add(getFutureColorBitmapTexture(mGvrContext, color));
         }
     }
 

@@ -1,6 +1,5 @@
 package com.samsung.smcl.vr.widgets.adapter;
 
-import com.samsung.smcl.vr.gvrf_launcher.util.AdapterViewFactory;
 import com.samsung.smcl.vr.widgets.widget.GroupWidget;
 import com.samsung.smcl.vr.widgets.widget.Widget;
 

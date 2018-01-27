@@ -2,23 +2,33 @@ package com.samsung.smcl.vr.widgets.widget;
 
 import android.database.DataSetObserver;
 
-import com.samsung.smcl.vr.widgets.widget.layout.basic.LinearLayout;
-import com.samsung.smcl.vr.widgets.widget.layout.basic.RingLayout;
+import com.samsung.smcl.vr.widgets.widget.animation.SimpleAnimationTracker;
+
+
 import com.samsung.smcl.vr.widgets.adapter.Adapter;
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.Utility;
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
+
 import com.samsung.smcl.vr.widgets.thread.FPSCounter;
 import com.samsung.smcl.vr.widgets.thread.MainThread;
-import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
+
+import com.samsung.smcl.vr.widgets.widget.animation.Animation;
+import com.samsung.smcl.vr.widgets.widget.animation.AnimationSet;
+import com.samsung.smcl.vr.widgets.widget.animation.Easing;
+
+import com.samsung.smcl.vr.widgets.widget.layout.basic.LinearLayout;
+import com.samsung.smcl.vr.widgets.widget.layout.basic.RingLayout;
 import com.samsung.smcl.vr.widgets.widget.layout.Layout;
 import com.samsung.smcl.vr.widgets.widget.layout.Layout.Axis;
 import com.samsung.smcl.vr.widgets.widget.layout.Layout.Direction;
 import com.samsung.smcl.vr.widgets.widget.layout.LayoutScroller;
 import com.samsung.smcl.vr.widgets.widget.layout.LayoutScroller.ScrollableList;
-import com.samsung.smcl.vr.widgets.widget.animation.Animation;
-import com.samsung.smcl.vr.widgets.widget.animation.AnimationSet;
-import com.samsung.smcl.vr.widgets.widget.animation.Easing;
 import com.samsung.smcl.vr.widgets.widget.layout.basic.GridLayout;
+
+import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optEnum;
+import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optFloat;
+import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optJSONObject;
+
 
 import org.gearvrf.GVRContext;
 import org.json.JSONObject;
@@ -30,9 +40,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optEnum;
-import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optFloat;
-import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optJSONObject;
 
 // TODO: Add support for animation (in particular, we need to handle layout changes)
 // TODO: Scrolling (this is different from rotating, a la AppRing)
@@ -825,7 +832,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
 
         private void startShifting(AnimationSet.Builder builder, Layout layout, float offset, Axis axis) {
-            if (Float.isNaN(offset) || Utility.equal(offset, 0)) {
+            if (Float.isNaN(offset) || equal(offset, 0)) {
                 return;
             }
 
@@ -846,7 +853,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 }
             }
 
-            if (!Utility.equal(shiftBy, 0)) {
+            if (!equal(shiftBy, 0)) {
                 if (isTransitionAnimationEnabled()) {
                     ScrollAnimation animation = new ScrollAnimation(ListWidget.this.mContent, layout, shiftBy, axis);
                     builder.add(animation);
@@ -946,11 +953,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                     mForce = mScrollByOffset.isNaN() ?
                             pos == mScrollToPosition :
 
-                            (Utility.equal(mScrollByOffset.get(Axis.X), 0) ||
+                            (equal(mScrollByOffset.get(Axis.X), 0) ||
                                     Float.isNaN(mScrollByOffset.get(Axis.X))) &&
-                                    (Utility.equal(mScrollByOffset.get(Axis.Y), 0) ||
+                                    (equal(mScrollByOffset.get(Axis.Y), 0) ||
                                             Float.isNaN(mScrollByOffset.get(Axis.Y))) &&
-                                    (Utility.equal(mScrollByOffset.get(Axis.Z), 0) ||
+                                    (equal(mScrollByOffset.get(Axis.Z), 0) ||
                                             Float.isNaN(mScrollByOffset.get(Axis.Z)));
                 }
             }

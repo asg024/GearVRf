@@ -1,7 +1,5 @@
 package com.samsung.smcl.vr.widgets.widget;
 
-import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
@@ -11,6 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.samsung.smcl.vr.widgets.log.Log;
+import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
 
 public class WidgetState {
     public enum State {

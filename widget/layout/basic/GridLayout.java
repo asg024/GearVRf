@@ -2,21 +2,22 @@ package com.samsung.smcl.vr.widgets.widget.layout.basic;
 
 import java.util.Collection;
 import java.util.List;
-
-import android.util.SparseArray;
 import java.util.Set;
 import java.util.HashSet;
 
-import com.samsung.smcl.vr.widgets.widget.Vector3Axis;
-import com.samsung.smcl.vr.widgets.widget.Widget;
+import android.util.SparseArray;
+
 import com.samsung.smcl.vr.widgets.log.Log;
 
-import com.samsung.smcl.utility.Utility;
+import com.samsung.smcl.vr.widgets.widget.Vector3Axis;
+import com.samsung.smcl.vr.widgets.widget.Widget;
+
 import com.samsung.smcl.vr.widgets.widget.layout.basic.LinearLayout.Gravity;
 import com.samsung.smcl.vr.widgets.widget.layout.CacheDataSet;
 import com.samsung.smcl.vr.widgets.widget.layout.Layout;
-import com.samsung.smcl.vr.widgets.widget.layout.basic.LinearCacheDataSet;
 import com.samsung.smcl.vr.widgets.widget.layout.OrientedLayout;
+
+import static org.gearvrf.utility.Log.tag;
 
 /**
  * A layout that shows items in the grid.
@@ -43,7 +44,7 @@ public class GridLayout extends OrientedLayout {
         protected SparseArray<CacheDataSet> mCaches = new SparseArray<CacheDataSet>();
         protected float mSize;
         protected boolean mForcePostMeasurement;
-        private final String TAG = Utility.tag(ChunkedLinearLayout.class);
+        private final String TAG = tag(ChunkedLinearLayout.class);
 
 
         ChunkedLinearLayout() {

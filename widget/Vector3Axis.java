@@ -1,9 +1,9 @@
 package com.samsung.smcl.vr.widgets.widget;
 
-import com.samsung.smcl.utility.RuntimeAssertion;
-import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.widgets.widget.layout.Layout;
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
 
+import org.gearvrf.utility.RuntimeAssertion;
 import org.joml.Vector3f;
 
 /**
@@ -61,13 +61,13 @@ public class Vector3Axis extends Vector3f {
 
     public Vector3Axis delta(Vector3f v) {
         Vector3Axis ret = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
-        if (x != Float.NaN && v.x != Float.NaN && !Utility.equal(x, v.x)) {
+        if (x != Float.NaN && v.x != Float.NaN && !equal(x, v.x)) {
             ret.set(x - v.x, Layout.Axis.X);
         }
-        if (y != Float.NaN && v.y != Float.NaN && !Utility.equal(y, v.y)) {
+        if (y != Float.NaN && v.y != Float.NaN && !equal(y, v.y)) {
             ret.set(y - v.y, Layout.Axis.Y);
         }
-        if (z != Float.NaN && v.z != Float.NaN && !Utility.equal(z, v.z)) {
+        if (z != Float.NaN && v.z != Float.NaN && !equal(z, v.z)) {
             ret.set(z - v.z, Layout.Axis.Z);
         }
         return ret;

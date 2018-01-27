@@ -2,7 +2,7 @@ package com.samsung.smcl.vr.widgets.widget;
 
 import org.gearvrf.GVRTransform;
 
-import com.samsung.smcl.utility.Utility;
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
 
 public class TransformCache {
     public TransformCache() {
@@ -55,16 +55,16 @@ public class TransformCache {
     }
 
     public boolean changed(final GVRTransform transform) {
-        return !(Utility.equal(posX, transform.getPositionX())
-                && Utility.equal(posY, transform.getPositionY())
-                && Utility.equal(posZ, transform.getPositionZ())
-                && Utility.equal(rotW, transform.getRotationW())
-                && Utility.equal(rotX, transform.getRotationX())
-                && Utility.equal(rotY, transform.getRotationY())
-                && Utility.equal(rotZ, transform.getRotationZ())
-                && Utility.equal(scaleX, transform.getScaleX())
-                && Utility.equal(scaleY, transform.getScaleY())
-                && Utility.equal(scaleZ, transform.getScaleZ()));
+        return !(equal(posX, transform.getPositionX())
+                && equal(posY, transform.getPositionY())
+                && equal(posZ, transform.getPositionZ())
+                && equal(rotW, transform.getRotationW())
+                && equal(rotX, transform.getRotationX())
+                && equal(rotY, transform.getRotationY())
+                && equal(rotZ, transform.getRotationZ())
+                && equal(scaleX, transform.getScaleX())
+                && equal(scaleY, transform.getScaleY())
+                && equal(scaleZ, transform.getScaleZ()));
     }
 
     public void save(final Widget widget) {
@@ -101,19 +101,19 @@ public class TransformCache {
     }
 
     public boolean setPosX(float posX) {
-        boolean changed = !Utility.equal(this.posX, posX);
+        boolean changed = !equal(this.posX, posX);
         this.posX = posX;
         return changed;
     }
 
     public boolean setPosY(float posY) {
-        boolean changed = !Utility.equal(this.posY, posY);
+        boolean changed = !equal(this.posY, posY);
         this.posY = posY;
         return changed;
     }
 
     public boolean setPosZ(float posZ) {
-        boolean changed = !Utility.equal(this.posZ, posZ);
+        boolean changed = !equal(this.posZ, posZ);
         this.posZ = posZ;
         return changed;
     }
@@ -123,25 +123,25 @@ public class TransformCache {
     }
 
     public boolean setRotW(float rotW) {
-        boolean changed = !Utility.equal(this.rotW, rotW);
+        boolean changed = !equal(this.rotW, rotW);
         this.rotW = rotW;
         return changed;
     }
 
     public boolean setRotX(float rotX) {
-        boolean changed = !Utility.equal(this.rotX, rotX);
+        boolean changed = !equal(this.rotX, rotX);
         this.rotX = rotX;
         return changed;
     }
 
     public boolean setRotY(float rotY) {
-        boolean changed = !Utility.equal(this.rotY, rotY);
+        boolean changed = !equal(this.rotY, rotY);
         this.rotY = rotY;
         return changed;
     }
 
     public boolean setRotZ(float rotZ) {
-        boolean changed = !Utility.equal(this.rotZ, rotZ);
+        boolean changed = !equal(this.rotZ, rotZ);
         this.rotZ = rotZ;
         return changed;
     }
@@ -151,19 +151,19 @@ public class TransformCache {
     }
 
     public boolean setScaleX(float scaleX) {
-        boolean changed = !Utility.equal(this.scaleX, scaleX);
+        boolean changed = !equal(this.scaleX, scaleX);
         this.scaleX = scaleX;
         return changed;
     }
 
     public boolean setScaleY(float scaleY) {
-        boolean changed = !Utility.equal(this.scaleY, scaleY);
+        boolean changed = !equal(this.scaleY, scaleY);
         this.scaleY = scaleY;
         return changed;
     }
 
     public boolean setScaleZ(float scaleZ) {
-        boolean changed = !Utility.equal(this.scaleZ, scaleZ);
+        boolean changed = !equal(this.scaleZ, scaleZ);
         this.scaleZ = scaleZ;
         return changed;
     }

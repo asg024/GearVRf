@@ -1,9 +1,5 @@
 package com.samsung.smcl.vr.widgets.widget.properties;
 
-import com.samsung.smcl.utility.Exceptions;
-import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
-
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRAssetLoader;
 import org.gearvrf.GVRContext;
@@ -12,6 +8,8 @@ import org.gearvrf.GVRShaders;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTextureParameters;
 import org.gearvrf.asynchronous.GVRCompressedTexture;
+import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -19,6 +17,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.Future;
+
+import static com.samsung.smcl.vr.widgets.main.Utility.getId;
+import com.samsung.smcl.vr.widgets.log.Log;
 
 public class TextureFactory {
     static final private String TAG = TextureFactory.class.getSimpleName();
@@ -92,7 +93,7 @@ public class TextureFactory {
                 loadBitmapTextureFromJSON(context, textureSpec, loader);
                 break;
             default:
-                throw Exceptions.RuntimeAssertion("Invalid texture type: %s",
+                throw RuntimeAssertion("Invalid texture type: %s",
                         textureType);
         }
     }
@@ -119,11 +120,11 @@ public class TextureFactory {
                 int resId = -1;
                 switch (BitmapType.valueOf(type)) {
                     case uncompressed:
-                        resId = Helpers.getId(context.getContext(), id);
+                        resId = getId(context.getContext(), id);
                         Log.d(TAG, "loadBitmapTextureFromJSON uncompressed id = %s resId = %d", id, resId);
                         break;
                     case compressed:
-                        resId = Helpers.getId(context.getContext(), id);
+                        resId = getId(context.getContext(), id);
                         Log.d(TAG, "loadBitmapTextureFromJSON compressed id = %s resId = %d", id, resId);
                         break;
                     default:
@@ -137,8 +138,7 @@ public class TextureFactory {
                 resource = new GVRAndroidResource(texturePath);
                 break;
             default:
-                throw Exceptions
-                        .RuntimeAssertion("Invalid bitmap texture resource type: %s",
+                throw RuntimeAssertion("Invalid bitmap texture resource type: %s",
                                 resourceType);
         }
 

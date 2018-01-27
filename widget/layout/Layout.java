@@ -2,10 +2,13 @@ package com.samsung.smcl.vr.widgets.widget.layout;
 
 import com.samsung.smcl.vr.widgets.widget.Vector3Axis;
 import com.samsung.smcl.vr.widgets.widget.Widget;
-import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.RuntimeAssertion;
-import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.widgets.widget.Widget.ViewPortVisibility;
+
+import com.samsung.smcl.vr.widgets.log.Log;
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
+
+
+import org.gearvrf.utility.RuntimeAssertion;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,8 +43,8 @@ abstract public class Layout {
         Layout layout = (Layout) o;
 
         return mViewPort.equals(layout.mViewPort)
-                && Utility.equal(mDividerPadding, layout.mDividerPadding)
-                && Utility.equal(mOffset, layout.mOffset);
+                && equal(mDividerPadding, layout.mDividerPadding)
+                && equal(mOffset, layout.mOffset);
     }
 
     @Override
@@ -294,7 +297,7 @@ abstract public class Layout {
      * @param padding
      */
     public void setDividerPadding(float padding, final Axis axis) {
-        if (!Utility.equal(mDividerPadding.get(axis), padding)) {
+        if (!equal(mDividerPadding.get(axis), padding)) {
             mDividerPadding.set(padding, axis);
             if (mContainer != null) {
                 mContainer.onLayoutChanged(this);
@@ -308,7 +311,7 @@ abstract public class Layout {
      * @param offset
      */
     public void setOffset(float offset, final Axis axis) {
-        if (!Utility.equal(mOffset.get(axis), offset)) {
+        if (!equal(mOffset.get(axis), offset)) {
             mOffset.set(offset, axis);
             if (mContainer != null) {
                 mContainer.onLayoutChanged(this);
@@ -517,17 +520,17 @@ abstract public class Layout {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
             float offset = mOffset.get(Axis.X);
-            if (!Utility.equal(offset, 0)) {
+            if (!equal(offset, 0)) {
                 updateTransform(child, Axis.X, offset);
             }
 
             offset = mOffset.get(Axis.Y);
-            if (!Utility.equal(offset, 0)) {
+            if (!equal(offset, 0)) {
                 updateTransform(child, Axis.Y, offset);
             }
 
             offset = mOffset.get(Axis.Z);
-            if (!Utility.equal(offset, 0)) {
+            if (!equal(offset, 0)) {
                 updateTransform(child, Axis.Z, offset);
             }
        }
@@ -583,17 +586,17 @@ abstract public class Layout {
 
             switch (axis) {
                 case X:
-                    if (!Utility.equal(child.getPositionX(), offset)) {
+                    if (!equal(child.getPositionX(), offset)) {
                         child.setPositionX(offset);
                     }
                     break;
                 case Y:
-                    if (!Utility.equal(child.getPositionY(), offset)) {
+                    if (!equal(child.getPositionY(), offset)) {
                         child.setPositionY(offset);
                     }
                     break;
                 case Z:
-                    if (!Utility.equal(child.getPositionZ(), offset)) {
+                    if (!equal(child.getPositionZ(), offset)) {
                         child.setPositionZ(offset);
                     }
                     break;

@@ -5,13 +5,14 @@ import java.util.Arrays;
 import org.gearvrf.GVRHybridObject;
 import org.gearvrf.animation.GVRColorAnimation;
 import org.gearvrf.utility.Colors;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
 import com.samsung.smcl.vr.widgets.widget.Widget;
 
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.getFloat;
+import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.getJSONColorGl;
 
 public class ColorAnimation extends MaterialAnimation {
 
@@ -32,7 +33,7 @@ public class ColorAnimation extends MaterialAnimation {
     public ColorAnimation(final Widget target, final JSONObject parameters)
             throws JSONException {
         this(target, getFloat(parameters, Animation.Properties.duration), //
-                Helpers.getJSONColorGl(parameters, Properties.color));
+                getJSONColorGl(parameters, Properties.color));
     }
 
     public float[] getColor() {

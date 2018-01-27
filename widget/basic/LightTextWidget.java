@@ -7,6 +7,8 @@ import org.gearvrf.GVRTextureParameters;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONObject;
 
+import java.util.concurrent.Future;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -17,12 +19,12 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.widget.TextView;
 
-import com.samsung.smcl.vr.widgets.widget.Widget;
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
+
+import com.samsung.smcl.vr.widgets.widget.Widget;
 import com.samsung.smcl.vr.widgets.widget.NodeEntry;
 
-import java.util.concurrent.Future;
+import static com.samsung.smcl.vr.widgets.main.TextureFutureHelper.getFutureBitmapTexture;
 
 @SuppressWarnings("deprecation")
 public class LightTextWidget extends Widget implements TextContainer {
@@ -235,7 +237,7 @@ public class LightTextWidget extends Widget implements TextContainer {
             canvas.drawText(text, x, y, mTextPaint);
         }
 
-        Future<GVRTexture> texture = Helpers.getFutureBitmapTexture(getGVRContext(), bitmap);
+        Future<GVRTexture> texture = getFutureBitmapTexture(getGVRContext(), bitmap);
         // Apply trilinear and anisotropic filtering
         GVRTextureParameters textureParameters = new GVRTextureParameters(getGVRContext());
         textureParameters.setMinFilterType(GVRTextureParameters.TextureFilterType.GL_LINEAR_MIPMAP_LINEAR);

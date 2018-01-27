@@ -8,18 +8,25 @@ import android.opengl.GLES30;
 import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 
-import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.widgets.widget.properties.UnmodifiableJSONObject;
-import com.samsung.smcl.utility.Utility;
-import com.samsung.smcl.vr.widgets.thread.FPSCounter;
 import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
-import com.samsung.smcl.vr.widgets.main.MainScene;
 import com.samsung.smcl.vr.gvrf_launcher.R;
+
+import com.samsung.smcl.vr.widgets.log.Log;
+import com.samsung.smcl.vr.widgets.thread.FPSCounter;
+import com.samsung.smcl.vr.widgets.main.MainScene;
+
 import com.samsung.smcl.vr.widgets.widget.animation.AnimationFactory;
+
 import com.samsung.smcl.vr.widgets.widget.layout.Layout;
 import com.samsung.smcl.vr.widgets.widget.layout.basic.AbsoluteLayout;
+
 import com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers;
 import com.samsung.smcl.vr.widgets.widget.properties.PropertyManager;
+import com.samsung.smcl.vr.widgets.widget.properties.UnmodifiableJSONObject;
+
+import static com.samsung.smcl.vr.widgets.main.TextureFutureHelper.getSolidColorTexture;
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
+import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.*;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRAssetLoader;
@@ -35,6 +42,7 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
 import org.gearvrf.scene_objects.GVRModelSceneObject;
+
 import org.joml.Vector3f;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,8 +59,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import static com.samsung.smcl.utility.Exceptions.RuntimeAssertion;
-import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.*;
+import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
 
 public class Widget  implements Layout.WidgetContainer {
 
@@ -960,7 +967,7 @@ public class Widget  implements Layout.WidgetContainer {
 
         mClippingEnabled = true;
 
-        GVRTexture texture = mContext.getAssetLoader().loadTexture(new GVRAndroidResource(mContext, R.drawable.yellow));
+        GVRTexture texture = getSolidColorTexture(mContext, Color.YELLOW);
 
         GVRSceneObject clippingObj = new GVRSceneObject(mContext, getViewPortWidth(), getViewPortHeight(), texture);
         clippingObj.setName("clippingObj");
@@ -2271,9 +2278,9 @@ public class Widget  implements Layout.WidgetContainer {
             float newDepth = getLayoutDepth();
 
             changed = changed ||
-                    !Utility.equal(oldWidth, newWidth) ||
-                    !Utility.equal(oldHeight, newHeight) ||
-                    !Utility.equal(oldDepth, newDepth);
+                    !equal(oldWidth, newWidth) ||
+                    !equal(oldHeight, newHeight) ||
+                    !equal(oldDepth, newDepth);
 
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout changed %s " +
                             "old = [%f, %f, %f] new [%f, %f, %f]!",

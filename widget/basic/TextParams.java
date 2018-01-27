@@ -6,13 +6,16 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 
-import com.samsung.smcl.vr.widgets.main.TypefaceManager;
-import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
-
-import org.gearvrf.scene_objects.GVRTextViewSceneObject;
 import org.json.JSONObject;
 
+import org.gearvrf.scene_objects.GVRTextViewSceneObject;
+
+import com.samsung.smcl.vr.widgets.main.TypefaceManager;
+import static com.samsung.smcl.vr.widgets.main.Utility.getId;
+
+import com.samsung.smcl.vr.widgets.log.Log;
+
+import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.getJSONColor;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optEnum;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optFloat;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optInt;
@@ -43,14 +46,14 @@ public class TextParams implements TextContainer {
     public void setFromJSON(Activity activity, JSONObject properties) {
         String backgroundResStr = optString(properties, Properties.background);
         if (backgroundResStr != null && !backgroundResStr.isEmpty()) {
-            final int backgroundResId = Helpers.getId(activity, backgroundResStr, "drawable");
+            final int backgroundResId = getId(activity, backgroundResStr, "drawable");
             setBackGround(activity.getResources().getDrawable(backgroundResId));
         }
 
-        setBackgroundColor(Helpers.getJSONColor(properties, Properties.background_color, getBackgroundColor()));
+        setBackgroundColor(getJSONColor(properties, Properties.background_color, getBackgroundColor()));
         setGravity(optInt(properties, TextContainer.Properties.gravity, getGravity()));
         setRefreshFrequency(optEnum(properties, Properties.refresh_freq, getRefreshFrequency()));
-        setTextColor(Helpers.getJSONColor(properties, Properties.text_color, getTextColor()));
+        setTextColor(getJSONColor(properties, Properties.text_color, getTextColor()));
         setText(optString(properties, Properties.text, (String) getText()));
         setTextSize(optFloat(properties, Properties.text_size, getTextSize()));
 

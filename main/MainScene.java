@@ -1,15 +1,18 @@
 package com.samsung.smcl.vr.widgets.main;
 
-import com.samsung.smcl.vr.widgets.thread.MainThread;
-import com.samsung.smcl.vr.gvrf_launcher.Policy;
-import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
-import com.samsung.smcl.vr.widgets.widget.layout.basic.AbsoluteLayout;
+
+import com.samsung.smcl.vr.widgets.thread.MainThread;
+import com.samsung.smcl.vr.widgets.log.Log;
+
 import com.samsung.smcl.vr.widgets.widget.GroupWidget;
 import com.samsung.smcl.vr.widgets.widget.Widget;
 import com.samsung.smcl.vr.widgets.widget.Widget.ChildInfo;
 import com.samsung.smcl.vr.widgets.widget.Widget.Visibility;
+
+import com.samsung.smcl.vr.widgets.widget.layout.basic.AbsoluteLayout;
+
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
 
 import org.gearvrf.GVRCameraRig;
 import org.gearvrf.GVRContext;
@@ -17,13 +20,14 @@ import org.gearvrf.GVRPerspectiveCamera;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTransform;
+import static org.gearvrf.utility.Log.tag;
+
 import org.joml.Quaternionf;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.samsung.smcl.vr.gvrf_launcher.Policy.*;
 
 /**
  * Encapsulates common operations on the main scene, the main camera rig, and
@@ -35,6 +39,7 @@ public class MainScene {
     public static final int LEFT_CAMERA = 1;
     public static final int RIGHT_CAMERA = 2;
     public static final int BOTH_CAMERAS = LEFT_CAMERA | RIGHT_CAMERA;
+    public static final float HORIZON = 1500f;
 
     /**
      * Implement this interface and
@@ -417,7 +422,24 @@ public class MainScene {
      * @return The camera's absolute yaw in degrees.
      */
     public float getMainCameraRigYaw() {
-        return Helpers.getCameraRigYaw(this.getMainCameraRig());
+        GVRTransform transform = getMainCameraRig().getHeadTransform();
+
+        float yaw = transform.getRotationYaw();
+        float z = getMainCameraRig().getLookAt()[2];
+        if (z == 0) {
+            // Use the 'z' component of the rig's 'up' vector instead. Per
+            // http://3dengine.org/Right-up-back_from_modelview, the 'up'
+            // vector is the second row of the matrix. Since OpenGL matrices
+            // are column-major, the second row is elements 1, 5, 9, 13; 1,
+            // 5, and 9 are the up vector, 13 is the 'y' component of the
+            // "encoded" camera center vector.
+            z = transform.getModelMatrix()[9];
+        }
+        if (z < 0) {
+            int flip = yaw < 0 ? -1 : 1;
+            yaw = flip * (90 + (90 - Math.abs(yaw)));
+        }
+        return yaw;
     }
 
     /**
@@ -431,7 +453,7 @@ public class MainScene {
         final GVRTransform t = getMainCameraRig().getHeadTransform();
         final Quaternionf q = new Quaternionf(0, t.getRotationY(), 0, t.getRotationW()).normalize();
 
-        transform.rotateWithPivot(q.w, q.x, q.y, q.z, ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
+        transform.rotateWithPivot(q.w, q.x, q.y, q.z, 0, 0, 0);
     }
 
     /**
@@ -444,10 +466,9 @@ public class MainScene {
      * @return The camera's yaw in degrees.
      */
     public float rotateToFaceCamera(final Widget widget) {
-        final float yaw = Helpers.getCameraRigYaw(getMainCameraRig());
+        final float yaw = getMainCameraRigYaw();
         GVRTransform t = getMainCameraRig().getHeadTransform();
-        widget.rotateWithPivot(t.getRotationW(), 0, t.getRotationY(), 0,
-                ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
+        widget.rotateWithPivot(t.getRotationW(), 0, t.getRotationY(), 0, 0, 0, 0);
         return yaw;
     }
 
@@ -458,7 +479,7 @@ public class MainScene {
     }
 
     public void updateFrontFacingRotation(float rotation) {
-        if (!Utility.isNaN(rotation) && !Utility.equal(rotation, frontFacingRotation)) {
+        if (!Float.isNaN(rotation) && !equal(rotation, frontFacingRotation)) {
             final float oldRotation = frontFacingRotation;
             frontFacingRotation = rotation % 360;
             for (OnFrontRotationChangedListener listener : mOnFrontRotationChangedListeners) {
@@ -473,20 +494,17 @@ public class MainScene {
     }
 
     public void rotateToFront(final GVRTransform transform) {
-        transform.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0,
-                ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
+        transform.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0, 0, 0, 0);
     }
 
     public void rotateToFront(final Widget widget) {
-        widget.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0, ORIGIN_X,
-                ORIGIN_Y, ORIGIN_Z);
+        widget.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0, 0, 0, 0);
     }
 
     public void rotateToFront() {
         GVRTransform transform = mSceneRootObject.getTransform();
         transform.setRotation(1, 0, 0, 0);
-        transform.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0,
-                ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
+        transform.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0, 0, 0, 0);
     }
 
     public void setCameraRigType(final int cameraRigType) {
@@ -498,7 +516,7 @@ public class MainScene {
     }
 
     public void setScale(final float scale) {
-        if (Utility.equal(mScale, scale) != true) {
+        if (equal(mScale, scale) != true) {
             Log.d(TAG, "setScale(): old: %.2f, new: %.2f", mScale, scale);
             mScale = scale;
             setScale(mSceneRootObject, scale);
@@ -539,7 +557,7 @@ public class MainScene {
     @SuppressWarnings("unused")
     private static void adjustClippingDistance(GVRPerspectiveCamera camera) {
         float distance = camera.getFarClippingDistance();
-        final float horizon = Policy.HORIZON;
+        final float horizon = HORIZON;
         if (horizon > 500 && distance <= 1000) {
             camera.setFarClippingDistance(distance * 2);
         } else if (horizon <= 500 && distance > 1000) {
@@ -548,7 +566,7 @@ public class MainScene {
     }
 
     private class RootWidget extends GroupWidget {
-        private String TAG = Utility.tag(RootWidget.class);
+        private String TAG = tag(RootWidget.class);
 
         public RootWidget(GVRSceneObject sceneObject) {
             super(sceneObject.getGVRContext(), sceneObject);

@@ -9,8 +9,9 @@ import org.gearvrf.GVRContext;
 
 import android.app.Activity;
 
-import com.samsung.smcl.utility.Utility;
 import com.samsung.smcl.vr.widgets.log.Log;
+
+import static org.gearvrf.utility.Threads.spawn;
 
 /**
  * Utility for ordering operations that will be executed on multiple threads,
@@ -66,7 +67,7 @@ import com.samsung.smcl.vr.widgets.log.Log;
  * {@code ExecutionChain} supports running tasks on the
  * {@link Activity#runOnUiThread(Runnable) UI thread}, {@link MainThread main
  * thread}, {@link GVRContext#runOnGlThread(Runnable) OpenGL thread}, and on
- * {@link Utility#spawn(Runnable) background threads}.
+ * {@link org.gearvrf.utility.Threads#spawn(Runnable) background threads}.
  */
 public class ExecutionChain {
     public enum State {
@@ -286,7 +287,7 @@ public class ExecutionChain {
     }
 
     /**
-     * Add a {@link Task} to be run on a {@link Utility#spawn(Runnable)
+     * Add a {@link Task} to be run on a {@link org.gearvrf.utility.Threads#spawn(Runnable)
      * background thread}. It will be run after all Tasks added prior to this
      * call.
      *
@@ -352,7 +353,7 @@ public class ExecutionChain {
 
     /**
      * A convenience method to wrap a {@link Runnable} in a {@link Task} to be
-     * run on a {@link Utility#spawn(Runnable) background thread}.
+     * run on a {@link org.gearvrf.utility.Threads#spawn(Runnable) background thread}.
      *
      * @param r
      *            {@code Runnable} to run
@@ -547,7 +548,7 @@ public class ExecutionChain {
 
                         break;
                     case BACKGROUND:
-                        Utility.spawn(this);
+                        spawn(this);
                         break;
                 }
             } else {

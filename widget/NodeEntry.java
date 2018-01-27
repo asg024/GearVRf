@@ -1,9 +1,9 @@
 package com.samsung.smcl.vr.widgets.widget;
 
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.utility.RuntimeAssertion;
 
 import org.gearvrf.GVRSceneObject;
+import org.gearvrf.utility.RuntimeAssertion;
 import org.json.JSONException;
 import org.json.JSONObject;
 

@@ -13,7 +13,6 @@ import org.json.JSONObject;
 
 import com.samsung.smcl.vr.widgets.widget.Widget;
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.gvrf_launcher.util.SimpleAnimationTracker;
 
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.getFloat;
 
