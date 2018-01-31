@@ -1,9 +1,8 @@
 package com.samsung.smcl.vr.widgets.main;
 
-import com.samsung.smcl.vr.gvrf_launcher.util.Helpers;
-
-import com.samsung.smcl.vr.widgets.thread.MainThread;
 import com.samsung.smcl.vr.widgets.log.Log;
+
+import static com.samsung.smcl.vr.widgets.main.Utility.equal;
 
 import com.samsung.smcl.vr.widgets.widget.GroupWidget;
 import com.samsung.smcl.vr.widgets.widget.Widget;
@@ -11,8 +10,6 @@ import com.samsung.smcl.vr.widgets.widget.Widget.ChildInfo;
 import com.samsung.smcl.vr.widgets.widget.Widget.Visibility;
 
 import com.samsung.smcl.vr.widgets.widget.layout.basic.AbsoluteLayout;
-
-import static com.samsung.smcl.vr.widgets.main.Utility.equal;
 
 import org.gearvrf.GVRCameraRig;
 import org.gearvrf.GVRContext;
@@ -583,23 +580,23 @@ public class MainScene {
             public void run() {
                 Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "requestLayout(): running layout from MainScene");
 
-            mInLayout = true;
-            layout();
-            mInLayout = false;
+                mInLayout = true;
+                layout();
+                mInLayout = false;
 
-            Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "requestLayout(): MainScene layout DONE");
+                Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "requestLayout(): MainScene layout DONE");
 
-            MainThread.get(getGVRContext()).runOnMainThread(new Runnable() {
-                @Override
-                public void run() {
-                    runOnGlThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            checkInnerLayoutRequest();
-                        }
-                    });
-                }
-            });
+                WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        runOnGlThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                checkInnerLayoutRequest();
+                            }
+                        });
+                    }
+                });
             }
         };
 

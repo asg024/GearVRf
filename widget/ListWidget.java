@@ -2,6 +2,7 @@ package com.samsung.smcl.vr.widgets.widget;
 
 import android.database.DataSetObserver;
 
+import com.samsung.smcl.vr.widgets.main.WidgetLib;
 import com.samsung.smcl.vr.widgets.widget.animation.SimpleAnimationTracker;
 
 
@@ -709,7 +710,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 mScroller.scroll();
             }
         } else {
-            MainThread.get(getGVRContext()).
+            WidgetLib.getMainThread().
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
@@ -719,7 +720,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                         }
                     });
             onChangedImpl(scrollToPosition);
-            MainThread.get(getGVRContext()).
+            WidgetLib.getMainThread().
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
@@ -742,7 +743,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     class ScrollingProcessor {
         private int mScrollToPosition = -1;
         private Vector3Axis mScrollByOffset = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
-        private SimpleAnimationTracker animationTracker = SimpleAnimationTracker.get(getGVRContext());
+        private SimpleAnimationTracker animationTracker = WidgetLib.getSimpleAnimationTracker();
         private boolean mScrolling = false;
         private LayoutScroller.OnScrollListener mListener;
         private boolean mForce = false;
@@ -873,7 +874,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
             AnimationSet.Builder builder = new AnimationSet.Builder(ListWidget.this.mContent);
             if (!mScrolling) {
-                MainThread.get(getGVRContext()).
+                WidgetLib.getMainThread().
                         runOnMainThread(new Runnable() {
                             @Override
                             public void run() {
@@ -968,7 +969,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
                 mScroller = null;
                 mScrolling = false;
                 mContent.requestLayout();
-                MainThread.get(getGVRContext()).
+                WidgetLib.getMainThread().
                         runOnMainThread(new Runnable() {
                             @Override
                             public void run() {

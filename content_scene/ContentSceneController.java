@@ -1,29 +1,17 @@
 package com.samsung.smcl.vr.widgets.content_scene;
 
-import android.app.Activity;
 import java.util.LinkedList;
 
 import org.gearvrf.GVRContext;
 
-import com.samsung.smcl.vr.widgets.main.Holder;
-import com.samsung.smcl.vr.widgets.main.HolderHelper;
-import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager;
-import com.samsung.smcl.vr.widgets.main.MainScene;
 import com.samsung.smcl.vr.widgets.thread.MainThread;
-import com.samsung.smcl.vr.widgets.log.Log;
 import com.samsung.smcl.vr.widgets.thread.ExecutionChain;
 
-public class ContentSceneController implements LauncherViewManager.OnInitListener {
+import com.samsung.smcl.vr.widgets.log.Log;
 
-    @Override
-    public void onInit(GVRContext context, MainScene scene) {
-        gvrContext = context;
-    }
+import static org.gearvrf.utility.Log.tag;
 
-    @Override
-    public void onPostInit() {
-
-    }
+public class ContentSceneController {
 
     /**
      * An entity that can be subjected to management by the
@@ -46,33 +34,11 @@ public class ContentSceneController implements LauncherViewManager.OnInitListene
         String getName();
     }
 
-    static public ContentSceneController get(Activity activity) {
-        return ((Holder) activity).get(ContentSceneController.class);
-    }
-
-    static public ContentSceneController get(GVRContext gvrContext) {
-        ContentSceneController sceneController = null;
-        if (gvrContext != null) {
-            Activity activity = gvrContext.getActivity();
-            sceneController = get(activity);
-        }
-
-        return sceneController;
-    }
-
     /**
      * Creates ContentSceneController
-     * An instance of {@link Holder} must be supplied and can only be associated
-     * with one {@link ContentSceneController}. If the supplied {@code Holder} instance has
-     * already been initialized, an {@link IllegalArgumentException} will be
-     * thrown.
-     *
-     * @param holder An {@link Activity} that implements {@link Holder}.
-     * @throws IllegalArgumentException if {@code holder} is {@code null} or is already holding
-     *                                  another instance of {@link ContentSceneController}.
      */
-    public <T extends Activity & Holder> ContentSceneController(T holder) {
-        HolderHelper.register(holder, this);
+    public ContentSceneController(GVRContext gvrContext) {
+        mGvrContext = gvrContext;
     }
 
     public void goTo(final ContentScene contentScene) {
@@ -118,7 +84,7 @@ public class ContentSceneController implements LauncherViewManager.OnInitListene
             return;
         }
 
-        new ExecutionChain(gvrContext).runOnMainThread(new Runnable() {
+        new ExecutionChain(mGvrContext).runOnMainThread(new Runnable() {
             @Override
             public void run() {
                 if (mContentSceneViewStack.isEmpty()) {
@@ -135,7 +101,7 @@ public class ContentSceneController implements LauncherViewManager.OnInitListene
             return;
         }
 
-        new ExecutionChain(gvrContext).runOnMainThread(new Runnable() {
+        new ExecutionChain(mGvrContext).runOnMainThread(new Runnable() {
             @Override
             public void run() {
                 if (mContentSceneViewStack.isEmpty()) {
@@ -185,7 +151,7 @@ public class ContentSceneController implements LauncherViewManager.OnInitListene
         // When there is no ongoing show-hide execution chain, create a new one
         if (nextContentScene == null) {
             nextContentScene = contentScene;
-            new ExecutionChain(gvrContext).runOnMainThread(new Runnable() {
+            new ExecutionChain(mGvrContext).runOnMainThread(new Runnable() {
                 @Override
                 public void run() {
                     ContentScene localNextContentScene = null;
@@ -249,8 +215,7 @@ public class ContentSceneController implements LauncherViewManager.OnInitListene
      * In other words, only modify from the {@link Runnable#run() run()} method
      * of a task passed to {@link #executeHideShowCycle}.
      */
-    private GVRContext gvrContext;
+    private GVRContext mGvrContext;
 
-    private static final String TAG = ContentSceneController.class
-            .getSimpleName();
+    private static final String TAG = tag(ContentSceneController.class);
 }

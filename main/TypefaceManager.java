@@ -1,14 +1,11 @@
 package com.samsung.smcl.vr.widgets.main;
 
-
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Typeface;
 import android.os.Environment;
 
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.widgets.widget.Widget;
 
 import org.gearvrf.GVRContext;
 import org.json.JSONException;
@@ -21,39 +18,11 @@ import java.util.Map;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.*;
 
 public class TypefaceManager {
-
-    static public TypefaceManager get(Activity activity) {
-        return ((Holder) activity).get(TypefaceManager.class);
-    }
-
-    static public TypefaceManager get(GVRContext gvrContext) {
-        TypefaceManager typefaceManager = null;
-        if (gvrContext != null) {
-            Activity activity = gvrContext.getActivity();
-            typefaceManager = get(activity);
-        }
-
-        return typefaceManager;
-    }
-
-    static public TypefaceManager get(Widget widget) {
-        return get(widget.getGVRContext());
-    }
-
     /**
      * Creates TypefaceManager
-     * An instance of {@link Holder} must be supplied and can only be associated
-     * with one {@link TypefaceManager}. If the supplied {@code Holder} instance has
-     * already been initialized, an {@link IllegalArgumentException} will be
-     * thrown.
-     *
-     * @param holder An {@link Activity} that implements {@link Holder}.
-     * @throws IllegalArgumentException if {@code holder} is {@code null} or is already holding
-     *                                  another instance of {@code TypefaceManager}.
      */
-    public <T extends Activity & Holder> TypefaceManager(T holder) {
-        HolderHelper.register(holder, this);
-        mContext = holder;
+    public TypefaceManager(GVRContext gvrContext) {
+        mGvrContext = gvrContext;
     }
 
     private enum Attributes {
@@ -152,7 +121,7 @@ public class TypefaceManager {
             Log.d(TAG, "getTypefaceResource(): typeface not in cache");
             final ResourceType resourceType = getResourceType(json);
             Log.d(TAG, "getTypefaceResource(): typeface resource type: %s", resourceType);
-            tf = resourceType.getTypeface(mContext, path);
+            tf = resourceType.getTypeface(mGvrContext.getContext(), path);
             Log.d(TAG, "getTypefaceResource(): typeface for '%s': %s", path, tf);
             mTypefaceCache.put(path, tf);
         }
@@ -163,7 +132,7 @@ public class TypefaceManager {
         return optEnum(json, Attributes.resource_type, ResourceType.class);
     }
 
-    private final Context mContext;
+    private final GVRContext mGvrContext;
     private final Map<Object, Typeface> mTypefaceCache = new HashMap<>();
 
     private static final String TAG = TypefaceManager.class.getSimpleName();

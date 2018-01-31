@@ -1,13 +1,9 @@
 package com.samsung.smcl.vr.widgets.widget;
 
 import android.app.Activity;
-import android.view.MotionEvent.PointerCoords;
 
-import com.samsung.smcl.vr.gvrf_launcher.SurfaceTextureScene;
 import com.samsung.smcl.vr.widgets.log.Log;
 import com.samsung.smcl.vr.widgets.main.Selector;
-import com.samsung.smcl.vr.widgets.main.Holder;
-import com.samsung.smcl.vr.widgets.main.HolderHelper;
 
 import org.gearvrf.GVRCollider;
 import org.gearvrf.GVRColliderGroup;
@@ -53,35 +49,11 @@ public class TouchManager {
     private Runnable defaultLeftClickAction = null;
     private Runnable defaultRightClickAction = null;
     private Set<OnTouch> mOnTouchInterceptors = new LinkedHashSet<>();
-    ;
-
-    static public TouchManager get(Activity activity) {
-        return ((Holder) activity).get(TouchManager.class);
-    }
-
-    static public TouchManager get(GVRContext gvrContext) {
-        TouchManager touchManager = null;
-        if (gvrContext != null) {
-            Activity activity = gvrContext.getActivity();
-            touchManager = get(activity);
-        }
-
-        return touchManager;
-    }
 
     /**
      * Creates TouchManager
-     * An instance of {@link Holder} must be supplied and can only be associated
-     * with one {@link TouchManager}. If the supplied {@code Holder} instance has
-     * already been initialized, an {@link IllegalArgumentException} will be
-     * thrown.
-     *
-     * @param holder An {@link Activity} that implements {@link Holder}.
-     * @throws IllegalArgumentException if {@code holder} is {@code null} or is already holding
-     *                                  another instance of {@code TouchManager}.
      */
-    public <T extends Activity & Holder> TouchManager(T holder) {
-        HolderHelper.register(holder, this);
+    public TouchManager(GVRContext gvrContext) {
     }
 
     /**

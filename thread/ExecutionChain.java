@@ -10,6 +10,7 @@ import org.gearvrf.GVRContext;
 import android.app.Activity;
 
 import com.samsung.smcl.vr.widgets.log.Log;
+import com.samsung.smcl.vr.widgets.main.WidgetLib;
 
 import static org.gearvrf.utility.Threads.spawn;
 
@@ -541,7 +542,7 @@ public class ExecutionChain {
                                 .runOnUiThread(this);
                         break;
                     case MAIN:
-                        MainThread.get(gvrContext).runOnMainThread(this);
+                        WidgetLib.getMainThread().runOnMainThread(this);
                         break;
                     case GL:
                         gvrContext.runOnGlThread(this);

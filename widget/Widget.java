@@ -8,12 +8,14 @@ import android.opengl.GLES30;
 import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 
-import com.samsung.smcl.vr.gvrf_launcher.LauncherViewManager.OnInitListener;
+// TODO: WIDGET_LIBRARY remove dependancy
 import com.samsung.smcl.vr.gvrf_launcher.R;
 
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.widgets.thread.FPSCounter;
+import com.samsung.smcl.vr.widgets.main.WidgetLib;
 import com.samsung.smcl.vr.widgets.main.MainScene;
+
+import com.samsung.smcl.vr.widgets.thread.FPSCounter;
 
 import com.samsung.smcl.vr.widgets.widget.animation.AnimationFactory;
 
@@ -78,39 +80,22 @@ public class Widget  implements Layout.WidgetContainer {
      *             if a constructor can't be found for an animation type
      *             specified in {@code objects.json}.
      */
-    static public void init(Context context) throws JSONException,
+    static public void init(GVRContext gvrContext) throws JSONException,
             NoSuchMethodException {
-        PropertyManager.init(context);
+        PropertyManager.init(gvrContext.getContext());
+        loadAnimations(gvrContext.getContext());
 
-        loadAnimations(context);
+        gvrContext.runOnGlThread(new Runnable() {
+            @Override
+            public void run() {
+                sGLThread = new WeakReference<>(Thread.currentThread());
+            }
+        });
+        GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
+        sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
+                gvrContext, R.raw.default_bkgd));
+        Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
     }
-
-    /**
-     * Register this with LauncherViewManager. An alternative would be to have
-     * {@link #init(Context) init()} do this work and just call it directly from
-     * LauncherViewManager.onInit().
-     */
-    static public final OnInitListener onInitListener = new OnInitListener() {
-        @Override
-        public void onInit(GVRContext gvrContext, MainScene scene) {
-            FocusManager.get(gvrContext).init(gvrContext);
-            gvrContext.runOnGlThread(new Runnable() {
-                @Override
-                public void run() {
-                    sGLThread = new WeakReference<>(Thread.currentThread());
-                }
-            });
-            GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
-            sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
-                    gvrContext, R.raw.default_bkgd));
-            Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
-        }
-
-        @Override
-        public void onPostInit() {
-
-        }
-    };
 
     /**
      * @return The time, in milliseconds, that a widget must have continuous
@@ -2033,8 +2018,7 @@ public class Widget  implements Layout.WidgetContainer {
      * Determine whether the calling thread is the GL thread.
      *
      * @return {@code True} if called from the GL thread, {@code false} if
-     *         called from another thread, or if the {@link Widget} framework
-     *         has not been {@linkplain #onInitListener GL initialized} yet.
+     *         called from another thread.
      */
     protected final boolean isGLThread() {
         final Thread glThread = sGLThread.get();
@@ -2083,15 +2067,9 @@ public class Widget  implements Layout.WidgetContainer {
      * This differs from {@link GVRContext#runOnGlThread(Runnable)}: that method
      * always queues the {@code Runnable} for execution in the next frame.
      * <p>
-     * Note: if the {@link Widget} framework has not yet been
-     * {@link #onInitListener GL initialized}, the {@code Runnable} will be
-     * executed in the next frame.
-     *
-     * @param r
-     *            {@link Runnable} to execute on the GL thread.
+     * @param r {@link Runnable} to execute on the GL thread.
      */
     protected final void runOnGlThread(final Runnable r) {
-
         getGVRContext().runOnGlThread(new Runnable() {
             public void run() {
                 FPSCounter.timeCheck("runOnGlThread <START>: " + r);
@@ -3152,7 +3130,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private void registerPickable() {
-        final TouchManager touchManager = TouchManager.get(getGVRContext());
+        final TouchManager touchManager = WidgetLib.getTouchManager();
         if (touchManager == null) {
             Log.e(TAG,
                   "Attempted to register widget as touchable with NULL TouchManager!");
@@ -3160,7 +3138,7 @@ public class Widget  implements Layout.WidgetContainer {
         }
 
         final boolean hasRenderData = getRenderData() != null;
-        final FocusManager focusManager = FocusManager.get(mContext);
+        final FocusManager focusManager = WidgetLib.getFocusManager();
         final TouchManager.OnTouch currentTouchHandler = mTouchHandler;
         final FocusManager.Focusable currentFocusable = mFocusableImpl;
 

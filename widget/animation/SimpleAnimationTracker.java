@@ -1,11 +1,8 @@
 package com.samsung.smcl.vr.widgets.widget.animation;
 
-import android.app.Activity;
 import android.util.Pair;
 
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.widgets.main.Holder;
-import com.samsung.smcl.vr.widgets.main.HolderHelper;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
@@ -29,35 +26,10 @@ public final class SimpleAnimationTracker {
         }
     };
 
-
-    static public SimpleAnimationTracker get(Activity activity) {
-        return ((Holder) activity).get(SimpleAnimationTracker.class);
-    }
-
-    static public SimpleAnimationTracker get(GVRContext gvrContext) {
-        SimpleAnimationTracker simpleAnimationTracker = null;
-        if (gvrContext != null) {
-            Activity activity = gvrContext.getActivity();
-            simpleAnimationTracker = get(activity);
-        }
-        return simpleAnimationTracker;
-    }
-
     /**
      * Creates SimpleAnimationTracker
-     * An instance of {@link Holder} must be supplied and can only be associated
-     * with one {@link SimpleAnimationTracker}. If the supplied {@code Holder} instance has
-     * already been initialized, an {@link IllegalArgumentException} will be
-     * thrown.
-     *
-     * @param holder
-     *            An {@link Activity} that implements {@link Holder}.
-     * @throws IllegalArgumentException
-     *             if {@code holder} is {@code null} or is already holding
-     *             another instance of {@code SimpleAnimationTracker}.
      */
-    public <T extends Activity & Holder> SimpleAnimationTracker(T holder) {
-        HolderHelper.register(holder, this);
+    public SimpleAnimationTracker(GVRContext gvrContext) {
         tracker = new ConcurrentHashMap<GVRSceneObject, Pair<GVRAnimation, GVROnFinish>>();
         requestQueue = new LinkedBlockingQueue<AnimationRequest>();
         // start animation request worker thread

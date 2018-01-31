@@ -14,6 +14,7 @@ import com.samsung.smcl.vr.widgets.main.TypefaceManager;
 import static com.samsung.smcl.vr.widgets.main.Utility.getId;
 
 import com.samsung.smcl.vr.widgets.log.Log;
+import com.samsung.smcl.vr.widgets.main.WidgetLib;
 
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.getJSONColor;
 import static com.samsung.smcl.vr.widgets.widget.properties.JSONHelpers.optEnum;
@@ -61,7 +62,7 @@ public class TextParams implements TextContainer {
 
         if (typefaceJson != null) {
             try {
-                Typeface typeface = TypefaceManager.get(activity).getTypeface(typefaceJson);
+                Typeface typeface = WidgetLib.getTypefaceManager().getTypeface(typefaceJson);
                 setTypeface(typeface);
             } catch (Throwable e) {
                 Log.e(TAG, e, "Couldn't set typeface from properties: %s", typefaceJson);

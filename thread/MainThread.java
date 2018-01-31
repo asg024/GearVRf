@@ -3,14 +3,9 @@ package com.samsung.smcl.vr.widgets.thread;
 import java.util.concurrent.CountDownLatch;
 
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRSceneObject;
 
 import com.samsung.smcl.vr.widgets.log.Log;
-import com.samsung.smcl.vr.widgets.widget.Widget;
-import com.samsung.smcl.vr.widgets.main.Holder;
-import com.samsung.smcl.vr.widgets.main.HolderHelper;
 
-import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -20,60 +15,16 @@ import android.os.SystemClock;
  *  a new thread.
  */
 public final class MainThread {
-
-    static public MainThread get(Activity activity) {
-        return ((Holder) activity).get(MainThread.class);
-    }
-
-    static public MainThread get(GVRContext gvrContext) {
-        MainThread mainThread = null;
-        if (gvrContext != null) {
-            Activity activity = gvrContext.getActivity();
-            mainThread = get(activity);
-        }
-        return mainThread;
-    }
-
-    static public MainThread get(Widget widget) {
-        MainThread mainThread = null;
-        if (widget != null) {
-            Activity activity = (Activity)widget.getContext();
-            mainThread = get(activity);
-        }
-        return mainThread;
-    }
-
-    static public MainThread get(GVRSceneObject sceneObject) {
-        MainThread mainThread = null;
-        if (sceneObject != null) {
-            Activity activity = sceneObject.getGVRContext().getActivity();
-            mainThread = get(activity);
-        }
-        return mainThread;
-    }
-
     /**
      * Creates and starts the main thread and its message handling Looper.
      * <p>
      * <b><span style="color:red">NOTE:</span></b> This method blocks until the
      * thread is started and the handler is ready to receive messages.
      * <p>
-     * An instance of {@link Holder} must be supplied and can only be associated
-     * with one {@link MainThread}. If the supplied {@code Holder} instance has
-     * already been initialized, an {@link IllegalArgumentException} will be
-     * thrown.
-     *
-     * @param holder
-     *            An {@link Activity} that implements {@link Holder}.
      * @throws InterruptedException
      *             if the thread wasn't successfully started.
-     * @throws IllegalArgumentException
-     *             if {@code holder} is {@code null} or is already holding
-     *             another instance of {@code MainThread}.
      */
-    public <T extends Activity & Holder> MainThread(T holder) throws InterruptedException {
-        HolderHelper.register(holder, this);
-
+    public MainThread(GVRContext gvrContext) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         mainThread = new Thread("MainThread") {
             public void run() {

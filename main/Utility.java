@@ -16,11 +16,6 @@ import static org.gearvrf.utility.Log.tag;
 
 /**
  * Generally useful constants and static methods.
- *
- * <p>
- * You may find it convenient to import this <i>via</i> <blockquote>
- * <code>import static com.samsung.smcl.components.Utility.*;</code>
- * </blockquote>
  */
 public abstract class Utility {
     private static final String TAG = tag(Utility.class);

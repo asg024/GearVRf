@@ -21,6 +21,9 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * Persistent logs are written to:
+ *
+ * // TODO: WIDGET_LIBRARY remove dependancy
+
  * /storage/emulated/0/Android/data/com.samsung.smcl.vr.gvrf_launcher/files/Documents/vrtop
  */
 @SuppressWarnings("unused")

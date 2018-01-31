@@ -1,9 +1,5 @@
 package com.samsung.smcl.vr.widgets.main;
 
-import com.samsung.smcl.utility.Utility;
-
-import java.util.Collection;
-
 /**
  * A selection (or filter) function. Useful for defining selection methods that can be used with
  * various objects.}.

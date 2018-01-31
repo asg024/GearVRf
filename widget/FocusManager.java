@@ -1,11 +1,8 @@
 package com.samsung.smcl.vr.widgets.widget;
 
-import android.app.Activity;
-
 import com.samsung.smcl.vr.widgets.log.Log;
+import com.samsung.smcl.vr.widgets.main.WidgetLib;
 import com.samsung.smcl.vr.widgets.thread.FPSCounter;
-import com.samsung.smcl.vr.widgets.main.Holder;
-import com.samsung.smcl.vr.widgets.main.HolderHelper;
 import com.samsung.smcl.vr.widgets.thread.MainThread;
 
 import org.gearvrf.GVRContext;
@@ -38,7 +35,7 @@ public class FocusManager {
 
     /**
      * Similar to
-     * {@link TouchManager#setTouchInterceptor(TouchManager.OnTouch)
+     * {@link TouchManager#addOnTouchInterceptor(TouchManager.OnTouch)}
      * TouchManager.setTouchInterceptor(OnTouch)}, instances of this interface
      * can be used to filter the delivery of focus events to
      * {@linkplain GVRSceneObject scene objects}.
@@ -71,34 +68,11 @@ public class FocusManager {
         void onFocus(boolean focused);
     }
 
-    static public FocusManager get(Activity activity) {
-        return ((Holder) activity).get(FocusManager.class);
-    }
-
-    static public FocusManager get(GVRContext gvrContext) {
-        FocusManager focusManager = null;
-        if (gvrContext != null) {
-            Activity activity = gvrContext.getActivity();
-            focusManager = get(activity);
-        }
-        return focusManager;
-    }
-
     /**
      * Creates FocusManager
-     * An instance of {@link Holder} must be supplied and can only be associated
-     * with one {@link FocusManager}. If the supplied {@code Holder} instance has
-     * already been initialized, an {@link IllegalArgumentException} will be
-     * thrown.
-     *
-     * @param holder
-     *            An {@link Activity} that implements {@link Holder}.
-     * @throws IllegalArgumentException
-     *             if {@code holder} is {@code null} or is already holding
-     *             another instance of {@code FocusManager}.
      */
-    public <T extends Activity & Holder> FocusManager(T holder) {
-        HolderHelper.register(holder, this);
+    public FocusManager(GVRContext gvrContext) {
+        init(gvrContext);
     }
 
     public boolean addFocusListener(FocusListener listener) {
@@ -137,7 +111,7 @@ public class FocusManager {
         if (focusableRef != null) {
             final boolean allowRelease = !softUnregister
                     || !containsFocusable(focusableRef);
-            MainThread.get(mContext).runOnMainThread(new Runnable() {
+            WidgetLib.getMainThread().runOnMainThread(new Runnable() {
                 @Override
                 public void run() {
                     if (allowRelease && mCurrentFocus == focusableRef.get()) {
@@ -148,7 +122,7 @@ public class FocusManager {
         }
     }
 
-    void init(GVRContext context) {
+    private void init(GVRContext context) {
         if (mContext == null) {
             mContext = context;
             mContext.registerDrawFrameListener(mDrawFrameListener);
@@ -174,12 +148,12 @@ public class FocusManager {
     }
 
     private void cancelLongFocusRunnable() {
-        MainThread.get(mContext).removeCallbacks(mLongFocusRunnable);
+        WidgetLib.getMainThread().removeCallbacks(mLongFocusRunnable);
     }
 
     private void postLongFocusRunnable(long timeout) {
         if (mCurrentFocus != null) {
-            MainThread.get(mContext).runOnMainThreadDelayed(mLongFocusRunnable,
+            WidgetLib.getMainThread().runOnMainThreadDelayed(mLongFocusRunnable,
                                                             timeout);
         }
     }
@@ -193,7 +167,7 @@ public class FocusManager {
             final GVRScene mainScene = mContext.getMainScene();
             mPickedObjects = GVRPicker.pickObjects(mainScene, 0, 0, 0, 0, 0, -1.0f);
 
-            MainThread.get(mContext).runOnMainThread(mFocusRunnable);
+            WidgetLib.getMainThread().runOnMainThread(mFocusRunnable);
             FPSCounter.timeCheck("onDrawFrame <END>: " + this + " frameTime = " + frameTime);
         }
     };
