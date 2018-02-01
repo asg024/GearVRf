@@ -254,13 +254,10 @@ public class BoundingBox {
 
     static private float[] getVertices(final Widget widget) {
         float[] vertices = null;
-        GVRRenderData renderData = widget.getRenderData();
-        if (renderData != null) {
-            GVRMesh mesh = renderData.getMesh();
-            if (mesh != null) {
-                GVRMesh boundingBox = mesh.getBoundingBox();
-                vertices = boundingBox.getVertices();
-            }
+        GVRMesh mesh = widget.getMesh();
+        if (mesh != null) {
+            GVRMesh boundingBox = mesh.getBoundingBox();
+            vertices = boundingBox.getVertices();
         }
         return vertices;
     }

@@ -85,17 +85,17 @@ public class Widget  implements Layout.WidgetContainer {
         PropertyManager.init(gvrContext.getContext());
         loadAnimations(gvrContext.getContext());
 
-        gvrContext.runOnGlThread(new Runnable() {
-            @Override
-            public void run() {
-                sGLThread = new WeakReference<>(Thread.currentThread());
-            }
-        });
-        GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
-        sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
-                gvrContext, R.raw.default_bkgd));
-        Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
-    }
+            gvrContext.runOnGlThread(new Runnable() {
+                @Override
+                public void run() {
+                    sGLThread = new WeakReference<>(Thread.currentThread());
+                }
+            });
+            GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
+            sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
+                    gvrContext, R.raw.default_bkgd));
+            Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
+        }
 
     /**
      * @return The time, in milliseconds, that a widget must have continuous
@@ -923,10 +923,7 @@ public class Widget  implements Layout.WidgetContainer {
      *            See {@link GVRRenderingOrder}.
      */
     public void setRenderingOrder(final int renderingOrder) {
-        final GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setRenderingOrder(renderingOrder);
-        }
+        mRenderDataCache.setRenderingOrder(renderingOrder);
     }
 
     /**
@@ -934,11 +931,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @see GVRRenderingOrder
      */
     public final int getRenderingOrder() {
-        final GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            return renderData.getRenderingOrder();
-        }
-        return -1;
+        return mRenderDataCache.getRenderingOrder();
     }
 
     private boolean mClippingEnabled;
@@ -970,11 +963,25 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    private Widget setStencilTest(boolean flag) {
+        mRenderDataCache.setStencilTest(flag);
+        return this;
+    }
+
+    private Widget setStencilFunc(int func, int ref, int mask) {
+        mRenderDataCache.setStencilFunc(func, ref, mask);
+        return this;
+    }
+
+    private Widget setStencilMask(int mask) {
+        mRenderDataCache.setStencilMask(mask);
+        return this;
+    }
+
     private static void setObjectClipped(Widget widget) {
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setObjectClipped for %s", widget.getName());
 
-        widget.getRenderData()
-                .setStencilTest(true)
+        widget.setStencilTest(true)
                 .setStencilFunc(GLES30.GL_EQUAL, 1, 0xFF)
                 .setStencilMask(0x00);
 
@@ -1188,10 +1195,7 @@ public class Widget  implements Layout.WidgetContainer {
      *            {@code false} if not.
      */
     public void setDepthTest(boolean depthTest) {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setDepthTest(depthTest);
-        }
+        mRenderDataCache.setDepthTest(depthTest);
     }
 
     /**
@@ -1199,11 +1203,7 @@ public class Widget  implements Layout.WidgetContainer {
      *         if not.
      */
     public boolean getDepthTest() {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            return renderData.getDepthTest();
-        }
-        return false;
+        return mRenderDataCache.getDepthTest();
     }
 
     /**
@@ -1214,10 +1214,7 @@ public class Widget  implements Layout.WidgetContainer {
      *            enabled, {@code false} if not.
      */
     public void setOffset(boolean offset) {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setOffset(offset);
-        }
+        mRenderDataCache.setOffset(offset);
     }
 
     /**
@@ -1225,11 +1222,7 @@ public class Widget  implements Layout.WidgetContainer {
      *         {@code false} if not.
      */
     public boolean getOffset() {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            return renderData.getOffset();
-        }
-        return false;
+        return mRenderDataCache.getOffset();
     }
 
     /**
@@ -1243,10 +1236,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @see #setOffset(boolean)
      */
     public void setOffsetFactor(float offsetFactor) {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setOffsetFactor(offsetFactor);
-        }
+        mRenderDataCache.setOffsetFactor(offsetFactor);
     }
 
     /**
@@ -1255,11 +1245,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @see #setOffset(boolean)
      */
     public float getOffsetFactor() {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            return renderData.getOffsetFactor();
-        }
-        return 0;
+        return mRenderDataCache.getOffsetFactor();
     }
 
     /**
@@ -1273,10 +1259,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @see #setOffset(boolean)
      */
     public void setOffsetUnits(float offsetUnits) {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setOffsetUnits(offsetUnits);
-        }
+        mRenderDataCache.setOffsetUnits(offsetUnits);
     }
 
     /**
@@ -1285,11 +1268,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @see #setOffset(boolean)
      */
     public float getOffsetUnits() {
-        GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            return renderData.getOffsetUnits();
-        }
-        return 0;
+        return mRenderDataCache.getOffsetUnits();
     }
 
     /**
@@ -2089,12 +2068,8 @@ public class Widget  implements Layout.WidgetContainer {
      *
      * @return The scene object's material or {@code null}.
      */
-    protected GVRMaterial getMaterial() {
-        final GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            return renderData.getMaterial();
-        }
-        return null;
+    private GVRMaterial getMaterial() {
+        return mRenderDataCache.getMaterial();
     }
 
     /**
@@ -2109,6 +2084,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (renderData != null) {
             renderData.setMaterial(material);
         }
+        mRenderDataCache.setMaterial(material);
     }
 
     /**
@@ -2118,11 +2094,7 @@ public class Widget  implements Layout.WidgetContainer {
      * @return The scene object's mesh or {@code null}.
      */
     protected GVRMesh getMesh() {
-        final GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            return renderData.getMesh();
-        }
-        return null;
+        return mRenderDataCache.getMesh();
     }
 
     /**
@@ -2133,10 +2105,7 @@ public class Widget  implements Layout.WidgetContainer {
      *            The new mesh.
      */
     protected void setMesh(final GVRMesh mesh) {
-        final GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setMesh(mesh);
-        }
+        mRenderDataCache.setMesh(mesh);
     }
 
     protected JSONObject getObjectMetadata() {
@@ -2717,8 +2686,7 @@ public class Widget  implements Layout.WidgetContainer {
         return removed;
     }
 
-    /* package */
-    GVRRenderData getRenderData() {
+    private GVRRenderData getRenderData() {
         return mSceneObject.getRenderData();
     }
 
@@ -2766,11 +2734,12 @@ public class Widget  implements Layout.WidgetContainer {
             final JSONObject metadata = getObjectMetadata();
             mSceneObject = getSceneObjectProperty(context, metadata);
 
+            mTransformCache = new TransformCache(getTransform());
+            mRenderDataCache = new RenderDataCache(mSceneObject);
+
             Log.v(Log.SUBSYSTEM.WIDGET, TAG,
                     "Widget(context, properties): %s (%s) width = %f height = %f depth = %f",
                     getName(), mSceneObject.getName(), getWidth(), getHeight(), getDepth());
-
-            mTransformCache = new TransformCache(getTransform());
 
             Log.d(Log.SUBSYSTEM.WIDGET, TAG,
                     "Widget(context, properties): setting up metadata for %s: %s",
@@ -3137,7 +3106,7 @@ public class Widget  implements Layout.WidgetContainer {
             return;
         }
 
-        final boolean hasRenderData = getRenderData() != null;
+        final boolean hasRenderData = mRenderDataCache.hasRenderData();
         final FocusManager focusManager = WidgetLib.getFocusManager();
         final TouchManager.OnTouch currentTouchHandler = mTouchHandler;
         final FocusManager.Focusable currentFocusable = mFocusableImpl;
@@ -3232,7 +3201,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private void setupProperties(JSONObject properties) {
-        final boolean hasRenderData = getRenderData() != null;
+        final boolean hasRenderData = mRenderDataCache.hasRenderData();
         mIsTouchable = hasRenderData && optBoolean(properties, Properties.touchable,
                 mIsTouchable);
         mFocusEnabled = optBoolean(properties, Properties.focusenabled,
@@ -3604,6 +3573,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     private final GVRContext mContext;
 
+    private final RenderDataCache mRenderDataCache;
     private final TransformCache mTransformCache;
     private BoundingBox mBoundingBox;
     private boolean mLayoutRequested;
