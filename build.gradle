@@ -1,0 +1,115 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
+    }
+}
+
+allprojects {
+    repositories {
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+        jcenter()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+repositories {
+    flatDir {
+        dirs './gearvrf-libs'
+    }
+}
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "25.0.3"
+
+    defaultConfig {
+        minSdkVersion 23
+        targetSdkVersion 23
+        multiDexEnabled true
+    }
+
+    signingConfigs {
+        platform {
+            storeFile file("./keystore/samsung_test.keystore")
+            storePassword "android"
+            keyAlias "platform"
+            keyPassword "android"
+            v2SigningEnabled false
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.platform
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+        debug {
+            signingConfig signingConfigs.platform
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+        }
+    }
+
+    productFlavors {
+        withPure {
+            resValue 'string', 'lib_name', "Widget Library Pure"
+        }
+        withOculus {
+            resValue 'string', 'lib_name', "Widget Library Oculus"
+        }
+    }
+
+    libraryVariants.all { variant ->
+        variant.outputs.each { output ->
+            if ("withPure" == variant.flavorName && "debug" == variant.buildType.name) {
+                def file = output.outputFile
+                output.outputFile = new File(file.parent, "widget-lib-debug.aar")
+            } else if ("withPure" == variant.flavorName && "release" == variant.buildType.name) {
+                def file = output.outputFile
+                output.outputFile = new File(file.parent, "widget-lib-release-unsigned.aar")
+            }
+        }
+    }
+}
+
+project.ext.jomlVersion = "1.9.1-SNAPSHOT"
+
+dependencies {
+    if (findProject(':backend_oculus')) {
+        withOculusCompile project(':backend_oculus')
+    } else {
+        withOculusCompile(name: 'backend_oculus-release', ext: 'aar')
+    }
+    if (findProject(':backend')) {
+        withPureCompile project(':backend')
+    } else {
+        withPureCompile(name: 'backend-release', ext: 'aar')
+    }
+    if (findProject(':framework')) {
+        compile project(':framework')
+    } else {
+        compile(name: 'framework-release', ext: 'aar')
+    }
+
+    compile 'com.android.support:support-v4:23.4.0'
+    compile "org.joml:joml-android:${jomlVersion}"
+    compile 'com.google.code.gson:gson:2.8.+'
+}
