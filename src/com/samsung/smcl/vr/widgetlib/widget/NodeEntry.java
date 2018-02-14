@@ -20,7 +20,7 @@ public class NodeEntry {
     private static final String KEY_NAME = "name";
     private static final String KEY_CLASS_NAME = "class";
     private static final String ROOT_NODE_NAME = "RootNode";
-    private static final String ROOT_NODE_CLASS_NAME = "com.samsung.smcl.vr.com.samsung.smcl.vr.com.samsung.smcl.vr.widgetlib.widget.Widget";
+    private static final String ROOT_NODE_CLASS_NAME = Widget.class.getName();
 
     private final static Set<String> mandatoryKeys = new HashSet<>();
     private final static Set<String> caseSensitiveKeys = new HashSet<>();
