@@ -13,9 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PropertyManager {
-    public static PropertyManager get() {
-        return sInstance;
-    }
 
     @NonNull
     public UnmodifiableJSONObject getInstanceProperties(Class<?> clazz, String name) {
@@ -28,12 +25,13 @@ public class PropertyManager {
         return getInstanceProperties(widget.getClass(), widget.getName());
     }
 
-    public static void init(Context context) throws JSONException {
-        sInstance = new PropertyManager(context);
+    public PropertyManager(Context context, String asset) throws JSONException {
+        this(context, asset, null);
     }
 
-    private PropertyManager(Context context) throws JSONException {
-        loadClassProperties(context);
+    public PropertyManager(Context context, String defaultPropertiesAsset,
+                           String customPropertiesAsset) throws JSONException {
+        loadClassProperties(context, defaultPropertiesAsset, customPropertiesAsset);
         loadInstanceProperties(context);
     }
 
@@ -112,18 +110,19 @@ public class PropertyManager {
         return Widget.class.isAssignableFrom(clazz);
     }
 
-    private JSONObject loadClassProperties(Context context)
-            throws JSONException {
-        JSONObject json = JSONHelpers.loadJSONAsset(context,
-                "default_metadata.json");
+    private JSONObject loadClassProperties(Context context, String defaultPropertyAsset,
+                                           String customPropertiesAsset) throws JSONException {
+        JSONObject properties = JSONHelpers.loadJSONAsset(context, defaultPropertyAsset);
+        JSONObject customProperties = JSONHelpers.loadJSONAsset(context, customPropertiesAsset);
         JSONObject publicJson = JSONHelpers.loadExternalJSONDocument(context, "user_default_metadata.json");
         Log.d(Log.SUBSYSTEM.JSON, TAG, "loadClassProperties(): public: %s", publicJson);
 
-        JSONHelpers.merge(publicJson, json);
+        JSONHelpers.merge(customProperties, properties);
+        JSONHelpers.merge(publicJson, properties);
 
-        Log.d(Log.SUBSYSTEM.JSON, TAG, "loadClassProperties(): %s", json);
-        mClassJson = new UnmodifiableJSONObject(json.optJSONObject("objects"));
-        return json;
+        Log.d(Log.SUBSYSTEM.JSON, TAG, "loadClassProperties(): %s", properties);
+        mClassJson = new UnmodifiableJSONObject(properties.optJSONObject("objects"));
+        return properties;
     }
 
     private void loadInstanceProperties(Context context)
@@ -139,6 +138,5 @@ public class PropertyManager {
     private Map<Class<?>, JSONObject> mClassProperties = new HashMap<>();
     private JSONObject mInstanceJson;
 
-    private static PropertyManager sInstance;
     private static final String TAG = PropertyManager.class.getSimpleName();
 }

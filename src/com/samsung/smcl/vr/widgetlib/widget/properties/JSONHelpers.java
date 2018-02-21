@@ -1136,6 +1136,9 @@ abstract public class JSONHelpers {
      * @return New instance of {@link JSONObject}
      */
     public static JSONObject loadJSONAsset(Context context, final String asset) {
+        if (asset == null) {
+            return new JSONObject();
+        }
         return getJsonObject(com.samsung.smcl.vr.widgetlib.main.Utility.readTextFile(context, asset));
     }
 
@@ -1713,7 +1716,7 @@ abstract public class JSONHelpers {
                             ((color & R_G_MASK) << 8) | ((color & G_B_MASK) << 4) |
                             ((color & B_MASK));
                 }
-                Log.d(Log.SUBSYSTEM.JSON, TAG, "getJSONColor(): string matching '%s' (%s): 0x%x", s, cstr, raw);
+                Log.d(Log.SUBSYSTEM.JSON, TAG, "getJSONColor(): string matching '%s' (%s): %s", s, cstr, raw);
                 return color;
             }
 

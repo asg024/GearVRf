@@ -79,7 +79,6 @@ public class Widget  implements Layout.WidgetContainer {
      */
     static public void init(GVRContext gvrContext) throws JSONException,
             NoSuchMethodException {
-        PropertyManager.init(gvrContext.getContext());
         loadAnimations(gvrContext.getContext());
 
             gvrContext.runOnGlThread(new Runnable() {
@@ -3199,7 +3198,7 @@ public class Widget  implements Layout.WidgetContainer {
         setName(optString(properties, Properties.name, getName()));
 
         Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): properties: %s", getName(), properties);
-        UnmodifiableJSONObject objectMetadata = PropertyManager.get().getWidgetProperties(this);
+        UnmodifiableJSONObject objectMetadata = WidgetLib.getPropertyManager().getWidgetProperties(this);
         Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): objectMetadata: %s", getName(), objectMetadata);
         final boolean preApplyAttribs = optBoolean(properties, Properties.preapply_attribs);
         Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): preApplyAttribs: %b", getName(), preApplyAttribs);
