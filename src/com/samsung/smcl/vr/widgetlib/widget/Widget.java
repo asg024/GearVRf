@@ -63,7 +63,6 @@ import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
 
 public class Widget  implements Layout.WidgetContainer {
 
-    private static final String MATERIAL_DIFFUSE_TEXTURE = "diffuseTexture";
 
     /**
      * Call to initialize the Widget infrastructure. Parses {@code objects.json}
@@ -71,7 +70,7 @@ public class Widget  implements Layout.WidgetContainer {
      * specs.
      *
      * @param gvrContext
-     *            A valid Android {@link Context}.
+     *            A valid {@link GVRContext}.
      * @throws JSONException
      *             if the {@code objects.json} file is invalid JSON
      * @throws NoSuchMethodException
@@ -110,7 +109,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     /**
      * Implement and {@link Widget#addFocusListener(OnFocusListener) register}
-     * this interface to listen for focus changes on com.samsung.smcl.vr.com.samsung.smcl.vr.widgetlib.
+     * this interface to listen for focus changes on widgets.
      */
     public interface OnFocusListener {
         /**
@@ -138,7 +137,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     /**
      * Implement and {@link Widget#addBackKeyListener(OnBackKeyListener)
-     * register} this interface to listen for back key events on com.samsung.smcl.vr.com.samsung.smcl.vr.widgetlib.
+     * register} this interface to listen for back key events on widgets.
      */
     public interface OnBackKeyListener {
         /**
@@ -155,7 +154,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     /**
      * Implement and {@link Widget#addTouchListener(OnTouchListener) register}
-     * this interface to listen for touch events on com.samsung.smcl.vr.com.samsung.smcl.vr.widgetlib.
+     * this interface to listen for touch events on widgets.
      */
     public interface OnTouchListener {
         /**
@@ -998,10 +997,7 @@ public class Widget  implements Layout.WidgetContainer {
      *            The new texture.
      */
     public void setTexture(final GVRTexture texture) {
-        final GVRMaterial material = getMaterial();
-        material.setMainTexture(texture);
-        //models use the new shader framework which has no single main texture
-        material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+        getMaterial().setTexture(texture);
     }
 
     /**
@@ -1038,14 +1034,7 @@ public class Widget  implements Layout.WidgetContainer {
      *            The new texture.
      */
     public void setTexture(final Future<GVRTexture> texture) {
-        final GVRMaterial material = getMaterial();
-        if (material != null) {
-            material.setMainTexture(texture);
-            material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
-            Log.w(TAG, "setTexture(%s): texture = %s!", getName(), texture);
-        } else {
-            Log.w(TAG, "setTexture(%s): material is null!", getName());
-        }
+        getMaterial().setTexture(texture);
     }
 
     /**
@@ -2096,7 +2085,7 @@ public class Widget  implements Layout.WidgetContainer {
      *
      * @return The scene object's material or {@code null}.
      */
-    private GVRMaterial getMaterial() {
+    private RenderDataCache.MaterialCache getMaterial() {
         return mRenderDataCache.getMaterial();
     }
 

@@ -4,9 +4,15 @@ import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRSceneObject;
+import org.gearvrf.GVRTexture;
 
-// TODO: Encapsulate access/modification of material
+import java.util.concurrent.Future;
 // TODO: Replace mExternalData references with posting opcodes to command buffer
+// TODO: Extend GVRRenderData for a static "identity" instance for "no render data" scenarios
+// IDEA: With above, once we're buffering operations, have a "postOp()" method that does a
+// centralized check for whether our render data is valid.  Overhead of fetching opcode instances
+// from pool and configuring them should be low, and it would be a much tidier approach than doing
+// "if (mRenderDataCache != null)" everywhere.
 class RenderDataCache {
     RenderDataCache(GVRSceneObject sceneObject) {
         mExternalRenderData = sceneObject.getRenderData();
@@ -23,8 +29,12 @@ class RenderDataCache {
 //            mRenderData.setStencilFunc(...);
 //            mRenderData.setStencilMask(renderData.getStencilMask());
 //            mRenderData.setStencilTest(renderData.getStencilTest());
+            final GVRMaterial material = mExternalRenderData.getMaterial();
+            mRenderData.setMaterial(material);
+            mMaterialCache = new MaterialCache(material);
         } else {
             mRenderData = null;
+            mMaterialCache = new MaterialCache();
         }
     }
 
@@ -131,11 +141,8 @@ class RenderDataCache {
         }
     }
 
-    GVRMaterial getMaterial() {
-        if (mRenderData != null) {
-            return mExternalRenderData.getMaterial();
-        }
-        return null;
+    MaterialCache getMaterial() {
+        return mMaterialCache;
     }
 
     void setMaterial(GVRMaterial material) {
@@ -143,8 +150,118 @@ class RenderDataCache {
             mExternalRenderData.setMaterial(material);
             mRenderData.setMaterial(material);
         }
+        mMaterialCache.set(material);
+    }
+
+    static class MaterialCache {
+
+        static final String MATERIAL_DIFFUSE_TEXTURE = "diffuseTexture";
+
+        public void setColor(int color) {
+            if (mMaterial != null) {
+                mExternalMaterial.setColor(color);
+                mMaterial.setColor(color);
+            }
+        }
+
+        public void setColor(float r, float g, float b) {
+            if (mMaterial != null) {
+                mExternalMaterial.setColor(r, g, b);
+                mMaterial.setColor(r, g, b);
+            }
+        }
+
+        public void setTexture(GVRTexture texture) {
+            if (mMaterial != null) {
+                mExternalMaterial.setMainTexture(texture);
+                mExternalMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+                mMaterial.setMainTexture(texture);
+                //models use the new shader framework which has no single main texture
+                mMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+            }
+        }
+
+        public void setTexture(Future<GVRTexture> texture) {
+            if (mMaterial != null) {
+                mExternalMaterial.setMainTexture(texture);
+                mExternalMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+                mMaterial.setMainTexture(texture);
+                //models use the new shader framework which has no single main texture
+                mMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+            }
+        }
+
+        public void setTexture(String name, GVRTexture texture) {
+            if (mMaterial != null) {
+                mExternalMaterial.setTexture(name, texture);
+                mMaterial.setTexture(name, texture);
+            }
+        }
+
+        public void setTexture(String name, Future<GVRTexture> texture) {
+            if (mMaterial != null) {
+                mExternalMaterial.setTexture(name, texture);
+                mMaterial.setTexture(name, texture);
+            }
+        }
+
+        public float getOpacity() {
+            if (mMaterial != null) {
+                return mMaterial.getOpacity();
+            }
+            return 0;
+        }
+
+        public void setOpacity(float opacity) {
+            if (mMaterial != null) {
+                mExternalMaterial.setOpacity(opacity);
+                mMaterial.setOpacity(opacity);
+            }
+        }
+
+        public int getRgbColor() {
+            if (mMaterial != null) {
+                return mMaterial.getRgbColor();
+            }
+            return 0;
+        }
+
+        public float[] getColor() {
+            if (mMaterial != null) {
+                return mMaterial.getColor();
+            }
+            return null;
+        }
+
+        private MaterialCache() {
+
+        }
+
+        private MaterialCache(GVRMaterial material) {
+            set(material);
+        }
+
+        private void set(GVRMaterial material) {
+            if (material != null) {
+                mMaterial = new GVRMaterial(material.getGVRContext());
+                // TODO: Add named texture entry for main texture
+                mMaterial.setMainTexture(material.getMainTexture());
+                mMaterial.setOpacity(material.getOpacity());
+                mMaterial.setColor(material.getRgbColor());
+                for (String textureName : material.getTextureNames()) {
+                    mMaterial.setTexture(textureName, material.getTexture(textureName));
+                }
+            } else {
+                mMaterial = null;
+            }
+            mExternalMaterial = material;
+        }
+
+        private GVRMaterial mExternalMaterial;
+        private GVRMaterial mMaterial;
     }
 
     private final GVRRenderData mExternalRenderData;
     private final GVRRenderData mRenderData;
+    private final MaterialCache mMaterialCache;
 }
