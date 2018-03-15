@@ -115,6 +115,10 @@ public class MainScene {
         mSceneRootObject.setName(TAG);
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean onFirstStep() {
         if (!mFirstStepDone) {
             Log.d(TAG, "onFirstStep()");

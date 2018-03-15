@@ -3,6 +3,10 @@ package com.samsung.smcl.vr.widgetlib.adapter;
 import android.database.DataSetObserver;
 
 public abstract class DataSetAdapter<T extends Object> extends BaseAdapter {
+    /**
+     * Create Adapter with the specified data set associated with it.
+     * @param dataSet data set associated with this adapter
+     */
     public DataSetAdapter(final DataSet<T> dataSet) {
         mDataSet = dataSet;
         mDataSet.registerObserver(mDataSetObserver);

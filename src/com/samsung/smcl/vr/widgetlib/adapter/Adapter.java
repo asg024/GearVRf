@@ -8,10 +8,6 @@ import com.samsung.smcl.vr.widgetlib.widget.Widget;
 /**
  * An version of {@link android.widget.Adapter} adapted for use with
  * {@link Widget} as the "view".
- * <p>
- * While {@link #getView(int, Widget, GroupWidget) getView()} should
- * only be called from the GL thread, the remaining methods should be prepared
- * to be called from any context.
  */
 public interface Adapter {
     /**
@@ -60,7 +56,7 @@ public interface Adapter {
 
     /**
      * Get a {@link Widget} that displays the data at the specified position in
-     * the data set. Should only be called from GL thread.
+     * the data set.
      *
      * @param position
      *            The position of the item within the adapter's data set of the

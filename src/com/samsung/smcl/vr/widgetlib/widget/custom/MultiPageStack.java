@@ -105,7 +105,7 @@ public class MultiPageStack extends MultiPageWidget {
         super.setItemsPerPage(itemNum);
         if (mItemAdapter != null && mAdapter != null) {
             int pageCount = (int) Math.ceil((float) mItemAdapter.getCount() /itemNum);
-            Log.d(Log.SUBSYSTEM.PANELS, TAG, "setPageCount =  %d", pageCount);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setPageCount =  %d", pageCount);
             ((PageAdapter)mAdapter).setCount(pageCount);
             recalculateViewPort(mAdapter);
         }
@@ -155,7 +155,7 @@ class PageAdapter extends BaseAdapter {
     }
 
     void setCount(int pageCount) {
-        Log.d(Log.SUBSYSTEM.PANELS, TAG, "setCount: pageCount = %d", pageCount);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setCount: pageCount = %d", pageCount);
         mPageCount = pageCount;
         mPages.clear();
         notifyDataSetChanged();
@@ -219,7 +219,7 @@ class PageAdapter extends BaseAdapter {
             mPages.put(position, page);
         }
 
-        Log.d(Log.SUBSYSTEM.PANELS, TAG, "getView[%d] %s", position, page);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getView[%d] %s", position, page);
         return page;
     }
 

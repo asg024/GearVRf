@@ -39,6 +39,10 @@ public class ListDataSet<T> extends DataSet<T> {
         return mList.isEmpty();
     }
 
+    /**
+     * Set new list data set
+     * @param list new data set
+     */
     public void setList(List<T> list) {
         if (list != mList) {
             mList = list;

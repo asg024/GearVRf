@@ -20,46 +20,95 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Persistent logs are written to:
+ * Widgetlib Log provides highly configurable logging facilities. The logging subsystem is configured
+ * using a system of log categories and log type. Log categories define what messages to capture,
+ * and log types define how to deal with those messages (write to disk, send to console).
  *
- * // TODO: WIDGET_LIBRARY remove dependancy
-
- * /storage/emulated/0/Android/data/com.samsung.smcl.vr.gvrf_launcher/files/Documents/vrtop
+ * Log levels indicate the nature and severity of a log message. The level of a given log message
+ * is specified by the developer using the appropriate methods of their chosen logging framework
+ * to send the message. Widgetlib supports the same set of standard android log message priorities:
+ * Verbose, Debug, Info, Warn, Error, Assert
+ *
  */
-@SuppressWarnings("unused")
 public class Log {
     private enum TYPE {
+        /**
+         * Standard android output
+         * Each message has a format: timestamp: PRIORITY/tag (PID): message
+         */
         ANDROID,
+        /**
+         * Save the log messages to the log file(s).
+         * These are the log files that get created for the default logging configurations:
+
+         * /storage/emulated/0/Android/data/<app_package_name>/files/Documents/widgetlib
+         * It can produce multiple files. Each file should not exceed the size:
+         * {@link PersistentLog#FILE_SIZE_LIMIT}
+         *
+         * The files stay in the memory no longer than {@link PersistentLog#MAXFILEAGE}
+         *
+         * The file name format is logFile.yyyy-MM-dd_HH:mm:ss
+         *
+         */
         PERSISTENT
     }
 
     public enum MODE {
-        DEBUG, // android log + start full log
-        DEVELOPER, // persistent log
-        USER // android log
+        /**
+         * Save full log into the file {@link PersistentLog#FULL_FILE_PATH_BASE}
+         */
+        DEBUG,
+        /**
+         * Save widgetLibrary debug only into the file(s)  {@link PersistentLog#FILE_PATH_BASE}
+         */
+        DEVELOPER,
+        /**
+         * Print the messages out to the standard android console
+         */
+        USER
     }
 
-    public enum SUBSYSTEM {
+    /**
+     * Simple interface for subsystem definition
+     */
+    public interface Subsystem {
+        /**
+         * Standard {@code Enum} method.
+         */
+        String name();
+    }
+
+    /**
+     * Log categories define a set of log messages to capture. By default only MAIN subsystem is
+     * captured. More than one subsystem can be captured at the same time.
+     * The set of enabled subsystems can be changed by either {@link #enableSubsystem} or
+     * {@link #enableAllSubsystems}
+     */
+    public enum SUBSYSTEM implements Subsystem {
         MAIN,
         WIDGET,
         LAYOUT,
-        PANELS,
         FOCUS,
         TRACING,
-        JSON
+        JSON;
     }
 
-    private static Set<SUBSYSTEM> mEnabledSubsystems = new HashSet<>();
+    /**
+     * Get current debug mode
+     */
+    public static MODE getMode() {
+        return mode;
+    }
 
-    private static final String TAG = "Log";
-    public static MODE mode;
-
-    private static final TYPE DEFAULT_TYPE = TYPE.PERSISTENT; // TYPE.ANDROID;
-    private static final boolean frequentlyUpdating = false;
-    private static boolean enable_logging;
-
-    private static LogBase currentLog;
-
+    /**
+     * Initialize the default logging system. {@link MODE#DEVELOPER} is used as a default one, and
+     * only {@link SUBSYSTEM#MAIN} category is activated. Other categories might produce a lot of
+     * log messages that might affect the performance.
+     * In release version for the best performance the logging system should be turned off or at
+     * least only the most important categories enabled.
+     * @param context
+     * @param enable true if the logging system is enabled, false - *All* logging is disabled
+     */
     public static void init(Context context, boolean enable) {
         PersistentLog.init(context);
 
@@ -72,11 +121,15 @@ public class Log {
 //        enableSubsystem(SUBSYSTEM.TRACING, true);
 //        enableSubsystem(SUBSYSTEM.LAYOUT, true);
 //        enableSubsystem(SUBSYSTEM.WIDGET, true);
-//        enableSubsystem(SUBSYSTEM.PANELS, true);
 
     }
 
-    public static void enableSubsystem(SUBSYSTEM subsystem, boolean enable) {
+    /**
+     * Enable/disable the logging component
+     * @param subsystem The logging component
+     * @param enable true - to enable it, false - to disable it
+     */
+    public static void enableSubsystem(Subsystem subsystem, boolean enable) {
         if (enable_logging) {
             if (enable) {
                 mEnabledSubsystems.add(subsystem);
@@ -86,10 +139,15 @@ public class Log {
         }
     }
 
+    /**
+     * Enable/disable all logging component
+     * @param enable true - to enable all logging components from the default list; false - disable
+     *               all currently enabled logging component including the custom ones
+     */
     public static void enableAllSubsystems(boolean enable) {
         if (enable_logging) {
             if (enable) {
-                for (SUBSYSTEM s : SUBSYSTEM.values()) {
+                for (Subsystem s : SUBSYSTEM.values()) {
                     mEnabledSubsystems.add(s);
                 }
             } else {
@@ -98,6 +156,10 @@ public class Log {
         }
     }
 
+    /**
+     * Rebuild logging systems with updated mode
+     * @param newMode log mode
+     */
     public static void rebuild(final MODE newMode) {
         if (mode != newMode) {
             mode = newMode;
@@ -123,197 +185,579 @@ public class Log {
         }
     }
 
-    private static LogBase getLog(Log.TYPE type) {
-        LogBase log = null;
-        switch(type) {
-        case ANDROID:
-            log = new AndroidLog();
-            break;
-        case PERSISTENT:
-            log = new PersistentLog();
-            break;
-        default:
-            android.util.Log.w(TAG, "Incorrect logger type! type = " + type +
-                    " Use default log type: " + DEFAULT_TYPE);
-            break;
-        }
-        return log;
-    }
-
-    public static boolean isEnabled(SUBSYSTEM subsystem) {
+    /**
+     * Check if the logging component is enabled
+     * @param subsystem the logging component
+     * @return true if it is currently enabled; otherwise - false
+     */
+    public static boolean isEnabled(Subsystem subsystem) {
         return mEnabledSubsystems.contains(subsystem);
     }
 
-    private static final String LOG_MSG_FORMAT = "<%s> %s";
-
-    private static String getMsg(SUBSYSTEM subsystem, String msg) {
-        return subsystem == SUBSYSTEM.MAIN ? msg :
-                String.format(LOG_MSG_FORMAT, subsystem, msg);
-    }
-
+    /**
+     * Pause the logging
+     */
     public static void pause() {
         currentLog.pause();
     }
+
+    /**
+     * Resume the logging
+     */
     public static void resume() {
         currentLog.resume();
     }
 
+    /**
+     * Send a DEBUG log message with {@link SUBSYSTEM#MAIN} as default one
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
     public static int d(String tag, String msg) {
         return d(SUBSYSTEM.MAIN, tag, msg);
     }
+
+    /**
+     * Send a DEBUG log message with {@link SUBSYSTEM#MAIN} as default one and log the exception.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
     public static int d(String tag, String msg, Throwable tr) {
         return d(SUBSYSTEM.MAIN, tag, msg, tr);
     }
+
+    /**
+     * Send an ERROR log message with {@link SUBSYSTEM#MAIN} as default one .
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
     public static int e(String tag, String msg) {
         return e(SUBSYSTEM.MAIN, tag, msg);
     }
+
+    /**
+     * Send an ERROR log message with {@link SUBSYSTEM#MAIN} as default one and log the exception.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
     public static int e(String tag, String msg, Throwable tr) {
         return e(SUBSYSTEM.MAIN, tag, msg, tr);
     }
+    /**
+     * Send an INFO log message with {@link SUBSYSTEM#MAIN} as default one .
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
     public static int i(String tag, String msg) {
         return i(SUBSYSTEM.MAIN, tag, msg);
     }
+
+    /**
+     * Send an INFO log message with {@link SUBSYSTEM#MAIN} as default one and log the exception.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
     public static int i(String tag, String msg, Throwable tr) {
         return i(SUBSYSTEM.MAIN, tag, msg, tr);
     }
-    public static int v(String tag, String msg, Throwable tr) {
-        return v(SUBSYSTEM.MAIN, tag, msg, tr);
-    }
+
+    /**
+     * Send a VERBOSE log message with {@link SUBSYSTEM#MAIN} as default one .
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
     public static int v(String tag, String msg) {
         return v(SUBSYSTEM.MAIN, tag, msg);
     }
-    public static int w(String tag, Throwable tr) {
-        return w(SUBSYSTEM.MAIN, tag, tr);
+
+    /**
+     * Send a VERBOSE log message with {@link SUBSYSTEM#MAIN} as default one and log the exception.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
+    public static int v(String tag, String msg, Throwable tr) {
+        return v(SUBSYSTEM.MAIN, tag, msg, tr);
     }
-    public static int w(String tag, String msg, Throwable tr) {
-        return w(SUBSYSTEM.MAIN, tag, msg, tr);
-    }
+
+    /**
+     * Send a WARN log message with {@link SUBSYSTEM#MAIN} as default one .
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
     public static int w(String tag, String msg) {
         return w(SUBSYSTEM.MAIN, tag, msg);
     }
-    public static int wtf(String tag, Throwable tr) {
-        return wtf(SUBSYSTEM.MAIN, tag, tr);
+
+    /**
+     * Send a WARN log message with {@link SUBSYSTEM#MAIN} as default one and log the exception.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
+    public static int w(String tag, String msg, Throwable tr) {
+        return w(SUBSYSTEM.MAIN, tag, msg, tr);
     }
-    public static int wtf(String tag, String msg, Throwable tr) {
-        return wtf(SUBSYSTEM.MAIN, tag, msg, tr);
+
+    /**
+     * Log WARN exception with {@link SUBSYSTEM#MAIN} as default one.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param tr An exception to log.
+     * @return
+     */
+    public static int w(String tag, Throwable tr) {
+        return w(SUBSYSTEM.MAIN, tag, tr);
     }
+
+    /**
+     * What a Terrible Failure: Report a condition that should never happen. The error will always
+     * be logged at level ASSERT with the call stack  and with {@link SUBSYSTEM#MAIN} as default one.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
     public static int wtf(String tag, String msg) {
         return wtf(SUBSYSTEM.MAIN, tag, msg);
     }
 
+    /**
+     * What a Terrible Failure: Report an exception that should never happen with
+     * {@link SUBSYSTEM#MAIN} as default one. Similar to {@link #wtf(String, String)},
+     * with an exception to log.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param tr An exception to log.
+     * @return
+     */
+    public static int wtf(String tag, Throwable tr) {
+        return wtf(SUBSYSTEM.MAIN, tag, tr);
+    }
 
-    public static int d(SUBSYSTEM subsystem, String tag, String msg) {
+    /**
+     * What a Terrible Failure: Report an exception that should never happen with
+     * {@link SUBSYSTEM#MAIN} as default one. Similar to {@link #wtf(String, Throwable)},
+     * with a message as well.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     * @return
+     */
+    public static int wtf(String tag, String msg, Throwable tr) {
+        return wtf(SUBSYSTEM.MAIN, tag, msg, tr);
+    }
+
+    /**
+     * Send a DEBUG log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
+    public static int d(Subsystem subsystem, String tag, String msg) {
         return isEnabled(subsystem) ?
                 currentLog.d(tag, getMsg(subsystem,msg)) : 0;
     }
 
-    public static int d(SUBSYSTEM subsystem, String tag, String msg, Throwable tr) {
+    /**
+     * Send a DEBUG log message with specified subsystem and log the exception.
+     * If subsystem is not enabled the message will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
+    public static int d(Subsystem subsystem, String tag, String msg, Throwable tr) {
         return isEnabled(subsystem) ?
                 currentLog.d(tag, getMsg(subsystem,msg), tr) : 0;
     }
-    public static int e(SUBSYSTEM subsystem, String tag, String msg) {
+
+    /**
+     * Send an ERROR log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
+    public static int e(Subsystem subsystem, String tag, String msg) {
         return isEnabled(subsystem) ?
                 currentLog.e(tag, getMsg(subsystem,msg)) : 0;
     }
-    public static int e(SUBSYSTEM subsystem, String tag, String msg, Throwable tr) {
+
+    /**
+     * Send an ERROR log message with specified subsystem and log the exception.
+     * If subsystem is not enabled the message will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
+    public static int e(Subsystem subsystem, String tag, String msg, Throwable tr) {
         return isEnabled(subsystem) ?
                 currentLog.e(tag, getMsg(subsystem,msg), tr) : 0;
     }
-    public static int i(SUBSYSTEM subsystem, String tag, String msg) {
+
+    /**
+     * Send an INFO log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
+    public static int i(Subsystem subsystem, String tag, String msg) {
         return isEnabled(subsystem) ?
                 currentLog.i(tag, getMsg(subsystem,msg)) : 0;
     }
-    public static int i(SUBSYSTEM subsystem, String tag, String msg, Throwable tr) {
+
+    /**
+     * Send an INFO log message with specified subsystem and log the exception.
+     * If subsystem is not enabled the message will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
+    public static int i(Subsystem subsystem, String tag, String msg, Throwable tr) {
         return isEnabled(subsystem) ?
                 currentLog.i(tag, getMsg(subsystem,msg), tr) : 0;
     }
-    public static int v(SUBSYSTEM subsystem, String tag, String msg, Throwable tr) {
-        return isEnabled(subsystem) ?
-                currentLog.v(tag, getMsg(subsystem,msg), tr) : 0;
-    }
-    public static int v(SUBSYSTEM subsystem, String tag, String msg) {
+
+    /**
+     * Send a VERBOSE log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
+    public static int v(Subsystem subsystem, String tag, String msg) {
         return isEnabled(subsystem) ?
                 currentLog.v(tag, getMsg(subsystem,msg)) : 0;
     }
-    public static int w(SUBSYSTEM subsystem, String tag, Throwable tr) {
+
+    /**
+     * Send a VERBOSE log message with specified subsystem and log the exception.
+     * If subsystem is not enabled the message will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
+    public static int v(Subsystem subsystem, String tag, String msg, Throwable tr) {
+        return isEnabled(subsystem) ?
+                currentLog.v(tag, getMsg(subsystem,msg), tr) : 0;
+    }
+
+    /**
+     * Log WARN exception with specified subsystem.
+     * If subsystem is not enabled the message will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param tr An exception to log.
+     * @return
+     */
+    public static int w(Subsystem subsystem, String tag, Throwable tr) {
         return isEnabled(subsystem) ?
                 currentLog.w(tag, getMsg(subsystem, ""), tr) : 0;
     }
-    public static int w(SUBSYSTEM subsystem, String tag, String msg, Throwable tr) {
+
+    /**
+     * Send a WARN log message with specified subsystem and log the exception.
+     * If subsystem is not enabled the message will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     *
+     * @return
+     */
+    public static int w(Subsystem subsystem, String tag, String msg, Throwable tr) {
         return isEnabled(subsystem) ?
                 currentLog.w(tag, getMsg(subsystem,msg), tr) : 0;
     }
-    public static int w(SUBSYSTEM subsystem, String tag, String msg) {
+
+    /**
+     * Send a WARN log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
+    public static int w(Subsystem subsystem, String tag, String msg) {
         return isEnabled(subsystem) ?
                 currentLog.w(tag, getMsg(subsystem,msg)) : 0;
     }
-    public static int wtf(SUBSYSTEM subsystem, String tag, Throwable tr) {
+
+    /**
+     * What a Terrible Failure: Report an exception that should never happen with specified
+     * subsystem. If subsystem is not enabled the message will not be logged.
+     * Similar to {@link #wtf(String, String)}, with an exception to log.
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param tr An exception to log.
+     * @return
+     */
+    public static int wtf(Subsystem subsystem, String tag, Throwable tr) {
         return isEnabled(subsystem) ?
                 currentLog.wtf(tag, getMsg(subsystem, ""), tr) : 0;
     }
-    public static int wtf(SUBSYSTEM subsystem, String tag, String msg, Throwable tr) {
+
+    /**
+     * What a Terrible Failure: Report an exception that should never happen with specified
+     * subsystem. If subsystem is not enabled the message will not be logged.
+     * Similar to {@link #wtf(String, Throwable)}, with a message as well.
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @param tr An exception to log.
+     * @return
+     */
+    public static int wtf(Subsystem subsystem, String tag, String msg, Throwable tr) {
         return isEnabled(subsystem) ?
                 currentLog.wtf(tag, getMsg(subsystem,msg), tr) : 0;
     }
-    public static int wtf(SUBSYSTEM subsystem, String tag, String msg) {
+
+    /**
+     * What a Terrible Failure: Report a condition that should never happen. The error will always
+     * be logged at level ASSERT with the call stack  and with specified subsystem.
+     * If subsystem is not enabled the message will not be logged.
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param msg The message you would like logged.
+     * @return
+     */
+    public static int wtf(Subsystem subsystem, String tag, String msg) {
         return isEnabled(subsystem) ?
                 currentLog.wtf(tag, getMsg(subsystem,msg)) : 0;
     }
 
-    public static void d(SUBSYSTEM subsystem, String TAG, String pattern, Object... parameters) {
+    /**
+     * Send a DEBUG log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void d(Subsystem subsystem, String tag, String pattern, Object... parameters) {
         if (!isEnabled(subsystem)) return;
-        d(subsystem, TAG, format(pattern, parameters));
-    }
-    public static void e(SUBSYSTEM subsystem, String TAG, String pattern, Object... parameters) {
-        if (!isEnabled(subsystem)) return;
-        e(subsystem, TAG, format(pattern, parameters));
-    }
-    public static void e(SUBSYSTEM subsystem, String TAG, Throwable t, String pattern, Object... parameters) {
-        if (!isEnabled(subsystem)) return;
-        e(subsystem, TAG, format(pattern, parameters), t);
-    }
-    public static void i(SUBSYSTEM subsystem, String TAG, String pattern, Object... parameters) {
-        if (!isEnabled(subsystem)) return;
-        i(subsystem, TAG, format(pattern, parameters));
-    }
-    public static void v(SUBSYSTEM subsystem, String TAG, String pattern, Object... parameters) {
-        if (!isEnabled(subsystem)) return;
-        v(subsystem, TAG, format(pattern, parameters));
-    }
-    public static void w(SUBSYSTEM subsystem, String TAG, String pattern, Object... parameters) {
-        if (!isEnabled(subsystem)) return;
-        w(subsystem, TAG, format(pattern, parameters));
+        d(subsystem, tag, format(pattern, parameters));
     }
 
-    @SuppressWarnings("unused")
+    /**
+     * Send an ERROR log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void e(Subsystem subsystem, String tag, String pattern, Object... parameters) {
+        if (!isEnabled(subsystem)) return;
+        e(subsystem, tag, format(pattern, parameters));
+    }
+
+    /**
+     * Send an ERROR log message with specified subsystem and log the exception.
+     * If subsystem is not enabled the message will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param tr An exception to log.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void e(Subsystem subsystem, String tag, Throwable tr, String pattern,
+                         Object... parameters) {
+        if (!isEnabled(subsystem)) return;
+        e(subsystem, tag, format(pattern, parameters), tr);
+    }
+    /**
+     * Send an INFO log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void i(Subsystem subsystem, String tag, String pattern, Object... parameters) {
+        if (!isEnabled(subsystem)) return;
+        i(subsystem, tag, format(pattern, parameters));
+    }
+
+    /**
+     * Send a VERBOSE log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void v(Subsystem subsystem, String tag, String pattern, Object... parameters) {
+        if (!isEnabled(subsystem)) return;
+        v(subsystem, tag, format(pattern, parameters));
+    }
+
+    /**
+     * Send a WARN log message with specified subsystem. If subsystem is not enabled the message
+     * will not be logged
+     * @param subsystem logging subsystem
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void w(Subsystem subsystem, String tag, String pattern, Object... parameters) {
+        if (!isEnabled(subsystem)) return;
+        w(subsystem, tag, format(pattern, parameters));
+    }
+
+    /**
+     * String getStackTraceString (Throwable tr) Handy function to get a loggable stack trace from
+     * a Throwable
+     * @param tr An exception to log
+     * @return
+     */
     public static String getStackTraceString(Throwable tr ) {
         return LogBase.getStackTraceString(tr);
     }
 
-    public static void d(String TAG, String pattern, Object... parameters) {
-        d(SUBSYSTEM.MAIN, TAG, pattern, parameters);
-    }
-    public static void e(String TAG, String pattern, Object... parameters) {
-        e(SUBSYSTEM.MAIN, TAG, pattern, parameters);
-    }
-    public static void e(String TAG, Throwable t, String pattern, Object... parameters) {
-        e(SUBSYSTEM.MAIN, TAG, t, pattern, parameters);
-    }
-    public static void i(String TAG, String pattern, Object... parameters) {
-        i(SUBSYSTEM.MAIN, TAG, pattern, parameters);
-    }
-    public static void v(String TAG, String pattern, Object... parameters) {
-        v(SUBSYSTEM.MAIN, TAG, pattern, parameters);
-    }
-    public static void w(String TAG, String pattern, Object... parameters) {
-        w(SUBSYSTEM.MAIN, TAG, pattern, parameters);
+    /**
+     * Send a DEBUG log message with subsystem {@link SUBSYSTEM#MAIN} as a default one.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void d(String tag, String pattern, Object... parameters) {
+        d(SUBSYSTEM.MAIN, tag, pattern, parameters);
     }
 
-    public static void startFullLog() {
+    /**
+     * Send an ERROR log message with subsystem {@link SUBSYSTEM#MAIN} as a default one.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void e(String tag, String pattern, Object... parameters) {
+        e(SUBSYSTEM.MAIN, tag, pattern, parameters);
+    }
+
+    /**
+     * Send an ERROR log message with subsystem {@link SUBSYSTEM#MAIN} as a default one
+     * and log the exception.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param tr An exception to log.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void e(String tag, Throwable tr, String pattern, Object... parameters) {
+        e(SUBSYSTEM.MAIN, tag, tr, pattern, parameters);
+    }
+
+    /**
+     * Send an INFO log message with subsystem {@link SUBSYSTEM#MAIN} as a default one.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void i(String tag, String pattern, Object... parameters) {
+        i(SUBSYSTEM.MAIN, tag, pattern, parameters);
+    }
+
+    /**
+     * Send a VERBOSE log message with subsystem {@link SUBSYSTEM#MAIN} as a default one.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void v(String tag, String pattern, Object... parameters) {
+        v(SUBSYSTEM.MAIN, tag, pattern, parameters);
+    }
+
+    /**
+     * Send a WARN log message with subsystem {@link SUBSYSTEM#MAIN} as a default one.
+     * @param tag Used to identify the source of a log message. It usually identifies the class or
+     *            activity where the log call occurs.
+     * @param pattern The message pattern
+     * @return
+     */
+    public static void w(String tag, String pattern, Object... parameters) {
+        w(SUBSYSTEM.MAIN, tag, pattern, parameters);
+    }
+
+
+
+
+    private static void startFullLog() {
         PersistentLog.startFullLog();
     }
 
-    public static void stopFullLog() {
+    private static void stopFullLog() {
         PersistentLog.stopFullLog();
     }
 
@@ -322,15 +766,49 @@ public class Log {
                 String.format(pattern, parameters);
     }
 
+    private static LogBase getLog(Log.TYPE type) {
+        LogBase log = null;
+        switch(type) {
+            case ANDROID:
+                log = new AndroidLog();
+                break;
+            case PERSISTENT:
+                log = new PersistentLog();
+                break;
+            default:
+                android.util.Log.w(TAG, "Incorrect logger type! type = " + type +
+                        " Use default log type: " + DEFAULT_TYPE);
+                break;
+        }
+        return log;
+    }
+
+    private static String getMsg(Subsystem subsystem, String msg) {
+        return subsystem == SUBSYSTEM.MAIN ? msg :
+                String.format(LOG_MSG_FORMAT, subsystem, msg);
+    }
+
+    private static final String LOG_MSG_FORMAT = "<%s> %s";
+
+    private static Set<Subsystem> mEnabledSubsystems = new HashSet<>();
+    private static MODE mode;
+    private static final String TAG = "Log";
+
+    private static final TYPE DEFAULT_TYPE = TYPE.PERSISTENT; // TYPE.ANDROID;
+    private static final boolean frequentlyUpdating = false;
+    private static boolean enable_logging;
+    private static LogBase currentLog;
+
+
     private static abstract class LogBase {
         protected static String getStackTraceString (Throwable tr) {
             return android.util.Log.getStackTraceString(tr) + "\n";
         }
 
-        public void pause() {
+        private void pause() {
         }
 
-        public void resume() {
+        private void resume() {
         }
 
         abstract public int d(String tag, String msg);
@@ -436,7 +914,7 @@ public class Log {
 
         static void init(Context context) {
             final File documentsDirs = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-            LOG_FILE_DIR = new File(documentsDirs, "vrtop");
+            LOG_FILE_DIR = new File(documentsDirs, "widgetlib");
             FILE_PATH_BASE = new File(LOG_FILE_DIR, "logFile").getAbsolutePath();
             FULL_FILE_PATH_BASE = new File(LOG_FILE_DIR, "fullLogFile").getAbsolutePath();
         }
@@ -446,12 +924,12 @@ public class Log {
             worker = new LogWorker(requestQueue);
         }
 
-        public void pause() {
+        private void pause() {
             d(TAG, "pause logging!");
             writeToFile(new CloseLogRequest());
         }
 
-        public void resume() {
+        private void resume() {
             // start log request worker thread
             if (executorService == null) {
                 executorService = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -545,7 +1023,7 @@ public class Log {
             return name == null ? "" : name;
         }
 
-        interface LogRequest {
+        private interface LogRequest {
             enum TYPE {
                 OPEN,
                 CLOSE,
@@ -563,7 +1041,7 @@ public class Log {
             private static final SynchronizedPool<MsgLogRequest> sPool =
                     new SynchronizedPool<>(MAX_POOL_SIZE);
 
-            public static MsgLogRequest obtain(final int priority, final String tag, final String msg, final Throwable tr) {
+            private static MsgLogRequest obtain(final int priority, final String tag, final String msg, final Throwable tr) {
                 MsgLogRequest instance = sPool.acquire();
                 if (instance != null) {
                     instance.init(priority, tag, msg, tr);
@@ -573,15 +1051,15 @@ public class Log {
                 return instance;
             }
 
-            public static MsgLogRequest obtain(final int priority, final String tag, final String msg) {
+            private static MsgLogRequest obtain(final int priority, final String tag, final String msg) {
                 return obtain(priority, tag, msg, null);
             }
 
-            public static MsgLogRequest obtain(final int priority, final String tag, final Throwable tr) {
+            private static MsgLogRequest obtain(final int priority, final String tag, final Throwable tr) {
                 return obtain(priority, tag, null, tr);
             }
 
-            public void init(final int priority, String tag, final String msg, final Throwable tr) {
+            private void init(final int priority, String tag, final String msg, final Throwable tr) {
                 if (msg != null) {
                     if (tag == null) {
                         tag = "";
@@ -596,6 +1074,7 @@ public class Log {
                         priority >= android.util.Log.WARN;
             }
 
+            @Override
             public TYPE getType() {
                 return TYPE.MSG;
             }
@@ -609,6 +1088,7 @@ public class Log {
                 sPool.release(this);
             }
 
+            @Override
             public void process(final boolean isLogging, final BufferedWriter writer) {
                 if (isLogging) {
                     try {
@@ -633,6 +1113,7 @@ public class Log {
         }
 
         private class CloseLogRequest implements LogRequest {
+            @Override
             public void process(final boolean isLogging, final BufferedWriter bufferedWriter) {
                 close();
                 deleteOldAndEmptyFiles();
@@ -644,6 +1125,7 @@ public class Log {
                 enableLog(false);
             }
 
+            @Override
             public TYPE getType() {
                 return TYPE.CLOSE;
             }
@@ -651,10 +1133,12 @@ public class Log {
         }
 
         private class OpenLogRequest implements LogRequest {
+            @Override
             public void process(final boolean isLogging, final BufferedWriter bufferedWriter) {
                 enableLog(true);
             }
 
+            @Override
             public TYPE getType() {
                 return TYPE.OPEN;
             }
@@ -713,7 +1197,7 @@ public class Log {
             return bufferedWriter;
         }
 
-        public void close() {
+        private void close() {
             try {
                 if (bufferedWriter != null) {
                     bufferedWriter.close();
@@ -762,8 +1246,8 @@ public class Log {
             }
         }
 
-        static Process fullLogProcess;
-        static void startFullLog() {
+        private static Process fullLogProcess;
+        private static void startFullLog() {
             deleteOldAndEmptyFiles();
             try {
                 // clear logcat  buffer

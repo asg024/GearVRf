@@ -4,6 +4,12 @@ import com.samsung.smcl.vr.widgetlib.widget.GroupWidget;
 import com.samsung.smcl.vr.widgetlib.widget.Widget;
 
 public class DataSetViewFactoryAdapter<T extends Object> extends DataSetAdapter<T> {
+    /**
+     * Create {@link Adapter} with the specified data set and viewFactory associated with it.
+     * @param dataSet {@link DataSet} associated with this adapter
+     * @param viewFactory {@link AdapterViewFactory} associated with this adapter
+     *
+     */
     public DataSetViewFactoryAdapter(DataSet dataSet, AdapterViewFactory viewFactory) {
         super(dataSet);
         mViewFactory = viewFactory;

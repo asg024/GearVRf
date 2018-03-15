@@ -1,10 +1,23 @@
 package com.samsung.smcl.vr.widgetlib.adapter;
 
 public class TransformingDataSet<T extends Object, U extends Object> extends DataSet<U> {
+    /**
+     * Interface to transform data from <T> to <U>
+     */
     public interface Transform<T extends Object, U extends Object> {
+        /**
+         * The method taking data <T> and transforming it to <U>
+         * @param item
+         * @return
+         */
         U getItem(T item);
     }
 
+    /**
+     * Create new TransformingDataSet
+     * @param dataSet data set attached
+     * @param transform {@link Transform} using for data transformation
+     */
     public TransformingDataSet(DataSet<T> dataSet, Transform<T, U> transform) {
         mDataSet = dataSet;
         mTransform = transform;

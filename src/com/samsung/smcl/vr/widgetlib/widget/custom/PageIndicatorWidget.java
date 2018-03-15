@@ -124,7 +124,7 @@ public class PageIndicatorWidget extends CheckableGroup {
     }
 
     private void removeIndicatorChildren(int numIndicators) {
-        Log.d(Log.SUBSYSTEM.PANELS, TAG, "removeIndicatorChildren %d", numIndicators);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeIndicatorChildren %d", numIndicators);
 
         List<PageIndicatorButton> children = getCheckableChildren();
         for (Widget child: children) {
