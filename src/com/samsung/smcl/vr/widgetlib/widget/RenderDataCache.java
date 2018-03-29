@@ -313,20 +313,6 @@ class RenderDataCache {
 
         static final String MATERIAL_DIFFUSE_TEXTURE = "diffuseTexture";
 
-        public void setColor(int color) {
-            if (mMaterial != null) {
-                SET_COLOR.buffer(mExternalMaterial, color);
-                mMaterial.setColor(color);
-            }
-        }
-
-        void setColor(float r, float g, float b) {
-            if (mMaterial != null) {
-                SET_COLOR_RGB.buffer(mExternalMaterial, r, g, b);
-                mMaterial.setColor(r, g, b);
-            }
-        }
-
         public void setTexture(GVRTexture texture) {
             if (mMaterial != null) {
                 SET_TEXTURE.buffer(mExternalMaterial, texture);
@@ -336,25 +322,9 @@ class RenderDataCache {
             }
         }
 
-        public void setTexture(Future<GVRTexture> texture) {
-            if (mMaterial != null) {
-                SET_FUTURE_TEXTURE.buffer(mExternalMaterial, texture);
-                mMaterial.setMainTexture(texture);
-                // Models use the new shader framework which has no single main texture
-                mMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
-            }
-        }
-
         public void setTexture(String name, GVRTexture texture) {
             if (mMaterial != null) {
                 SET_NAMED_TEXTURE.buffer(mExternalMaterial, name, texture);
-                mMaterial.setTexture(name, texture);
-            }
-        }
-
-        public void setTexture(String name, Future<GVRTexture> texture) {
-            if (mMaterial != null) {
-                SET_NAMED_FUTURE_TEXTURE.buffer(mExternalMaterial, name, texture);
                 mMaterial.setTexture(name, texture);
             }
         }
@@ -373,20 +343,6 @@ class RenderDataCache {
             }
         }
 
-        int getRgbColor() {
-            if (mMaterial != null) {
-                return mMaterial.getRgbColor();
-            }
-            return 0;
-        }
-
-        public float[] getColor() {
-            if (mMaterial != null) {
-                return mMaterial.getColor();
-            }
-            return null;
-        }
-
         private MaterialCache() {
 
         }
@@ -401,7 +357,7 @@ class RenderDataCache {
                 // TODO: Add named texture entry for main texture
                 mMaterial.setMainTexture(material.getMainTexture());
                 mMaterial.setOpacity(material.getOpacity());
-                mMaterial.setColor(material.getRgbColor());
+                //mMaterial.setColor(material.getRgbColor());
                 for (String textureName : material.getTextureNames()) {
                     mMaterial.setTexture(textureName, material.getTexture(textureName));
                 }
@@ -484,7 +440,7 @@ class RenderDataCache {
                 @Override
                 public void exec(Object... params) {
                     final GVRMaterial material = (GVRMaterial) params[0];
-                    final Future<GVRTexture> texture = (Future<GVRTexture>) params[1];
+                    final GVRTexture texture = (GVRTexture) params[1];
                     material.setMainTexture(texture);
                     material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
                 }
@@ -518,7 +474,7 @@ class RenderDataCache {
                 public void exec(Object... params) {
                     final GVRMaterial material = (GVRMaterial) params[0];
                     final String name = (String) params[1];
-                    final Future<GVRTexture> texture = (Future<GVRTexture>) params[2];
+                    final GVRTexture texture = (GVRTexture) params[2];
                     material.setTexture(name, texture);
                 }
             };

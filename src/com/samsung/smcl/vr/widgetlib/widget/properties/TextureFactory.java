@@ -2,12 +2,13 @@ package com.samsung.smcl.vr.widgetlib.widget.properties;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRAssetLoader;
+import org.gearvrf.GVRBitmapImage;
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRImage;
 import org.gearvrf.GVRMaterial;
-import org.gearvrf.GVRShaders;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTextureParameters;
-import org.gearvrf.asynchronous.GVRCompressedTexture;
+import org.gearvrf.GVRCompressedImage;
 import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
 
 import org.json.JSONException;
@@ -20,9 +21,11 @@ import java.util.concurrent.Future;
 
 import static com.samsung.smcl.vr.widgetlib.main.Utility.getId;
 import com.samsung.smcl.vr.widgetlib.log.Log;
+import com.samsung.smcl.vr.widgetlib.main.GVRBitmapTexture;
 
 public class TextureFactory {
     static final private String TAG = TextureFactory.class.getSimpleName();
+    static final String MAIN_TEXTURE = "main_texture";
 
     static public GVRTexture loadTexture(GVRContext context, JSONObject textureSpec) {
         ImmediateLoader loader = new ImmediateLoader(context);
@@ -36,8 +39,8 @@ public class TextureFactory {
         }
     }
 
-    static public Future<GVRTexture> loadFutureTexture(GVRContext context, JSONObject textureSpec) {
-        FutureLoader loader = new FutureLoader(context);
+    static public GVRTexture loadFutureTexture(GVRContext context, JSONObject textureSpec) {
+        ImmediateLoader loader = new ImmediateLoader(context);
         try {
             loadOneTextureFromJSON(context, textureSpec, loader);
             return loader.getTexture();
@@ -64,7 +67,7 @@ public class TextureFactory {
                 .optJSONObject(materialSpec, MaterialTextureProperties.main_texture);
         if (mainTextureSpec != null) {
             loadOneTextureFromJSON(material.getGVRContext(), mainTextureSpec,
-                    new MaterialLoader(material, mainTextureSpec, GVRShaders.MAIN_TEXTURE));
+                    new MaterialLoader(material, mainTextureSpec, MAIN_TEXTURE));
             loadOneTextureFromJSON(material.getGVRContext(), mainTextureSpec,
                     new MaterialLoader(material, mainTextureSpec, "diffuseTexture"));
         }
@@ -224,24 +227,6 @@ public class TextureFactory {
         void loadTexture(GVRAndroidResource resource, GVRTextureParameters parameters);
     }
 
-    private static class FutureLoader implements Loader {
-        FutureLoader(GVRContext context) {
-            mContext = context;
-        }
-
-        @Override
-        public void loadTexture(GVRAndroidResource resource, GVRTextureParameters parameters) {
-            mTexture = mContext.getAssetLoader().loadFutureTexture(resource);
-        }
-
-        public Future<GVRTexture> getTexture() {
-            return mTexture;
-        }
-
-        private final GVRContext mContext;
-        private Future<GVRTexture> mTexture;
-    }
-
     private static class ImmediateLoader implements Loader {
         ImmediateLoader(GVRContext context) {
             mContext = context;
@@ -270,13 +255,13 @@ public class TextureFactory {
 
         @Override
         public void loadTexture(GVRAndroidResource resource, GVRTextureParameters parameters) {
-            GVRContext context = mMaterial.getGVRContext();
+            final GVRContext context = mMaterial.getGVRContext();
             context.getAssetLoader().loadTexture(
                     resource, new GVRAndroidResource.TextureCallback() {
                         @Override
-                        public void loaded(GVRTexture resource11,
+                        public void loaded(GVRImage resource11,
                                            GVRAndroidResource androidResource) {
-                            mMaterial.setTexture(mKey, resource11);
+                            mMaterial.setTexture(mKey, new GVRBitmapTexture(context, (GVRBitmapImage)resource11));
                         }
 
                         @Override
@@ -291,7 +276,7 @@ public class TextureFactory {
                             return true;
                         }
                     },
-                    parameters, GVRAssetLoader.DEFAULT_PRIORITY, GVRCompressedTexture.BALANCED);
+                    parameters, GVRAssetLoader.DEFAULT_PRIORITY, GVRCompressedImage.BALANCED);
         }
 
         private final GVRMaterial mMaterial;

@@ -2,8 +2,8 @@ package com.samsung.smcl.vr.widgetlib.widget.custom;
 
 import android.graphics.Color;
 
-import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getFutureColorBitmapTexture;
 import static com.samsung.smcl.vr.widgetlib.main.Utility.equal;
+import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getSolidColorTexture;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.adapter.Adapter;
@@ -140,7 +140,7 @@ public class MultiPageStack extends MultiPageWidget {
 
         private final Map<Integer, ListWidget> mPages;
 
-        private final List<Future<GVRTexture>> mPageBgTextures;
+        private final List<GVRTexture> mPageBgTextures;
 
         private final static int[] mPageRainbowColors = {
                 Color.RED,
@@ -167,7 +167,7 @@ public class MultiPageStack extends MultiPageWidget {
 
             mPageBgTextures = new ArrayList<>(mPageGrayColors.length);
             for (int color: mPageGrayColors){
-                mPageBgTextures.add(getFutureColorBitmapTexture(mGvrContext, color));
+                mPageBgTextures.add(getSolidColorTexture(mGvrContext, color));
             }
         }
 

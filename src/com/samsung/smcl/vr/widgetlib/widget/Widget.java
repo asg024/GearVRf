@@ -29,7 +29,6 @@ import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.*;
 
 import org.gearvrf.GVRAndroidResource;
 import org.gearvrf.GVRAssetLoader;
-import org.gearvrf.GVRBitmapTexture;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRImportSettings;
 import org.gearvrf.GVRMaterial;
@@ -939,30 +938,6 @@ public class Widget  implements Layout.WidgetContainer {
      * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
      * of the {@link Widget}.
      *
-     * @param name
-     *            Name of the texture
-     * @param texture
-     *            The new texture.
-     */
-    public void setTexture(String name, final Future<GVRTexture> texture) {
-        getMaterial().setTexture(name, texture);
-    }
-
-    /**
-     * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
-     * of the {@link Widget}.
-     *
-     * @param texture
-     *            The new texture.
-     */
-    public void setTexture(final Future<GVRTexture> texture) {
-        getMaterial().setTexture(texture);
-    }
-
-    /**
-     * Sets the {@linkplain GVRMaterial#setMainTexture(GVRTexture) main texture}
-     * of the {@link Widget}.
-     *
      * @param bitmapId
      *            Resource ID of the bitmap to create the texture from.
      */
@@ -972,7 +947,7 @@ public class Widget  implements Layout.WidgetContainer {
 
         final GVRAndroidResource resource = new GVRAndroidResource(
                 mContext.getContext(), bitmapId);
-        setTexture(mContext.getAssetLoader().loadFutureTexture(resource));
+        setTexture(mContext.getAssetLoader().loadTexture(resource));
     }
 
     /**
@@ -1719,50 +1694,6 @@ public class Widget  implements Layout.WidgetContainer {
         if (mTransformCache.reset()) {
             onTransformChanged();
         }
-    }
-
-    /**
-     * Modify the Widget's material current color
-     * @param color
-     */
-    public void setColor(final int color) {
-        getMaterial().setColor(color);
-    }
-
-    /**
-     * Modify the Widget's material current color
-     * @param rgb
-     */
-    public void setColor(final float[] rgb) {
-        getMaterial().setColor(rgb[0], rgb[1], rgb[2]);
-    }
-
-    /**
-     * Modify the Widget's material current color
-     * @param r
-     * @param g
-     * @param b
-     */
-    public void setColor(final float r, final float g, final float b) {
-        getMaterial().setColor(r, g, b);
-    }
-
-    /**
-     * Gets the Widget's material current color
-     * @return color
-     */
-    public float[] getColor() {
-        return getMaterial().getColor();
-    }
-
-    /**
-     * A convenience method that wraps {@link #getColor()} and returns an
-     * Android {@link Color}
-     *
-     * @return An Android {@link Color}
-     */
-    public int getRgbColor() {
-        return getMaterial().getRgbColor();
     }
 
     /**
@@ -3524,7 +3455,7 @@ public class Widget  implements Layout.WidgetContainer {
         });
     }
 
-    protected void invalidateAllLayouts() {
+    public void invalidateAllLayouts() {
         for (Layout layout: mLayouts) {
             invalidateLayout(layout);
         }
@@ -3902,7 +3833,6 @@ public class Widget  implements Layout.WidgetContainer {
                                 sceneObjectParent.removeChildObject(mSceneObject);
                             }
                             parentSceneObject.addChildObject(mSceneObject);
-                            gvrContext.getMainScene().bindShaders(parentSceneObject);
                         }
                         break;
                     case HIDDEN:

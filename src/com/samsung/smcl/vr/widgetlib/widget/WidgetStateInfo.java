@@ -6,6 +6,7 @@ import java.util.Iterator;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMaterial.GVRShaderType;
+import org.gearvrf.GVRShaderId;
 import org.gearvrf.utility.Exceptions;
 import static org.gearvrf.utility.Log.tag;
 
@@ -123,11 +124,7 @@ class WidgetStateInfo {
         return getMaterial(gvrContext, materialSpec);
     }
 
-    // TODO: MaterialFactory
-    static private GVRMaterial getMaterial(final GVRContext gvrContext,
-            JSONObject materialSpec) throws JSONException, IOException {
-        GVRMaterial material = new GVRMaterial(gvrContext);
-
+    static private GVRShaderId getShaderId(JSONObject materialSpec) throws JSONException, IOException {
         final Iterator<String> iter = materialSpec.keys();
         while (iter.hasNext()) {
             final String key = iter.next();
@@ -135,15 +132,30 @@ class WidgetStateInfo {
                 case shader_type:
                     final String shaderType = materialSpec.getString(key);
                     if (shaderType.equalsIgnoreCase("texture")) {
-                        material.setShaderType(GVRShaderType.Texture.ID);
+                        return GVRShaderType.Texture.ID;
                     } else if (shaderType.equalsIgnoreCase("cubemap")) {
-                        material.setShaderType(GVRShaderType.Cubemap.ID);
+                        return GVRShaderType.Cubemap.ID;
                     } else {
                         throw Exceptions
                                 .RuntimeAssertion("Unsupported shader type '%s' specified for state",
-                                                  shaderType);
+                                        shaderType);
                     }
-                    break;
+            }
+        }
+        return GVRShaderType.Texture.ID;
+    }
+
+    // TODO: MaterialFactory
+    static private GVRMaterial getMaterial(final GVRContext gvrContext,
+            JSONObject materialSpec) throws JSONException, IOException {
+
+        GVRShaderId shaderId = getShaderId(materialSpec);
+        GVRMaterial material = new GVRMaterial(gvrContext, shaderId);
+
+        final Iterator<String> iter = materialSpec.keys();
+        while (iter.hasNext()) {
+            final String key = iter.next();
+            switch (MaterialProperties.valueOf(key)) {
                 case color:
                     final float[] color = getJSONColorGl(materialSpec,
                                                                key);

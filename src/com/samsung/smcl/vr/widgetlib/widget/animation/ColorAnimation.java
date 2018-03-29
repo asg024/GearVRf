@@ -40,10 +40,6 @@ public class ColorAnimation extends MaterialAnimation {
         return Arrays.copyOf(mTargetColor, mTargetColor.length);
     }
 
-    public float[] getCurrentColor() {
-        return getTarget().getColor();
-    }
-
     @Override
     protected void animate(Widget target, float ratio) {
         mAdapter.superAnimate(target, ratio);

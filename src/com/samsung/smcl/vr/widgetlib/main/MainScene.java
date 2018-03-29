@@ -713,6 +713,5 @@ public class MainScene {
     private static final String TAG = MainScene.class.getSimpleName();
 
     public void bindShaders() {
-        mMainScene.bindShaders();
     }
 }

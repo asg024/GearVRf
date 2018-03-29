@@ -21,6 +21,7 @@ import android.view.Gravity;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 
+import com.samsung.smcl.vr.widgetlib.main.GVRBitmapTexture;
 import com.samsung.smcl.vr.widgetlib.widget.Widget;
 import com.samsung.smcl.vr.widgetlib.widget.NodeEntry;
 
@@ -371,13 +372,13 @@ public class LightTextWidget extends Widget implements TextContainer {
             canvas.drawText(text, x, y, mTextPaint);
         }
 
-        Future<GVRTexture> texture = getFutureBitmapTexture(getGVRContext(), bitmap);
+        GVRTexture texture = new GVRBitmapTexture(getGVRContext(), bitmap);
         // Apply trilinear and anisotropic filtering
         GVRTextureParameters textureParameters = new GVRTextureParameters(getGVRContext());
         textureParameters.setMinFilterType(GVRTextureParameters.TextureFilterType.GL_LINEAR_MIPMAP_LINEAR);
         textureParameters.setAnisotropicValue(4);
         try {
-            texture.get().updateTextureParameters(textureParameters);
+            texture.updateTextureParameters(textureParameters);
         }
         catch(Exception e){
             Log.e(TAG, "InterruptedException, ExecutionException");

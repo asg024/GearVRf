@@ -1,13 +1,9 @@
 package com.samsung.smcl.vr.widgetlib.widget;
 
-import android.provider.SyncStateContract;
-
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.main.Selector;
-import com.samsung.smcl.vr.widgetlib.main.Utility;
 
 import org.gearvrf.GVRCollider;
-import org.gearvrf.GVRColliderGroup;
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRMeshCollider;
 import org.gearvrf.GVRPicker.GVRPickedObject;
@@ -65,16 +61,16 @@ public class TouchManager {
      * @param sceneObject
      * @param handler
      */
-    public void makeTouchable(GVRSceneObject sceneObject,
-                              OnTouch handler) {
-        makePickable(sceneObject);
-
+    public void makeTouchable(GVRSceneObject sceneObject, OnTouch handler) {
         if (handler != null) {
             if (sceneObject.getRenderData() != null) {
-                touchHandlers.put(sceneObject, new WeakReference<OnTouch>(handler));
+                if (!touchHandlers.containsKey(sceneObject)) {
+                    makePickable(sceneObject);
+                    touchHandlers.put(sceneObject, new WeakReference<>(handler));
+                }
             } else if (sceneObject.getChildrenCount() > 0) {
                 for (GVRSceneObject child : sceneObject.getChildren()) {
-                    touchHandlers.put(child, new WeakReference<OnTouch>(handler));
+                    makeTouchable(child, handler);
                 }
             }
         }
@@ -98,20 +94,12 @@ public class TouchManager {
      */
     public void makePickable(GVRSceneObject sceneObject) {
         try {
-            if (sceneObject.getRenderData() != null) {
-                GVRColliderGroup eyePointeeHolder = new GVRColliderGroup(
-                        sceneObject.getGVRContext());
-                GVRMeshCollider eyePointee = new GVRMeshCollider(sceneObject.getGVRContext(),
-                        sceneObject.getRenderData().getMesh().getBoundingBox());
-                eyePointeeHolder.addCollider(eyePointee);
-                sceneObject.attachComponent(eyePointeeHolder);
-            } else if (sceneObject.getChildrenCount() > 0) {
-                for (GVRSceneObject child : sceneObject.getChildren()) {
-                    makePickable(child);
-                }
-            }
+            GVRMeshCollider eyePointee = new GVRMeshCollider(sceneObject.getGVRContext(),
+                    sceneObject.getRenderData().getMesh().getBoundingBox());
+            sceneObject.attachComponent(eyePointee);
         } catch (Exception e) {
             // Possible that some objects (X3D panel nodes) are without mesh
+            Log.e(TAG, "makePickable(): possible that some objects (X3D panel nodes) are without mesh!");
         }
     }
 
@@ -181,15 +169,21 @@ public class TouchManager {
      */
     public boolean handleClick(List<GVRPickedObject> pickedObjectList, int event) {
         boolean isClickableItem = false;
+        if(pickedObjectList == null){
+            Log.w(TAG, "handleClick(): NULL pickedObjectList!");
+        }else if(pickedObjectList.isEmpty()){
+            Log.w(TAG, "handleClick(): EMPTY pickedObjectList!");
+        }
+
         // Process result(s)
         for (GVRPickedObject pickedObject : pickedObjectList) {
             if (pickedObject == null) {
-                Log.w(TAG, "handleClick(): got a null reference in the pickedObjectList");
+                Log.w(TAG, "handleClick(): got a null reference in the pickedObject");
                 continue;
             }
             GVRSceneObject sceneObject = pickedObject.getHitObject();
             if (sceneObject == null) {
-                Log.w(TAG, "handleClick(): got a null reference in the pickedObjectList");
+                Log.w(TAG, "handleClick(): got a null reference in the pickedObject.getHitObject()");
                 continue;
             }
 
@@ -205,8 +199,7 @@ public class TouchManager {
 
             if (!isClickableItem) {
                 Set<TouchManagerFilter> filters = event == LEFT_CLICK_EVENT ?
-                        mTouchFilters :
-                        mBackKeyFilters;
+                        mTouchFilters : mBackKeyFilters;
                 synchronized (mTouchFilters) {
                     boolean processTouch = true;
                     for (TouchManagerFilter filter: filters) {
@@ -240,8 +233,7 @@ public class TouchManager {
                 break;
             }
 
-            Log.e(TAG, "No handler or displayID for %s",
-                    sceneObject.getName());
+            Log.e(TAG, "No handler or displayID for %s", sceneObject.getName());
         }
 
         if (!isClickableItem) {
