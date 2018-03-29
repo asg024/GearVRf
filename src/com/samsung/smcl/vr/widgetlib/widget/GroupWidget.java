@@ -247,6 +247,6 @@ public class GroupWidget extends Widget {
     }
 
     @SuppressWarnings("unused")
-    private static final String TAG = GroupWidget.class.getSimpleName();
+    private static final String TAG = org.gearvrf.utility.Log.tag(GroupWidget.class);
 
 }

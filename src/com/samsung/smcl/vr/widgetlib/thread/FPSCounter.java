@@ -4,17 +4,15 @@ import android.os.SystemClock;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 
+/**
+ * Utility to check FPS
+ */
 public class FPSCounter {
-    private static int frames = 0;
-    private static long startTimeMillis = 0;
-    private static final long interval = 1000;
-    private static int sumFrames = 0;
-    private static long startTime = 0;
-
-
-    private static long startCheckTime = 0;
-    private static long nextCheckTime = 0;
-
+    /**
+     * This method should be called every frame in {@link org.gearvrf.GVRMain#onStep}
+     * to do FPS calculation.
+     * If main debug subsystem is enabled the FPS measurements will be printed out each frame.
+     */
     public static void tick() {
         sumFrames++;
         if (startTime == 0) {
@@ -31,6 +29,9 @@ public class FPSCounter {
         }
     }
 
+    /**
+     * Computes FPS average
+     */
     public static void count() {
         long duration = SystemClock.uptimeMillis() - startTime;
         float avgFPS = sumFrames / (duration / 1000f);
@@ -40,17 +41,28 @@ public class FPSCounter {
                 sumFrames, duration, avgFPS);
     }
 
+    /**
+     * Resets the FPS counting data
+     */
     public static void pause() {
         startTime = 0;
         sumFrames = 0;
     }
 
+    /**
+     * Start check of execution time
+     * @param extra
+     */
     public static void startCheck(String extra) {
         startCheckTime = System.currentTimeMillis();
         nextCheckTime = startCheckTime;
         Log.d(Log.SUBSYSTEM.TRACING, "FPSCounter" , "[%d] startCheck %s",  startCheckTime, extra);
     }
 
+    /**
+     * Computes execution time
+     * @param extra
+     */
     public static void timeCheck(String extra) {
         if (startCheckTime > 0) {
             long now = System.currentTimeMillis();
@@ -60,6 +72,10 @@ public class FPSCounter {
         }
     }
 
+    /**
+     * Stop check of execution time
+     * @param extra
+     */
     public static void stopCheck(String extra) {
         if (startCheckTime > 0) {
             long now = System.currentTimeMillis();
@@ -69,4 +85,14 @@ public class FPSCounter {
         startCheckTime = 0;
         nextCheckTime = 0;
     }
+
+    private static int frames = 0;
+    private static long startTimeMillis = 0;
+    private static final long interval = 1000;
+    private static int sumFrames = 0;
+    private static long startTime = 0;
+
+
+    private static long startCheckTime = 0;
+    private static long nextCheckTime = 0;
 }

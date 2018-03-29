@@ -45,6 +45,11 @@ public class BoundingBox {
         }
     }
 
+    /**
+     * Constructs a bounding box
+     * @param rhs
+     *            {@link BoundingBox} to build the bounding box from.
+     */
     public BoundingBox(final BoundingBox rhs) {
         mVertices = copyVertices(rhs.mVertices);
         mMinCorner = rhs.getMinCorner();
@@ -53,10 +58,18 @@ public class BoundingBox {
         mRadius = rhs.getRadius();
     }
 
+    /**
+     * Gets min corner of BoundingBox
+     * @return min corner
+     */
     public Vector3f getMinCorner() {
         return new Vector3f(mMinCorner);
     }
 
+    /**
+     * Gets max corner of BoundingBox
+     * @return max corner
+     */
     public Vector3f getMaxCorner() {
         return new Vector3f(mMaxCorner);
     }
@@ -128,6 +141,27 @@ public class BoundingBox {
     }
 
     /**
+     * A {@link BoundingBox} is considered valid if the
+     * {@linkplain #getMinCorner() minimum} and {@linkplain #getMaxCorner()
+     * maximum} corners are set to neither {@linkplain Float#POSITIVE_INFINITY
+     * positive} nor {@linkplain Float#NEGATIVE_INFINITY negative} infinity.
+     *
+     * @return {@code True} if the {@code BoundingBox} is valid, {@code false}
+     *         if it isn't.
+     */
+    public boolean isValid() {
+        return isValid(mMinCorner) && isValid(mMaxCorner);
+    }
+
+    @Override
+    public String toString() {
+        return new StringBuilder().append("min: ").append(vec2str(mMinCorner))
+                .append(", max: ").append(vec2str(mMaxCorner)).append(", c: ")
+                .append(vec2str(mCenter)).append(", r: ").append(mRadius)
+                .toString();
+    }
+
+    /**
      * Expands the bounding box as necessary to encompass {@code vertices}.
      *
      * @param vertices
@@ -181,19 +215,6 @@ public class BoundingBox {
     }
 
     /**
-     * A {@link BoundingBox} is considered valid if the
-     * {@linkplain #getMinCorner() minimum} and {@linkplain #getMaxCorner()
-     * maximum} corners are set to neither {@linkplain Float#POSITIVE_INFINITY
-     * positive} nor {@linkplain Float#NEGATIVE_INFINITY negative} infinity.
-     *
-     * @return {@code True} if the {@code BoundingBox} is valid, {@code false}
-     *         if it isn't.
-     */
-    public boolean isValid() {
-        return isValid(mMinCorner) && isValid(mMaxCorner);
-    }
-
-    /**
      * Transforms the vertices of the {@link BoundingBox} by the specified
      * matrix.
      *
@@ -216,14 +237,6 @@ public class BoundingBox {
      */
     private BoundingBox transform(final Widget widget) {
         return transform(new BoundingBox(this), widget);
-    }
-
-    @Override
-    public String toString() {
-        return new StringBuilder().append("min: ").append(vec2str(mMinCorner))
-                .append(", max: ").append(vec2str(mMaxCorner)).append(", c: ")
-                .append(vec2str(mCenter)).append(", r: ").append(mRadius)
-                .toString();
     }
 
     private void clear() {
@@ -337,5 +350,5 @@ public class BoundingBox {
     private static final int Z = 2;
 
     @SuppressWarnings("unused")
-    private static final String TAG = BoundingBox.class.getSimpleName();
+    private static final String TAG = org.gearvrf.utility.Log.tag(BoundingBox.class);
 }

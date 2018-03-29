@@ -1,4 +1,4 @@
-package com.samsung.smcl.vr.widgetlib.main;
+package com.samsung.smcl.vr.widgetlib.widget.properties;
 
 import android.content.Context;
 import android.content.res.AssetManager;

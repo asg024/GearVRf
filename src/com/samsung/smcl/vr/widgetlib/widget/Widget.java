@@ -612,8 +612,7 @@ public class Widget  implements Layout.WidgetContainer {
         void onChildWidgetRemoved(Widget parent, Widget child);
     }
 
-    private final class FocusableImpl implements FocusManager.Focusable,
-            FocusManager.LongFocusTimeout {
+    private final class FocusableImpl implements FocusManager.Focusable {
         /**
          * Hook method for handling changes in focus for this object.
          *
@@ -645,11 +644,6 @@ public class Widget  implements Layout.WidgetContainer {
 
         @Override
         public long getLongFocusTimeout() {
-            // We use the getter method instead of directly accessing the
-            // property so that deriving classes can override
-            // getLongFocusTimeout() and return a constant; this is a handy
-            // pattern for ensuring that instances of a class will always have
-            // the specified timeout.
             return Widget.this.getLongFocusTimeout();
         }
 
@@ -822,7 +816,7 @@ public class Widget  implements Layout.WidgetContainer {
         if (level >= 0 && mLevel != level && level < mLevelInfo.size()) {
             Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setLevel(%d): clearing level: %d", level, mLevel);
             if (mLevel >= 0) {
-                mLevelInfo.get(mLevel).setState(this, null);
+                mLevelInfo.get(mLevel).setState(null);
             }
 
             mLevel = level;
@@ -3330,7 +3324,7 @@ public class Widget  implements Layout.WidgetContainer {
 
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "updateState(): %s for '%s'", state, getName());
         if (!mLevelInfo.isEmpty() && mLevel >= 0) {
-            mLevelInfo.get(mLevel).setState(this, state);
+            mLevelInfo.get(mLevel).setState(state);
         }
 
         boolean updateChildren = isInFollowStateGroup()

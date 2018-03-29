@@ -173,10 +173,19 @@ public final class MainThread {
         return handler.postDelayed(r, delayMillis);
     }
 
+    /**
+     * Gets Handler
+     * @return
+     */
     public Handler getHandler() {
         return handler;
     }
 
+    /**
+     * Checks if the logic is running on main thread. If this is not a case - throw
+     * {@link RuntimeException} exception
+     * @param label
+     */
     public void assertIsMainThread(final String label) {
         final boolean mainThread = isMainThread();
         Log.d(TAG, "%s: is main thread: %b", label, mainThread);

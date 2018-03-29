@@ -27,6 +27,9 @@ import java.util.concurrent.TimeoutException;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 
+/**
+ * Utilities for TextureFutures
+ */
 public final class TextureFutureHelper {
     private static final String TAG = tag(TextureFutureHelper.class);
     private TextureFutureHelper() {
@@ -115,23 +118,16 @@ public final class TextureFutureHelper {
         private volatile boolean mIsCancelled;
     }
 
-    private static class BitmapTextureFuture extends TextureFuture {
-
-        public BitmapTextureFuture(final GVRContext gvrContext, final Bitmap bitmap, String name) {
-            super(gvrContext, name);
-            mBitmap = bitmap;
-        }
-
-        @Override
-        @NonNull
-        protected GVRTexture getTexture(GVRContext context) {
-            return new GVRBitmapTexture(context, mBitmap);
-        }
-
-        private final Bitmap mBitmap;
-    }
-
+    /**
+     * TextureFuture built around resolved texture
+     */
     public static class ResolvedTextureFuture extends TextureFuture {
+        /**
+         * Create {@link #TextureFuture} wrapped around the resolved texture
+         * @param gvrContext
+         * @param texture
+         * @param name
+         */
         public ResolvedTextureFuture(GVRContext gvrContext, @NonNull GVRTexture texture, String name) {
             super(gvrContext, name);
             mTexture = texture;
@@ -154,6 +150,113 @@ public final class TextureFutureHelper {
         }
 
         private final GVRTexture mTexture;
+    }
+
+    /**
+     * Gets a {@link Future} for an {@link GVRBitmapTexture bitmap texture},
+     * returning a cached texture instance if possible.
+     *
+     * @param gvrContext
+     * @param resId
+     * @return
+     */
+    public static Future<GVRTexture> getFutureBitmapTexture(
+            final GVRContext gvrContext, int resId) {
+        final Resources resources = gvrContext.getActivity().getResources();
+        final Bitmap bitmap = BitmapFactory.decodeResource(resources, resId);
+        return getFutureBitmapTexture(gvrContext, bitmap);
+    }
+
+    /**
+     * Gets a {@link Future} for an {@linkplain ImmutableBitmapTexture immutable texture} with the
+     * specified color, returning a cached texture instance if possible.
+     *
+     * @param gvrContext
+     * @param color
+     * @return
+     */
+    public static Future<GVRTexture> getFutureColorBitmapTexture(final GVRContext gvrContext, int color) {
+        RunnableFuture<GVRTexture> future;
+        final String s = String.format(Locale.getDefault(), "color: 0x%X", color);
+
+        final ImmutableBitmapTexture texture;
+        synchronized (sColorTextureCache) {
+            Log.d(TAG, "getFutureColorBitmapTexture(): fetching cached texture for color 0x%08X", color);
+            texture = sColorTextureCache.get(color);
+        }
+
+        if (texture == null) {
+            synchronized (sColorTextureFutureCache) {
+                future = sColorTextureFutureCache.get(color);
+                if (future == null) {
+                    Log.d(TAG, "getFutureColorBitmapTexture(): creating new texture for color 0x%08X", color);
+                    future = new ColorTextureFuture(gvrContext, color, s);
+                    sColorTextureFutureCache.put(color, (ColorTextureFuture) future);
+                    gvrContext.runOnGlThread(future);
+                } else {
+                    Log.d(TAG, "getFutureColorBitmapTexture(): returning cached future for color 0x%08X", color);
+                }
+            }
+        } else {
+            Log.d(TAG, "getFutureColorBitmapTexture(): returning cached texture for color 0x%08X", color);
+            future = new ResolvedTextureFuture(gvrContext, texture, s);
+        }
+
+        return future;
+    }
+
+    /**
+     * Gets a {@link Future} for an {@link GVRBitmapTexture bitmap texture},
+     * returning a cached texture instance if possible.
+     *
+     * @param gvrContext
+     * @param bitmap
+     * @return
+     */
+    public static Future<GVRTexture> getFutureBitmapTexture(
+            final GVRContext gvrContext, final Bitmap bitmap) {
+        final String s = "";
+        return getFutureBitmapTexture(gvrContext, bitmap, s);
+    }
+
+    /**
+     * Gets an {@linkplain ImmutableBitmapTexture immutable texture} with the specified color,
+     * returning a cached instance if possible.
+     *
+     * @param gvrContext
+     * @param color
+     * @return
+     */
+    public static ImmutableBitmapTexture getSolidColorTexture(GVRContext gvrContext, int color) {
+        ImmutableBitmapTexture texture;
+        synchronized (sColorTextureCache) {
+            texture = sColorTextureCache.get(color);
+            Log.d(TAG, "getSolidColorTexture(): have cached texture for 0x%08X: %b", color, texture != null);
+            if (texture == null) {
+                texture = new ImmutableBitmapTexture(gvrContext, makeSolidColorBitmap(color));
+                Log.d(TAG, "getSolidColorTexture(): caching texture for 0x%08X", color);
+                sColorTextureCache.put(color, texture);
+                Log.d(TAG, "getSolidColorTexture(): succeeded caching for 0x%08X: %b", color, sColorTextureCache.containsKey(color));
+            }
+        }
+
+        return texture;
+    }
+
+    private static class BitmapTextureFuture extends TextureFuture {
+
+        public BitmapTextureFuture(final GVRContext gvrContext, final Bitmap bitmap, String name) {
+            super(gvrContext, name);
+            mBitmap = bitmap;
+        }
+
+        @Override
+        @NonNull
+        protected GVRTexture getTexture(GVRContext context) {
+            return new GVRBitmapTexture(context, mBitmap);
+        }
+
+        private final Bitmap mBitmap;
     }
 
     private static class ColorTextureFuture extends TextureFuture {
@@ -213,86 +316,11 @@ public final class TextureFutureHelper {
         }
     }
 
-    public static Future<GVRTexture> getFutureBitmapTexture(
-            final GVRContext gvrContext, int resId) {
-        final Resources resources = gvrContext.getActivity().getResources();
-        final Bitmap bitmap = BitmapFactory.decodeResource(resources, resId);
-        return getFutureBitmapTexture(gvrContext, bitmap);
-    }
-
-    /**
-     * Gets a {@link Future} for an {@linkplain ImmutableBitmapTexture immutable texture} with the
-     * specified color, returning a cached texture instance if possible.
-     *
-     * @param gvrContext
-     * @param color
-     * @return
-     */
-    public static Future<GVRTexture> getFutureColorBitmapTexture(final GVRContext gvrContext, int color) {
-        RunnableFuture<GVRTexture> future;
-        final String s = String.format(Locale.getDefault(), "color: 0x%X", color);
-
-        final ImmutableBitmapTexture texture;
-        synchronized (sColorTextureCache) {
-            Log.d(TAG, "getFutureColorBitmapTexture(): fetching cached texture for color 0x%08X", color);
-            texture = sColorTextureCache.get(color);
-        }
-
-        if (texture == null) {
-            synchronized (sColorTextureFutureCache) {
-                future = sColorTextureFutureCache.get(color);
-                if (future == null) {
-                    Log.d(TAG, "getFutureColorBitmapTexture(): creating new texture for color 0x%08X", color);
-                    future = new ColorTextureFuture(gvrContext, color, s);
-                    sColorTextureFutureCache.put(color, (ColorTextureFuture) future);
-                    gvrContext.runOnGlThread(future);
-                } else {
-                    Log.d(TAG, "getFutureColorBitmapTexture(): returning cached future for color 0x%08X", color);
-                }
-            }
-        } else {
-            Log.d(TAG, "getFutureColorBitmapTexture(): returning cached texture for color 0x%08X", color);
-            future = new ResolvedTextureFuture(gvrContext, texture, s);
-        }
-
-        return future;
-    }
-
-    public static Future<GVRTexture> getFutureBitmapTexture(
-            final GVRContext gvrContext, final Bitmap bitmap) {
-        final String s = "";
-        return getFutureBitmapTexture(gvrContext, bitmap, s);
-    }
-
     @NonNull
     private static Future<GVRTexture> getFutureBitmapTexture(GVRContext gvrContext, Bitmap bitmap, String s) {
         final BitmapTextureFuture bitmapFuture = new BitmapTextureFuture(gvrContext, bitmap, s);
         gvrContext.runOnGlThread(bitmapFuture);
         return bitmapFuture;
-    }
-
-    /**
-     * Gets an {@linkplain ImmutableBitmapTexture immutable texture} with the specified color,
-     * returning a cached instance if possible.
-     *
-     * @param gvrContext
-     * @param color
-     * @return
-     */
-    public static ImmutableBitmapTexture getSolidColorTexture(GVRContext gvrContext, int color) {
-        ImmutableBitmapTexture texture;
-        synchronized (sColorTextureCache) {
-            texture = sColorTextureCache.get(color);
-            Log.d(TAG, "getSolidColorTexture(): have cached texture for 0x%08X: %b", color, texture != null);
-            if (texture == null) {
-                texture = new ImmutableBitmapTexture(gvrContext, makeSolidColorBitmap(color));
-                Log.d(TAG, "getSolidColorTexture(): caching texture for 0x%08X", color);
-                sColorTextureCache.put(color, texture);
-                Log.d(TAG, "getSolidColorTexture(): succeeded caching for 0x%08X: %b", color, sColorTextureCache.containsKey(color));
-            }
-        }
-
-        return texture;
     }
 
     @NonNull

@@ -72,16 +72,31 @@ public abstract class Utility {
      * of calculations for floating point equality. This method checks if the
      * difference between these two numbers is less than ETA, the Greek letter
      * usually used to stand for 'error term' in floating point tests.
+     * @param n1
+     * @param n2
      */
     public static boolean equal(float n1, float n2) {
         return Math.abs(n1 - n2) < ETAf;
     }
 
 
+    /**
+     * Are these two numbers effectively equal?
+     *
+     * The same logic is applied for each of the 3 vector dimensions: see  {@link #equal}
+     * @param v1
+     * @param v2
+     */
     public static boolean equal(Vector3f v1, Vector3f v2) {
         return equal(v1.x, v2.x) && equal(v1.y, v2.y) && equal(v1.z, v2.z);
     }
 
+    /**
+     * Parses the resource String id and get back the int res id
+     * @param context
+     * @param id String resource id
+     * @return int resource id
+     */
     public static int getId(Context context, String id) {
         final String defType;
         if (id.startsWith("R.")) {
@@ -95,6 +110,12 @@ public abstract class Utility {
         return getId(context, id, defType);
     }
 
+    /**
+     * Get the int resource id with specified type definition
+     * @param context
+     * @param id String resource id
+     * @return int resource id
+     */
     public static int getId(Context context, String id, String defType) {
         String type = "R." + defType + ".";
         if (id.startsWith(type)) {

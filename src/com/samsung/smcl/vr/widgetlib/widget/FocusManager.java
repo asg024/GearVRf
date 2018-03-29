@@ -26,10 +26,38 @@ import java.util.WeakHashMap;
  * stopped entirely when no object has line-of-sight focus.
  */
 public class FocusManager {
+    /**
+     * Widgets indicate their willingness to take focus through the implementing {@link Focusable}
+     * interface.
+     */
     public interface Focusable {
+        /**
+         * Returns whether this View is currently able to take focus.
+         * @return True if this view can take focus, or false otherwise.
+         */
         boolean isFocusEnabled();
+
+        /**
+         * Called when the widget gains or loses focus.
+         * @param focused True if the widget now has focus, false otherwise.
+         * @return true if the widget accepts the focus. If the widget does not process focus event,
+         * the focus event will be passed to the next widget in the stack.
+         */
         boolean onFocus(boolean focused);
+        /**
+         * Called when the widget gains the long focus.
+         * "Long focus" is similar to "long press" and occurs when an object has held
+         * line-of-sight focus for {@link #LONG_FOCUS_TIMEOUT} milliseconds or longer.
+         * The long focus timeout is reset each time an object gains focus and is
+         * stopped entirely when no object has line-of-sight focus.
+         */
         void onLongFocus();
+
+        /**
+         * Defines long focus timeout. {@link #LONG_FOCUS_TIMEOUT} milliseconds is default one.
+         * @return
+         */
+        long getLongFocusTimeout();
     }
 
     /**
@@ -59,12 +87,19 @@ public class FocusManager {
         boolean onFocus(GVRSceneObject sceneObject);
     }
 
-    interface LongFocusTimeout {
-        long getLongFocusTimeout();
-    }
-
-    public interface FocusListener {
-        void onFocus(boolean focused);
+    /**
+     * Interface for listening the current focus.
+     * It is called with {@code True} if no object on the screen had the focus before,
+     * but now some {@link Focusable} has a focus.
+     *
+     * It is called with {@code False} if some object on the screen had the focus before,
+     * but now no {@link Focusable} is in focus.
+     *
+     * @params focused
+     *
+     */
+    public interface CurrentFocusListener {
+        void onCurrentFocus(boolean focused);
     }
 
     /**
@@ -74,21 +109,31 @@ public class FocusManager {
         init(gvrContext);
     }
 
-    public boolean addFocusListener(FocusListener listener) {
+    /**
+     * Adds current focus listener
+     * @param listener
+     * @return true if the listener has been successfully added
+     */
+    public boolean addCurrentFocusListener(CurrentFocusListener listener) {
         synchronized (mFocusListeners) {
             return mFocusListeners.add(listener);
         }
     }
 
-    public boolean removeFocusListener(FocusListener listener) {
+    /**
+     * Removes current focus listener
+     * @param listener
+     * @return true if the listener has been successfully removed
+     */
+    public boolean removeCurrentFocusListener(CurrentFocusListener listener) {
         synchronized (mFocusListeners) {
             return mFocusListeners.remove(listener);
         }
     }
 
     /**
-     * The focus manager will not hold strong references to the sceneObject and the
-     * focusable.
+     * Registers the {@link Focusable} to manage focus for the particular scene object.
+     * The focus manager will not hold strong references to the sceneObject and the focusable.
      * @param sceneObject
      * @param focusable
      */
@@ -98,8 +143,30 @@ public class FocusManager {
         mFocusableMap.put(sceneObject, new WeakReference<>(focusable));
     }
 
+    /**
+     * Unregisters the {@link Focusable} for the particular scene object. If the scene object
+     * has a focus, the focus will be released.
+     * @param sceneObject
+     */
     public void unregister(final GVRSceneObject sceneObject) {
         unregister(sceneObject, false);
+    }
+
+    /**
+     * Stops managing focus every frame
+     */
+    public void clear() {
+        if (mContext != null) {
+            mContext.unregisterDrawFrameListener(mDrawFrameListener);
+        }
+    }
+
+    /**
+     * Sets focus interceptor {@link FocusInterceptor}
+     * @param interceptor if it is null the current interceptor is removed
+     */
+    public void setFocusInterceptor(FocusInterceptor interceptor) {
+        focusInterceptor = interceptor;
     }
 
     void unregister(final GVRSceneObject sceneObject,
@@ -128,12 +195,6 @@ public class FocusManager {
         }
     }
 
-    public void clear() {
-        if (mContext != null) {
-            mContext.unregisterDrawFrameListener(mDrawFrameListener);
-        }
-    }
-
     private boolean containsFocusable(
             final WeakReference<Focusable> focusableRef) {
         final Focusable focusable = focusableRef.get();
@@ -157,7 +218,6 @@ public class FocusManager {
         }
     }
 
-    private volatile GVRPickedObject[] mPickedObjects;
     private GVRDrawFrameListener mDrawFrameListener = new GVRDrawFrameListener() {
         @Override
         public void onDrawFrame(float frameTime) {
@@ -171,16 +231,11 @@ public class FocusManager {
         }
     };
 
-    private FocusInterceptor focusInterceptor;
-
-    public void setFocusInterceptor(FocusInterceptor interceptor) {
-        focusInterceptor = interceptor;
-    }
-
     private final Runnable mFocusRunnable = new Runnable() {
         @Override
         public void run() {
             final GVRPickedObject[] pickedObjectList = mPickedObjects;
+            boolean noCurrentFocus =  mCurrentFocus == null;
 
             // release old focus
             if (pickedObjectList == null || 0 == pickedObjectList.length) {
@@ -189,6 +244,10 @@ public class FocusManager {
                         mCurrentFocusName);
                 }
                 releaseCurrentFocus();
+
+                if (!noCurrentFocus) {
+                    notifyFocusListeners(false);
+                }
                 return;
             }
 
@@ -236,6 +295,12 @@ public class FocusManager {
             if (mCurrentFocus != null && focusable != mCurrentFocus) {
                 Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onDrawFrame(): no eligible focusable found! (%s)", mCurrentFocusName);
                 releaseCurrentFocus();
+                notifyFocusListeners(false);
+            }
+
+
+            if (noCurrentFocus ^ (mCurrentFocus != null)) {
+                notifyFocusListeners(!noCurrentFocus);
             }
         }
 
@@ -256,7 +321,6 @@ public class FocusManager {
             ret = mCurrentFocus.onFocus(false);
             mCurrentFocus = null;
             mCurrentFocusName = null;
-            notifyFocusListeners(false);
         }
         return ret;
     }
@@ -271,16 +335,8 @@ public class FocusManager {
 
             if (newFocusable.onFocus(true)) {
                 mCurrentFocus = newFocusable;
-                final long longFocusTimeout;
-                if (newFocusable instanceof LongFocusTimeout) {
-                    longFocusTimeout = ((LongFocusTimeout) newFocusable)
-                            .getLongFocusTimeout();
-                } else {
-                    longFocusTimeout = LONG_FOCUS_TIMEOUT;
-                }
-                postLongFocusRunnable(longFocusTimeout);
+                postLongFocusRunnable(newFocusable.getLongFocusTimeout());
 
-                notifyFocusListeners(true);
                 return true;
             }
         }
@@ -289,9 +345,9 @@ public class FocusManager {
 
     private void notifyFocusListeners(boolean focused) {
         synchronized (mFocusListeners) {
-            for (FocusListener listener : mFocusListeners) {
+            for (CurrentFocusListener listener : mFocusListeners) {
                     try {
-                        listener.onFocus(focused);
+                        listener.onCurrentFocus(focused);
                     } catch (Throwable t) {
                         Log.e(TAG, t, "");
                     }
@@ -303,9 +359,12 @@ public class FocusManager {
     private Focusable mCurrentFocus = null;
     private String mCurrentFocusName = "";
     private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<>();
-    private Set<FocusListener> mFocusListeners = new LinkedHashSet<>();
+    private Set<CurrentFocusListener> mFocusListeners = new LinkedHashSet<>();
+    private FocusInterceptor focusInterceptor;
+    private volatile GVRPickedObject[] mPickedObjects;
 
     private final Runnable mLongFocusRunnable = new Runnable() {
+
 
         @Override
         public void run() {
@@ -318,5 +377,5 @@ public class FocusManager {
     static final int LONG_FOCUS_TIMEOUT = 5000;
 
     @SuppressWarnings("unused")
-    private static final String TAG = FocusManager.class.getSimpleName();
+    private static final String TAG =  org.gearvrf.utility.Log.tag(FocusManager.class);
 }

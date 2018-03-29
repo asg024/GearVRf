@@ -33,9 +33,21 @@ import java.util.Set;
  * without requiring any support from other objects in the scene graph.
  */
 public class MainScene {
+    /**
+     * Specifies the left camera of the camera rig
+     */
     public static final int LEFT_CAMERA = 1;
+    /**
+     * Specifies the right camera of the camera rig
+     */
     public static final int RIGHT_CAMERA = 2;
+    /**
+     * Specifies the both right and left cameras of the rig
+     */
     public static final int BOTH_CAMERAS = LEFT_CAMERA | RIGHT_CAMERA;
+    /**
+     * Specifies the horizon distance behind all objects
+     */
     public static final float HORIZON = 1500f;
 
     /**
@@ -116,8 +128,8 @@ public class MainScene {
     }
 
     /**
-     *
-     * @return
+     * Calling on first {@link org.gearvrf.GVRMain#onStep} to process first rendering
+     * @return true if it is first rendering, otherwise - false
      */
     public boolean onFirstStep() {
         if (!mFirstStepDone) {
@@ -475,10 +487,18 @@ public class MainScene {
 
     private float frontFacingRotation;
 
+    /**
+     * get front facing rotation
+     * @return rotation
+     */
     public float getFrontFacingRotation() {
         return frontFacingRotation;
     }
 
+    /**
+     * Set new front facing rotation
+     * @param rotation
+     */
     public void updateFrontFacingRotation(float rotation) {
         if (!Float.isNaN(rotation) && !equal(rotation, frontFacingRotation)) {
             final float oldRotation = frontFacingRotation;
@@ -494,28 +514,54 @@ public class MainScene {
         }
     }
 
+    /**
+     * Rotate transform to make it facing to the front of the scene
+     * @param transform
+     */
     public void rotateToFront(final GVRTransform transform) {
         transform.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0, 0, 0, 0);
     }
 
+    /**
+     * Rotate widget to make it facing to the front of the scene
+     * @param widget rotating widget
+     */
     public void rotateToFront(final Widget widget) {
         widget.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0, 0, 0, 0);
     }
 
+    /**
+     * Rotate root widget to make it facing to the front of the scene
+     */
     public void rotateToFront() {
         GVRTransform transform = mSceneRootObject.getTransform();
         transform.setRotation(1, 0, 0, 0);
         transform.rotateByAxisWithPivot(-frontFacingRotation + 180, 0, 1, 0, 0, 0, 0);
     }
 
+    /**
+     * Set the {@link org.gearvrf.GVRCameraRig.GVRCameraRigType type} of the camera rig.
+     *
+     * @param cameraRigType
+     *            The rig {@link org.gearvrf.GVRCameraRig.GVRCameraRigType type}.
+     */
     public void setCameraRigType(final int cameraRigType) {
         getMainCameraRig().setCameraRigType(cameraRigType);
     }
 
+    /**
+     * Get the {@link org.gearvrf.GVRCameraRig.GVRCameraRigType type} of the camera rig.
+     *
+     * @return The rig {@link org.gearvrf.GVRCameraRig.GVRCameraRigType type}.
+     */
     public int getCameraRigType() {
         return getMainCameraRig().getCameraRigType();
     }
 
+    /**
+     * Scale all widgets in Main Scene hierarchy
+     * @param scale
+     */
     public void setScale(final float scale) {
         if (equal(mScale, scale) != true) {
             Log.d(TAG, "setScale(): old: %.2f, new: %.2f", mScale, scale);
@@ -579,6 +625,28 @@ public class MainScene {
             requestLayout();
         }
 
+        @Override
+        public void requestLayout() {
+            // Top of the food chain; time to actually lay stuff out
+            super.requestLayout();
+            Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "requestLayout(%s): root layout requested; posting", getName());
+
+            runOnGlThread(mLayoutRunnable);
+        }
+
+        @Override
+        public boolean isInLayout() {
+            return mInLayout;
+        }
+
+        @Override
+        protected void requestInnerLayout(Widget widget) {
+            if (widget != this) {
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "add requestInnerLayout %s", widget.getName());
+                mInnerLayoutRequests.add(widget);
+            }
+        }
+
         private final Runnable mMainLayoutRunnable = new Runnable() {
             @Override
             public void run() {
@@ -612,15 +680,6 @@ public class MainScene {
             }
         };
 
-        @Override
-        public void requestLayout() {
-            // Top of the food chain; time to actually lay stuff out
-            super.requestLayout();
-            Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "requestLayout(%s): root layout requested; posting", getName());
-
-            runOnGlThread(mLayoutRunnable);
-        }
-
         private void checkInnerLayoutRequest() {
             Set<Widget> copySet = new HashSet<>(mInnerLayoutRequests);
             mInnerLayoutRequests.clear();
@@ -632,19 +691,6 @@ public class MainScene {
         }
 
         private final Set<Widget> mInnerLayoutRequests = new HashSet<>();
-
-        @Override
-        protected void requestInnerLayout(Widget widget) {
-            if (widget != this) {
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "add requestInnerLayout %s", widget.getName());
-                mInnerLayoutRequests.add(widget);
-            }
-        }
-
-        @Override
-        public boolean isInLayout() {
-            return mInLayout;
-        }
 
         private volatile boolean mInLayout;
     }

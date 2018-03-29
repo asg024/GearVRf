@@ -1,7 +1,10 @@
 package com.samsung.smcl.vr.widgetlib.widget;
 
+import android.provider.SyncStateContract;
+
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.main.Selector;
+import com.samsung.smcl.vr.widgetlib.main.Utility;
 
 import org.gearvrf.GVRCollider;
 import org.gearvrf.GVRColliderGroup;
@@ -18,6 +21,11 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 public class TouchManager {
+
+    /**
+     * Widgets indicate their willingness to manage touch through the implementing {@link OnTouch}
+     * interface.
+     */
 
     public interface OnTouch {
         /**
@@ -43,18 +51,15 @@ public class TouchManager {
         boolean onBackKey(GVRSceneObject sceneObject, final float[] coords);
     }
 
-    private final Map<GVRSceneObject, WeakReference<OnTouch>> touchHandlers = new WeakHashMap<GVRSceneObject, WeakReference<OnTouch>>();
-    private Runnable defaultLeftClickAction = null;
-    private Runnable defaultRightClickAction = null;
-    private Set<OnTouch> mOnTouchInterceptors = new LinkedHashSet<>();
-
     /**
      * Creates TouchManager
+     * @param gvrContext
      */
     public TouchManager(GVRContext gvrContext) {
     }
 
     /**
+     * Makes the scene object touchable and associates the {@link OnTouch handler} with it.
      * The TouchManager will not hold strong references to sceneObject and handler.
      *
      * @param sceneObject
@@ -75,32 +80,105 @@ public class TouchManager {
         }
     }
 
-    // Click code
+    /**
+     * Makes the object unpickable and removes the touch handler for it
+     * @param sceneObject
+     * @return true if the handler has been successfully removed
+     */
+    public boolean removeHandlerFor(final GVRSceneObject sceneObject) {
+        sceneObject.detachComponent(GVRCollider.getComponentType());
+        return null != touchHandlers.remove(sceneObject);
+    }
+
+    /**
+     * Makes the scene object pickable by eyes. However, the object has to be touchable to process
+     * the touch events.
+     *
+     * @param sceneObject
+     */
+    public void makePickable(GVRSceneObject sceneObject) {
+        try {
+            if (sceneObject.getRenderData() != null) {
+                GVRColliderGroup eyePointeeHolder = new GVRColliderGroup(
+                        sceneObject.getGVRContext());
+                GVRMeshCollider eyePointee = new GVRMeshCollider(sceneObject.getGVRContext(),
+                        sceneObject.getRenderData().getMesh().getBoundingBox());
+                eyePointeeHolder.addCollider(eyePointee);
+                sceneObject.attachComponent(eyePointeeHolder);
+            } else if (sceneObject.getChildrenCount() > 0) {
+                for (GVRSceneObject child : sceneObject.getChildren()) {
+                    makePickable(child);
+                }
+            }
+        } catch (Exception e) {
+            // Possible that some objects (X3D panel nodes) are without mesh
+        }
+    }
+
+    /**
+     * Checks if the object is touchable and the touch handler is associated with this object to
+     * process the touch events
+     * @param sceneObject
+     * @return true if the object is touchable, false otherwise
+     */
+    public boolean isTouchable(GVRSceneObject sceneObject) {
+        return touchHandlers.containsKey(sceneObject);
+    }
+
+    /** Click code for left button */
     public static final int LEFT_CLICK_EVENT = 1;
+
+    /** Click code for back button */
     public static final int BACK_KEY_EVENT = 2;
 
-    private Set<TouchManagerFilter> mTouchFilters = new LinkedHashSet<>();
-    private Set<TouchManagerFilter> mBackKeyFilters = new LinkedHashSet<>();
-
+    /**
+     * Touch Filter specifies the objects interested in processing the touch.
+     * {@link Selector#select} defines the selection
+     */
     public interface TouchManagerFilter extends Selector<GVRSceneObject> {
     }
 
+    /**
+     * Registers touch filter to limit the set of the objects processing the touch
+     * More than one filter might be applied at the same time
+     * @param filter
+     */
     public void registerTouchFilter(final TouchManagerFilter filter) {
         mTouchFilters.add(filter);
     }
 
+    /**
+     * Unregisters touch filter
+     * @param filter
+     */
     public void unregisterTouchFilter(final TouchManagerFilter filter) {
         mTouchFilters.remove(filter);
     }
 
+    /**
+     * Registers touch filter to limit the set of the objects processing the back key event
+     * More than one filter might be applied at the same time
+     * @param filter
+     */
     public void registerBackKeyFilter(final TouchManagerFilter filter) {
         mBackKeyFilters.add(filter);
     }
 
+    /**
+     * Unregisters touch filter
+     * @param filter
+     */
     public void unregisterBackKeyFilter(final TouchManagerFilter filter) {
         mBackKeyFilters.remove(filter);
     }
 
+    /**
+     * This method should be called externally from touch event dispatcher to run the logic for
+     * widget lib
+     * @param pickedObjectList list of picked objects
+     * @param event touch event code
+     * @return true if the input has been accepted and processed by some object, otherwise - false
+     */
     public boolean handleClick(List<GVRPickedObject> pickedObjectList, int event) {
         boolean isClickableItem = false;
         // Process result(s)
@@ -130,10 +208,15 @@ public class TouchManager {
                         mTouchFilters :
                         mBackKeyFilters;
                 synchronized (mTouchFilters) {
+                    boolean processTouch = true;
                     for (TouchManagerFilter filter: filters) {
                         if (!filter.select(sceneObject)) {
-                            continue;
+                            processTouch = false;
+                            break;
                         }
+                    }
+                    if (!processTouch) {
+                        continue;
                     }
                 }
 
@@ -169,27 +252,51 @@ public class TouchManager {
         return isClickableItem;
     }
 
+    /**
+     * Sets default action on left click
+     * @param runnable code running on left click
+     */
     public void setDefaultLeftClickAction(Runnable runnable) {
         defaultLeftClickAction = runnable;
     }
 
+    /**
+     * Gets default action on left click
+     * @return default runnable executing on left click
+     */
     public Runnable getDefaultLeftClickAction() {
         return defaultLeftClickAction;
     }
 
+    /**
+     * Gets default action on right click
+     * @return default runnable executing on right click
+     */
     public Runnable getDefaultRightClickAction() {
         return defaultRightClickAction;
     }
 
+    /**
+     * Sets default action on right click
+     * @param runnable code running on right click
+     */
     public void setDefaultRightClickAction(Runnable runnable) {
         defaultRightClickAction = runnable;
     }
 
+    /**
+     * Sets the default action on both right and left click
+     * @param runnable code running on click
+     */
     public void setDefaultClickAction(Runnable runnable) {
         setDefaultLeftClickAction(runnable);
         setDefaultRightClickAction(runnable);
     }
 
+    /**
+     * Takes default action on left click
+     * @return true if the default action is assigned on left click, otherwise - false
+     */
     public boolean takeDefaultLeftClickAction() {
         if (defaultLeftClickAction != null) {
             defaultLeftClickAction.run();
@@ -198,11 +305,10 @@ public class TouchManager {
         return false;
     }
 
-    // The defaultBackAction defined in LauncherViewManager calls goBack() which
-    // involves in mainScene changes sometimes, e.g., exiting from bigscreen to
-    // appRing, so we have to make sure scene changes happen before the
-    // following operations take places, rather than running it in an async way.
-    // Otherwise rendering and displaying problem will occur in high frequency.
+    /**
+     * Takes default action on right click
+     * @return true if the default action is assigned on right click, otherwise - false
+     */
     public boolean takeDefaultRightClickAction() {
         if (defaultRightClickAction != null) {
             defaultRightClickAction.run();
@@ -239,34 +345,13 @@ public class TouchManager {
         return mOnTouchInterceptors.remove(interceptor);
     }
 
+    private final Map<GVRSceneObject, WeakReference<OnTouch>> touchHandlers = new WeakHashMap<GVRSceneObject, WeakReference<OnTouch>>();
+    private Runnable defaultLeftClickAction = null;
+    private Runnable defaultRightClickAction = null;
+    private Set<OnTouch> mOnTouchInterceptors = new LinkedHashSet<>();
 
-    public boolean removeHandlerFor(final GVRSceneObject sceneObject) {
-        sceneObject.detachComponent(GVRCollider.getComponentType());
-        return null != touchHandlers.remove(sceneObject);
-    }
+    private Set<TouchManagerFilter> mTouchFilters = new LinkedHashSet<>();
+    private Set<TouchManagerFilter> mBackKeyFilters = new LinkedHashSet<>();
 
-    public void makePickable(GVRSceneObject sceneObject) {
-        try {
-            if (sceneObject.getRenderData() != null) {
-                GVRColliderGroup eyePointeeHolder = new GVRColliderGroup(
-                        sceneObject.getGVRContext());
-                GVRMeshCollider eyePointee = new GVRMeshCollider(sceneObject.getGVRContext(),
-                        sceneObject.getRenderData().getMesh().getBoundingBox());
-                eyePointeeHolder.addCollider(eyePointee);
-                sceneObject.attachComponent(eyePointeeHolder);
-            } else if (sceneObject.getChildrenCount() > 0) {
-                for (GVRSceneObject child : sceneObject.getChildren()) {
-                    makePickable(child);
-                }
-            }
-        } catch (Exception e) {
-            // Possible that some objects (X3D panel nodes) are without mesh
-        }
-    }
-
-    public boolean isTouchable(GVRSceneObject sceneObject) {
-        return touchHandlers.containsKey(sceneObject);
-    }
-
-    private final static String TAG = "TouchManager";
+    private final static String TAG = org.gearvrf.utility.Log.tag(TouchManager.class);
 }
