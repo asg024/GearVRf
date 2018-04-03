@@ -16,14 +16,19 @@ import java.util.Map.Entry;
 import java.util.MissingFormatArgumentException;
 import java.util.Set;
 
+/**
+ * The class is used for parsing Widget model. The root node has to be always named as
+ * {@link #ROOT_NODE_NAME} in the model. Each node is represented by scene object with set of
+ * parameters specifying the widget type, look and feel.
+ */
 public class NodeEntry {
+    private final static Set<String> mandatoryKeys = new HashSet<>();
+    private final static Set<String> caseSensitiveKeys = new HashSet<>();
     private static final String KEY_NAME = "name";
     private static final String KEY_CLASS_NAME = "class";
     private static final String ROOT_NODE_NAME = "RootNode";
     private static final String ROOT_NODE_CLASS_NAME = Widget.class.getName();
 
-    private final static Set<String> mandatoryKeys = new HashSet<>();
-    private final static Set<String> caseSensitiveKeys = new HashSet<>();
 
     static {
         mandatoryKeys.add(KEY_NAME);
@@ -32,10 +37,12 @@ public class NodeEntry {
         caseSensitiveKeys.add(KEY_CLASS_NAME);
     }
 
-    protected String name;
-    private String className;
-    private Map<String, String> properties = new HashMap<>();
-
+    /**
+     * Create the node based on the scene object. The mandatory keys should always be valid and
+     * assigned based on the model parsing.
+     * @param sceneObject
+     * @throws IllegalFormatException
+     */
     public NodeEntry(GVRSceneObject sceneObject) throws IllegalFormatException {
         String name = sceneObject.getName();
         Log.d(TAG, "NodeEntry(): %s", name);
@@ -69,22 +76,47 @@ public class NodeEntry {
         }
     }
 
+    /**
+     * Gets Widget class name property
+     * @return Widget class name
+     */
     public String getClassName() {
         return className;
     }
 
+    /**
+     * Gets node name property
+     * @return node name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Gets the property by key
+     * @param key property key
+     * @return node property
+     */
     public String getProperty(String key) {
         return properties == null ? null : properties.get(key);
     }
 
+    /**
+     * Gets the property by key
+     * @param key property key
+     * @return node property
+     */
     public String getProperty(Enum<?> key) {
         return getProperty(key, true);
     }
 
+    /**
+     * Gets the property by key converted to lowercase if requested
+     * @param key property key
+     * @param lowerCase convert property to lowercase if it is true, keep the original one if it is
+     *                  false
+     * @return node property
+     */
     public String getProperty(Enum<?> key, boolean lowerCase) {
         final String keyName;
         if (lowerCase) {
@@ -95,6 +127,10 @@ public class NodeEntry {
         return getProperty(keyName);
     }
 
+    /**
+     * Converts the node to JSON
+     * @return JSON object
+     */
     public JSONObject toJSON() {
         try {
             return new JSONObject(properties).putOpt("name", getName());
@@ -162,5 +198,8 @@ public class NodeEntry {
         }
     }
 
+    protected String name;
+    private String className;
+    private Map<String, String> properties = new HashMap<>();
     private static final String TAG = NodeEntry.class.getSimpleName();
 }

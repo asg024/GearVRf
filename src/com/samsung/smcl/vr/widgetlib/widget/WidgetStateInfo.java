@@ -22,6 +22,9 @@ import com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers;
 import com.samsung.smcl.vr.widgetlib.widget.properties.TextureFactory;
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.getJSONColorGl;
 
+/**
+ * Helper class to work with the widget states
+ */
 class WidgetStateInfo {
     public enum Properties {
         scene_object, material, animation, id

@@ -61,8 +61,6 @@ import java.util.concurrent.Future;
 import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
 
 public class Widget  implements Layout.WidgetContainer {
-
-
     /**
      * Call to initialize the Widget infrastructure. Parses {@code objects.json}
      * to load metadata for {@code Widgets}, as well as animation and material
@@ -93,19 +91,6 @@ public class Widget  implements Layout.WidgetContainer {
         }
 
     /**
-     * @return The time, in milliseconds, that a widget must have continuous
-     *         focus before an {@link OnFocusListener#onLongFocus()
-     *         onLongFocus()} event is sent.
-     */
-    static public long getLongFocusTime() {
-        return FocusManager.LONG_FOCUS_TIMEOUT;
-    }
-
-    static public GVRTexture getDefaultTexture() {
-        return sDefaultTexture;
-    }
-
-    /**
      * Implement and {@link Widget#addFocusListener(OnFocusListener) register}
      * this interface to listen for focus changes on widgets.
      */
@@ -124,7 +109,7 @@ public class Widget  implements Layout.WidgetContainer {
 
         /**
          * Called when a widget has had focus for more than
-         * {@link Widget#getLongFocusTime()} milliseconds.
+         * {@link Widget#mLongFocusTimeout} milliseconds.
          *
          * @return {@code True} to indicate that no further processing of the
          *         event should take place; {@code false} to allow further
@@ -217,12 +202,6 @@ public class Widget  implements Layout.WidgetContainer {
         this(context, packageSceneObject(sceneObject), false);
     }
 
-    private static JSONObject packageSceneObject(GVRSceneObject sceneObject) {
-        final JSONObject json = new JSONObject();
-        put(json, Properties.scene_object, sceneObject);
-        return json;
-    }
-
     /**
      * A constructor for wrapping existing {@link GVRSceneObject} instances.
      * Deriving classes should override and do whatever processing is
@@ -241,64 +220,16 @@ public class Widget  implements Layout.WidgetContainer {
         this(context, packageSceneObjectWithAttributes(sceneObject, attributes), false);
     }
 
-    private static JSONObject packageSceneObjectWithAttributes(GVRSceneObject sceneObject,
-                                                               NodeEntry attributes)
-            throws InstantiationException {
-        final JSONObject json;
-
-        if (attributes != null) {
-            json = attributes.toJSON();
-            put(json, Properties.preapply_attribs, true);
-        } else {
-            json = new JSONObject();
-        }
-
-        put(json, Properties.scene_object, sceneObject);
-
-        return json;
-    }
-
-    // private static final String pattern = Widget.class.getSimpleName()
-    // + "name : %s size = (%f, %f, %f) \n"
-    // + "touchable = %b focus_enabled = %b Visible = %s selected = %b";
-    //
-    // public String toString() {
-    // return String.format(pattern, getName(), getWidth(), getHeight(),
-    // getDepth(),
-    // mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
-    // }
-
-    private static GVRModelSceneObject loadSceneObjectFromModel(GVRContext context, String modelFile) {
-        final GVRAssetLoader loader = context.getAssetLoader();
-        final EnumSet<GVRImportSettings> settings = GVRImportSettings.getRecommendedSettings();
-        try {
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "loadSceneObjectFromModel(): attemping to load '%s'", modelFile);
-            return loader.loadModel(modelFile, settings, true, null);
-        } catch (IOException e) {
-            Log.e(TAG, e, "loadSceneObjectFromModel(): failed to load model for Widget: %s", modelFile);
-            throw new RuntimeException("Failed to load Widget model from " + modelFile, e);
-        }
-    }
-
+    /**
+     * Construct a {@link Widget} with specific size. The default material will be setup
+     * @param context
+     *            The current {@link GVRContext}.
+     * @param width widget width
+     * @param height widget height
+     *
+     */
     public Widget(final GVRContext context, final float width, final float height) {
         this(context, makeQuad(context, width, height));
-    }
-
-    private static final GVRSceneObject makeQuad(GVRContext context, final float width,
-                                                 final float height) {
-        GVRSceneObject sceneObject = new GVRSceneObject(context, width, height);
-        setupDefaultMaterial(context, sceneObject);
-        return sceneObject;
-    }
-
-    private static void setupDefaultMaterial(GVRContext context, GVRSceneObject sceneObject) {
-        GVRRenderData renderData = sceneObject.getRenderData();
-        if (renderData != null) {
-            GVRMaterial material = new GVRMaterial(context,
-                    GVRShaderType.Texture.ID);
-            material.setMainTexture(sDefaultTexture);
-            renderData.setMaterial(material);
-        }
     }
 
     /**
@@ -599,6 +530,17 @@ public class Widget  implements Layout.WidgetContainer {
         return mFollowParentInput;
     }
 
+    /**
+     * This method is nearly identical to
+     * {@link #setChildrenFollowInput(boolean)}, with the only difference being
+     * that the child is independently grouping itself with the parent for
+     * purposes of managing input. If either feature is enabled, the child will
+     * be receive input with the parent.
+     *
+     * @param follow
+     *            {@code true} to enable this {@link Widget} to follow its
+     *            parent's input, {@code false} to disable.
+     */
     public void setFollowParentInput(final boolean follow) {
         if (follow != mFollowParentInput) {
             mFollowParentInput = follow;
@@ -606,57 +548,25 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    /**
+     * An interface to indicate if widget has been either added to or removed from the hierarchy
+     * recently.
+     */
     protected interface OnHierarchyChangedListener {
+        /**
+         * Calls on adding the widget to hierarchy
+         * @param parent parent widget
+         * @param child added child
+         */
         void onChildWidgetAdded(Widget parent, Widget child);
+
+        /**
+         * Calls on removing the widget from hierarchy
+         * @param parent parent widget
+         * @param child removed child
+         */
         void onChildWidgetRemoved(Widget parent, Widget child);
     }
-
-    private final class FocusableImpl implements FocusManager.Focusable {
-        /**
-         * Hook method for handling changes in focus for this object.
-         *
-         * @param focused
-         *            {@code True} if the object has gained focus, {@code false}
-         *            if it has lost focus.
-         */
-        @Override
-        public boolean onFocus(boolean focused) {
-            return Widget.this.doOnFocus(focused);
-        }
-
-        /**
-         * Hook method for handling long focus events. Called when the object
-         * has held focus for longer than a certain period of time. This is
-         * similar to
-         * {@link android.view.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
-         * OnGestureListener.onLongPress()}.
-         */
-        @Override
-        public void onLongFocus() {
-            Widget.this.doOnLongFocus();
-        }
-
-        @Override
-        public boolean isFocusEnabled() {
-            return Widget.this.isFocusEnabled();
-        }
-
-        @Override
-        public long getLongFocusTimeout() {
-            return Widget.this.getLongFocusTimeout();
-        }
-
-        @Override
-        public String toString() {
-            return target().getName();
-        }
-
-        public Widget target() {
-            return Widget.this;
-        }
-    }
-
-    private FocusableImpl mFocusableImpl = new FocusableImpl();
 
     /**
      * Set whether or not the {@code Widget} can receive touch and back key
@@ -779,10 +689,24 @@ public class Widget  implements Layout.WidgetContainer {
         return mTouchListeners.remove(listener);
     }
 
+    /**
+     * @return Whether children of this {@link Widget} will be grouped with
+     *         their parent for purposes of managing changing the state.
+     * @see #setChildrenFollowState(boolean)
+     */
     public boolean getChildrenFollowState() {
         return mChildrenFollowState;
     }
 
+    /**
+     * When children follow the state of their parent {@link Widget}, the parent
+     * and children are treated as a single entity for state change purposes.
+     * When any of them would normally change the state, they all change the state.
+     * <p>
+     * @param follow
+     *            {@code true} to enable children following state, {@code false}
+     *            to disable.
+     */
     public void setChildrenFollowState(final boolean follow) {
         if (follow != mChildrenFollowState) {
             mChildrenFollowState = follow;
@@ -790,10 +714,31 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    /**
+     * Whether this {@link Widget} will be grouped with its parent for purposes
+     * of managing changing the state. This is different from
+     * {@link #setChildrenFollowState(boolean)} in that the parent is not in
+     * control of whether or not the child follows parent state, as the following has
+     * been initiated by the child.
+     *
+     * @return {@code true} if this {@code Widget} is following its parent's
+     *         state, {@code false} if not.
+     */
     public boolean getFollowParentState() {
         return mFollowParentState;
     }
 
+    /**
+     * This method is nearly identical to
+     * {@link #setChildrenFollowState(boolean)}, with the only difference being
+     * that the child is independently grouping itself with the parent for
+     * purposes of managing state change. If either feature is enabled, the child will
+     * change the state with the parent.
+     *
+     * @param follow
+     *            {@code true} to enable this {@link Widget} to follow its
+     *            parent's state, {@code false} to disable.
+     */
     public void setFollowParentState(final boolean follow) {
         if (follow != mFollowParentState) {
             mFollowParentState = follow;
@@ -832,6 +777,16 @@ public class Widget  implements Layout.WidgetContainer {
         return mLevel;
     }
 
+    /**
+     * Sets the state of the {@link Widget} to {@link WidgetState.State#PRESSED pressed} if
+     * "press" event came and processed by the widget but "release" event has not been delivered yet.
+     * This state may be accompanied by visual changes -- material, animation, displayed mesh --
+     * if it has been specified in the {@code Widget's} metadata.
+     *
+     * @param pressed
+     *            {@code True} to set the {@code Widget} as pressed,
+     *            {@code false} to set as unpressed.
+     */
     public void setPressed(final boolean pressed) {
         if (pressed != mIsPressed) {
             mIsPressed = pressed;
@@ -839,6 +794,11 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    /**
+     * @return {@code True} if the {@link Widget Widget's} state is set to
+     *         {@linkplain #setPressed(boolean) "pressed", {@code false} if
+     *         it is not.
+     */
     public boolean isPressed() {
         return mIsPressed;
     }
@@ -892,10 +852,6 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    public String getMetadata() {
-        return mSceneObject.getName();
-    }
-
     /**
      * @return The {@link Widget Widget's} parent. If the {@code Widget} has not
      *         been {@linkplain GroupWidget#addChild(Widget) added} to a
@@ -923,7 +879,10 @@ public class Widget  implements Layout.WidgetContainer {
         return mRenderDataCache.getRenderingOrder();
     }
 
-    private boolean mClippingEnabled;
+    /**
+     * Enable clipping for the widget. Widget content including its children will be clipped by
+     * rectangular View Port. By dafault the clipping is disabled.
+     */
     public void enableClipRegion() {
         if (mClippingEnabled) {
             Log.w(TAG, "Clipping has been enabled already for %s!", getName());
@@ -948,35 +907,6 @@ public class Widget  implements Layout.WidgetContainer {
         mSceneObject.addChildObject(clippingObj);
 
         for (Widget child : getChildren()) {
-            setObjectClipped(child);
-        }
-    }
-
-    private Widget setStencilTest(boolean flag) {
-        mRenderDataCache.setStencilTest(flag);
-        return this;
-    }
-
-    private Widget setStencilFunc(int func, int ref, int mask) {
-        mRenderDataCache.setStencilFunc(func, ref, mask);
-        return this;
-    }
-
-    private Widget setStencilMask(int mask) {
-        mRenderDataCache.setStencilMask(mask);
-        return this;
-    }
-
-    private static void setObjectClipped(Widget widget) {
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setObjectClipped for %s", widget.getName());
-
-        widget.setStencilTest(true)
-                .setStencilFunc(GLES30.GL_EQUAL, 1, 0xFF)
-                .setStencilMask(0x00);
-
-        widget.mClippingEnabled = true;
-
-        for (Widget child : widget.getChildren()) {
             setObjectClipped(child);
         }
     }
@@ -1046,20 +976,48 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * This group of methods get the mesh size of the widget
+     * This group of methods get the mesh size of the scene object. It does not take into account
+     * the children meshes.
+     */
+
+
+    /**
+     * Gest widget mesh width
+     * @return width
      */
     public float getWidth() {
         return getBoundingBoxInternal().getWidth();
     }
 
+    /**
+     * Gest widget mesh height
+     * @return height
+     */
     public float getHeight() {
         return getBoundingBoxInternal().getHeight();
     }
 
+    /**
+     * Gest widget mesh depth
+     * @return depth
+     */
     public float getDepth() {
         return getBoundingBoxInternal().getDepth();
     }
 
+    /**
+     * This group of methods get the layout size of the widget. It might be different from mesh size
+     * and bounds size. If Viewport is set up and clipping is enabled the layout size is equal to
+     * viewport size, otherwise - the layout size is the actual widget content size. If more than
+     * one layout is applied to the widget the size is calculated based on their total. The layout
+     * size is used for measuring and laying out the widget inside its parent.
+     */
+
+    /**
+     * Gest widget layout dimension
+     * @param axis
+     * @return dimension
+     */
     public float getLayoutSize(final Layout.Axis axis) {
         float size = 0;
         for (Layout layout : mLayouts) {
@@ -1069,18 +1027,41 @@ public class Widget  implements Layout.WidgetContainer {
         return size;
     }
 
+    /**
+     * Gest widget layout  width
+     * @return width
+     */
     public float getLayoutWidth() {
         return getLayoutSize(Layout.Axis.X);
     }
 
+    /**
+     * Gest widget layout height
+     * @return height
+     */
     public float getLayoutHeight() {
         return getLayoutSize(Layout.Axis.Y);
     }
 
+    /**
+     * Gest widget layout depth
+     * @return depth
+     */
     public float getLayoutDepth() {
         return getLayoutSize(Layout.Axis.Z);
     }
 
+
+    /**
+     * This group of methods get the actual size of the widget, how much space the content occupies
+     * including children. It might be different from mesh size and layout size.
+     */
+
+
+    /**
+     * Gets widget bounds width
+     * @return width
+     */
     public float getBoundsWidth() {
         if (mSceneObject != null) {
             GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
@@ -1091,6 +1072,10 @@ public class Widget  implements Layout.WidgetContainer {
         return 0f;
     }
 
+    /**
+     * Gets widget bounds height
+     * @return height
+     */
     public float getBoundsHeight(){
         if (mSceneObject != null) {
             GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
@@ -1101,6 +1086,10 @@ public class Widget  implements Layout.WidgetContainer {
         return 0f;
     }
 
+    /**
+     * Gets widget bounds depth
+     * @return depth
+     */
     public float getBoundsDepth() {
         if (mSceneObject != null) {
             GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
@@ -1114,38 +1103,52 @@ public class Widget  implements Layout.WidgetContainer {
     /**
      * This group of methods set/get the viewport size of the widget
      */
-    private Vector3Axis mViewPort;
 
+
+    /**
+     * Gets viewport width
+     * @return width
+     */
     public float getViewPortWidth() {
         return mViewPort.get(Layout.Axis.X);
     }
 
+    /**
+     * Gets viewport height
+     * @return height
+     */
     public float getViewPortHeight() {
         return mViewPort.get(Layout.Axis.Y);
     }
 
+    /**
+     * Gets viewport depth
+     * @return depth
+     */
     public float getViewPortDepth() {
         return mViewPort.get(Layout.Axis.Z);
     }
 
-    private void updateViewPort(float size, Layout.Axis axis) {
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "Widget[%s] setViewPort : viewport = %s size = %f", this, mViewPort, size);
-        if (mViewPort.get(axis) != size) {
-            mViewPort.set(size, axis);
-            for (Layout layout : mLayouts) {
-                layout.onLayoutApplied(this, mViewPort);
-            }
-        }
-    }
-
+    /**
+     * Sets viewport width
+     * @param viewPortWidth
+     */
     public void setViewPortWidth(float viewPortWidth) {
         updateViewPort(viewPortWidth, Layout.Axis.X);
     }
 
+    /**
+     * Sets viewport height
+     * @param viewPortHeight
+     */
     public void setViewPortHeight(float viewPortHeight) {
         updateViewPort(viewPortHeight, Layout.Axis.Y);
     }
 
+    /**
+     * Sets viewport depth
+     * @param viewPortDepth
+     */
     public void setViewPortDepth(float viewPortDepth) {
         updateViewPort(viewPortDepth, Layout.Axis.Z);
     }
@@ -1718,18 +1721,36 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    /**
+     * Modify the widget's material current color
+     * @param color
+     */
     public void setColor(final int color) {
         getMaterial().setColor(color);
     }
 
+    /**
+     * Modify the widget's material current color
+     * @param rgb
+     */
     public void setColor(final float[] rgb) {
         getMaterial().setColor(rgb[0], rgb[1], rgb[2]);
     }
 
+    /**
+     * Modify the widget's material current color
+     * @param r
+     * @param g
+     * @param b
+     */
     public void setColor(final float r, final float g, final float b) {
         getMaterial().setColor(r, g, b);
     }
 
+    /**
+     * Gets the widget's material current color
+     * @return color
+     */
     public float[] getColor() {
         return getMaterial().getColor();
     }
@@ -1869,20 +1890,28 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    protected void requestInnerLayout(Widget widget)  {
-        if (mParent != null) {
-            mParent.requestInnerLayout(widget);
-        }
-    }
-
+    /**
+     * Checks if the widget transform has been changed and layout is required. As soon as layout
+     * process is finished {@link #mChanged} is cleared.
+     * @return true if the transform has been changed , otherwise - false
+     */
     public boolean isChanged() {
         return mChanged;
     }
 
+    /**
+     * Checks if the layout is in progress for that widget
+     * @return true if layout  is not finished yet, otherwise - false
+     */
     public boolean isInLayout() {
         return mParent != null && mParent.isInLayout();
     }
 
+    /**
+     * Checks if the layout requested has been posted. {@link #mLayoutRequested} is cleared as soon
+     * as layout request is processed.
+     * @return true if layout for Widget is requested, otherwise - false
+     */
     public boolean isLayoutRequested() {
         return mLayoutRequested;
     }
@@ -1949,49 +1978,6 @@ public class Widget  implements Layout.WidgetContainer {
         return children;
     }
 
-    protected Widget(final GVRContext context, final GVRMesh mesh) {
-        this(context, new GVRSceneObject(context, mesh, sDefaultTexture));
-    }
-
-    /**
-     * Initialize the instance on the GL thread. This method is called
-     * automatically for you when the instance is
-     * {@linkplain GroupWidget#addChild(Widget) attached} to another
-     * {@code Widget}, but you may call it explicitly to do early
-     * initialization. However many times this method is called, the creation
-     * code will only be executed <em>once</em>.
-     * <p>
-     * Override {@link #onCreate()} to implement your GL thread initialization.
-     */
-    // TODO: Should this be public?
-    protected final void create() {
-        if (!mIsCreated) {
-            // Set the default layout if necessary
-            if (mLayouts.isEmpty()) {
-                applyLayout(getDefaultLayout());
-            }
-
-            runOnGlThread(new Runnable() {
-                @Override
-                public void run() {
-                    doOnCreate();
-                }
-            });
-            mIsCreated = true;
-        }
-    }
-
-    /**
-     * Determine whether the calling thread is the GL thread.
-     *
-     * @return {@code True} if called from the GL thread, {@code false} if
-     *         called from another thread.
-     */
-    protected final boolean isGLThread() {
-        final Thread glThread = sGLThread.get();
-        return glThread != null && glThread.equals(Thread.currentThread());
-    }
-
     /**
      * Determine whether the specified {@link GVRSceneObject} is the object
      * wrapped by this {@link Widget}.
@@ -2006,395 +1992,18 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Does layout on the {@link Widget}. If you override this method and don't
-     * call {@code super}, bad things will almost certainly happen.
-     * @return true if the widget has been relaidout, otherwise - false
+     * Gets GVRContext instance
+     * @return GVRContext
      */
-    @SuppressLint("WrongCall")
-    protected boolean layout() {
-        boolean relaidout = false;
-        Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): changed: %b, requested: %b", getName(),
-                isChanged(), mLayoutRequested);
-
-        if (isChanged() || mLayoutRequested) {
-            Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): calling onLayout", getName());
-            relaidout = onLayout();
-        }
-
-        mLayoutRequested = false;
-        mChanged = false;
-        return relaidout;
-    }
-
-    /**
-     * Execute a {@link Runnable} on the GL thread. If this method is called
-     * from the GL thread, the {@code Runnable} is executed immediately;
-     * otherwise, the {@code Runnable} will be executed in the next frame.
-     * <p>
-     * This differs from {@link GVRContext#runOnGlThread(Runnable)}: that method
-     * always queues the {@code Runnable} for execution in the next frame.
-     * <p>
-     * @param r {@link Runnable} to execute on the GL thread.
-     */
-    protected final void runOnGlThread(final Runnable r) {
-        getGVRContext().runOnGlThread(new Runnable() {
-            public void run() {
-                FPSCounter.timeCheck("runOnGlThread <START>: " + r);
-                r.run();
-                FPSCounter.timeCheck("runOnGlThread <END>: " + r);
-            }
-        });
-    }
-
     public final GVRContext getGVRContext() {
         return mContext;
     }
 
     /**
-     * Get the {@link GVRMaterial material} for the underlying
-     * {@link GVRSceneObject scene object}.
-     *
-     * @return The scene object's material or {@code null}.
+     * Finds the widget in hierarchy
+     * @param name
+     * @return
      */
-    private RenderDataCache.MaterialCache getMaterial() {
-        return mRenderDataCache.getMaterial();
-    }
-
-    /**
-     * Set the {@linkplain GVRMaterial material} for the underlying
-     * {@linkplain GVRSceneObject scene object}.
-     *
-     * @param material
-     *            The new material.
-     */
-    protected void setMaterial(final GVRMaterial material) {
-        final GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setMaterial(material);
-        }
-        mRenderDataCache.setMaterial(material);
-    }
-
-    /**
-     * Get the {@link GVRMesh mesh} for the underlying {@link GVRSceneObject
-     * scene object}.
-     *
-     * @return The scene object's mesh or {@code null}.
-     */
-    protected GVRMesh getMesh() {
-        return mRenderDataCache.getMesh();
-    }
-
-    /**
-     * Set the {@linkplain GVRMesh mesh} for the underlying
-     * {@linkplain GVRSceneObject scene object}.
-     *
-     * @param mesh
-     *            The new mesh.
-     */
-    protected void setMesh(final GVRMesh mesh) {
-        mRenderDataCache.setMesh(mesh);
-    }
-
-    protected JSONObject getObjectMetadata() {
-        return mMetadata;
-    }
-
-    /**
-     * A hook method called after the {@code Widget} instance has been
-     * {@linkplain GroupWidget#addChild(Widget) added} to another {@link Widget}
-     * as a child.
-     * <p>
-     * <b>NOTE:</b> The order of execution between this method and
-     * {@link #onCreate()} is <em>not</em> guaranteed. As a general rule, you
-     * should not write code that has dependencies between this method and
-     * {@code onCreate()}.
-     */
-    protected void onAttached() {
-
-    }
-
-    /**
-     * A hook method for doing any initialization that must be performed on the
-     * GL Thread (e.g., creation of {@link GVRBitmapTexture bitmap textures}).
-     * <p>
-     * If {@link #create()} has not been explicitly called, this method will be
-     * called automatically when the instance is added to another {@link Widget}
-     * as a child.
-     * <p>
-     * <b>NOTE:</b> The order of execution between the
-     * {@linkplain #onAttached() attach} and {@linkplain #onDetached() detach}
-     * hooks and this method is <em>not</em> guaranteed. As a general rule, you
-     * should not write code that has dependencies between the attachment hooks
-     * and this method!
-     *
-     * @see #create()
-     */
-    protected void onCreate() {
-
-    }
-
-    /**
-     * A hook method called after the {@code Widget} instance has been
-     * {@linkplain GroupWidget#removeChild(Widget) removed} from another
-     * {@link GroupWidget} as a child. At this point, the instance has no
-     * {@linkplain #getParent() parent}.
-     * <p>
-     * <b>NOTE:</b> The order of execution between this method and
-     * {@link #onCreate()} is <em>not</em> guaranteed. As a general rule, you
-     * should not write code that has dependencies between this method and
-     * {@code onCreate()}.
-     */
-    protected void onDetached() {
-
-    }
-
-    /**
-     * Hook method for handling changes in focus for this object.
-     *
-     * @param focused
-     *            {@code True} if the object has gained focus, {@code false} if
-     *            it has lost focus.
-     * @return {@code True} to accept focus, {@code false} if not.
-     */
-    protected boolean onFocus(boolean focused) {
-        return true;
-    }
-
-    /**
-     * Hook method for handling long focus events. Called when the object has
-     * held focus for longer than a certain period of time. This is similar to
-     * {@link android.view.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
-     * OnGestureListener.onLongPress()}.
-     */
-    protected void onLongFocus() {
-
-    }
-
-    /**
-     * Hook method for handling layout events. For {@link GroupWidget} in
-     * particular, this is where layout of children is done.
-     * {@code GroupWidgets} should call {@link #layout()} on their children,
-     * most likely before performing their own layout <em>of</em> their
-     * children.
-     * @return true if the widget has been relaidout, otherwise - false
-     */
-    protected long time;
-
-    protected boolean onLayout() {
-        boolean changed = isChanged();
-        boolean runLayout = false;
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout() called (%s) mChanged = %b ", getName(), changed);
-
-        FPSCounter.timeCheck("onLayout <START>: " + this + "<" + getName() + "> changed = " + changed);
-
-        float oldWidth = getLayoutWidth();
-        float oldHeight = getLayoutHeight();
-        float oldDepth = getLayoutDepth();
-
-        for (Widget child : getChildren()) {
-            if (child.layout()) {
-                invalidateAllLayouts();
-                runLayout = true;
-            }
-        }
-
-        if (mLayouts == null || mLayouts.isEmpty()) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: no layouts applied %s!", getName());
-        } else if (runLayout || changed) {
-
-            for (Layout layout : mLayouts) {
-                measureLayout(layout);
-                layout.layoutChildren();
-            }
-
-            float newWidth = getLayoutWidth();
-            float newHeight = getLayoutHeight();
-            float newDepth = getLayoutDepth();
-
-            changed = changed ||
-                    !equal(oldWidth, newWidth) ||
-                    !equal(oldHeight, newHeight) ||
-                    !equal(oldDepth, newDepth);
-
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout changed %s " +
-                            "old = [%f, %f, %f] new [%f, %f, %f]!",
-
-                  getName(), oldWidth, oldHeight, oldDepth, newWidth, newHeight, newDepth);
-        } else {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout is not changed %s!", getName());
-        }
-
-        FPSCounter.timeCheck("onLayout <END>: " + this + "<" + getName() + "> changed = " + changed);
-        return changed;
-    }
-
-    protected boolean measureLayout(Layout layout) {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] measure layout = %s", this, layout);
-        return layout.measureAll(null);
-    }
-
-    /**
-     * Hook method for handling back key events.
-     *
-     * @return {@code True} if the back key event was successfully processed,
-     *         {@code false} otherwise.
-     */
-    protected boolean onBackKey() {
-        return false;
-    }
-
-    /**
-     * Hook method for handling changes in selection state for this object.
-     *
-     * @param selected
-     *            {@code True} if the object has gained selection, {@code false} if it has lost
-     *            selection.
-     * @return {@code True} to accept selection, {@code false} if not. Returns {@code true} by
-     *            default.
-     */
-    protected boolean onSelected(boolean selected) {
-        return true;
-    }
-
-    /**
-     * Hook method for handling touch events.
-     *
-     * @return {@code True} if the touch event was successfully processed,
-     *         {@code false} otherwise.
-     */
-    protected boolean onTouch() {
-        return false;
-    }
-
-    /**
-     * Called when the {@link Widget}'s transform is altered, whether by
-     * scaling, rotation, or translation. Flags the {@code Widget} for layout
-     * (client code will still have to call {@link #requestLayout()} to initiate
-     * the layout cycle) and invalidates its {@linkplain #getBoundingBox()
-     * bounding box}.
-     * <p>
-     * Deriving classes that override this method <em>really</em> need to call
-     * {@code super}: otherwise the {@code Widget} won't get laid out until
-     * somebody explicitly calls {@code requestLayout()} on it, and the cached
-     * bounding box will get out of date.
-     */
-    // TODO: temporary changed to public access to solve the access issue in Layout.java
-    public void onTransformChanged() {
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "onTransformChanged(): %s mPreventTransformChanged = %b",
-                getName(), mPreventTransformChanged);
-
-        // Even if the calling code that altered the transform doesn't request a
-        // layout, we'll do a layout the next time a layout is requested on our
-        // part of the scene graph.
-        if (!mPreventTransformChanged) {
-            mChanged = true;
-
-            // Clear this to indicate that the bounding box has been invalidated and
-            // needs to be constructed and transformed anew.
-            mBoundingBox = null;
-        }
-    }
-
-    private boolean mPreventTransformChanged;
-
-    // TODO: temporary changed to public access to solve the access issue in Layout.java
-    public void preventTransformChanged(boolean prevent) {
-        mPreventTransformChanged = prevent;
-    }
-
-    /* package */
-    boolean addChildInner(final Widget child,
-            final GVRSceneObject childRootSceneObject, int index) {
-        if (child == this || child.getSceneObject() == getSceneObject()) {
-            Log.e(TAG, "Attempted to add widget '%s' to itself!", getName());
-            throw RuntimeAssertion("Attempted to add widget '%s' to itself!", getName());
-        }
-        final boolean added = mChildren.indexOf(child) == -1;
-        if (added) {
-            Widget parent = child.getParent();
-            if (parent != null) {
-                parent.removeChild(child, child.getSceneObject(), true);
-            }
-            if (index == -1 || index > mChildren.size()) {
-                mChildren.add(child);
-            } else {
-                mChildren.add(index, child);
-            }
-            if (child.getVisibility() == Visibility.VISIBLE &&
-                child.getViewPortVisibility() != ViewPortVisibility.INVISIBLE) {
-                final GVRSceneObject childRootSceneObjectParent = childRootSceneObject.getParent();
-                if (childRootSceneObjectParent != getSceneObject()) {
-                    if (null != childRootSceneObjectParent) {
-                        childRootSceneObjectParent.removeChildObject(childRootSceneObject);
-                    }
-                    getSceneObject().addChildObject(childRootSceneObject);
-                } else {
-                    Log.v(Log.SUBSYSTEM.WIDGET, TAG,
-                          "addChildInner(): child '%s' already attached to this Group ('%s')",
-                          child.getName(), getName());
-                }
-            } else {
-                Log.v(TAG,
-                      "addChildInner(): child '%s' is not visible visibility = %s, mIsVisibleInViewPort = %s ",
-                      child.getName(), child.getVisibility(), child.getViewPortVisibility());
-            }
-            child.doOnAttached(this);
-
-            final List<OnHierarchyChangedListener> listeners;
-            synchronized (mOnHierarchyChangedListeners) {
-                listeners = new ArrayList<>(mOnHierarchyChangedListeners);
-            }
-            for (OnHierarchyChangedListener listener : listeners) {
-                listener.onChildWidgetAdded(this, child);
-            }
-        }
-
-        if (mClippingEnabled) {
-            setObjectClipped(child);
-        }
-
-        return added;
-    }
-
-    // TODO: temporary changed to public access to solve the access issue in Layout.java
-    public void checkTransformChanged() {
-        if (mTransformCache.save(this, true)) {
-            onTransformChanged();
-        }
-    }
-
-    /* package */
-    Widget createChild(GVRContext context, GVRSceneObject sceneObjectChild)
-            throws InstantiationException {
-        final Widget child = WidgetFactory.createWidget(sceneObjectChild);
-        return child;
-    }
-
-    /* package */
-    void createChildren(final GVRContext context,
-            final GVRSceneObject sceneObject) throws InstantiationException {
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating children", getName());
-        List<GVRSceneObject> children = sceneObject.getChildren();
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): child count: %d", getName(), children.size());
-        for (GVRSceneObject sceneObjectChild : children) {
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating child '%s'", getName(),
-                  sceneObjectChild.getName());
-            final Widget child = createChild(context, sceneObjectChild);
-            if (child != null) {
-                addChildInner(child);
-            }
-        }
-    }
-
-    protected boolean addOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
-        return mOnHierarchyChangedListeners.add(listener);
-    }
-
-    protected boolean removeOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
-        return mOnHierarchyChangedListeners.remove(listener);
-    }
-
     public Widget findChildByName(final String name) {
         final List<Widget> groups = new ArrayList<>();
         groups.add(this);
@@ -2402,298 +2011,354 @@ public class Widget  implements Layout.WidgetContainer {
         return findChildByNameInAllGroups(name, groups);
     }
 
-    /* package */
-    protected List<Widget> getChildren() {
-        return new ArrayList<>(mChildren);
-    }
-
-    /* package */
-    boolean hasChild(final Widget child) {
-        return mChildren.contains(child);
-    }
-
-    /* package */
-    int indexOfChild(final Widget child) {
-        return mChildren.indexOf(child);
-    }
-
     /**
-     * Add another {@link Widget} as a child of this one. Convenience method for
-     * {@link #addChild(Widget, int, boolean) addChild(child, -1, false)}.
+     * Core {@link Widget} constructor.
      *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
+     * @param context A valid {@link GVRContext}.
+     * @param properties A structured set of properties for the {@code Widget} instance. See
+     *                       {@code widget.json} for schema.
      */
-    protected boolean addChild(final Widget child) {
-        return addChild(child, -1, false);
+
+    public Widget(final GVRContext context, @NonNull final JSONObject properties) {
+        this(context, properties, true);
     }
 
     /**
-     * Add another {@link Widget} as a child of this one. Convenience method for
-     * {@link #addChild(Widget, int, boolean) addChild(child, index, false)}.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param index
-     *            Position at which to add the child. Pass -1 to add at end.
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
+     * Specify the list of the widget core  JSON properties
      */
-    protected boolean addChild(final Widget child, int index) {
-        return addChild(child, index, false);
+    public enum Properties {
+        name, touchable, focusenabled, id, visibility, states, levels, level, model, selected,
+        scene_object, preapply_attribs, size, transform, viewport
     }
 
     /**
-     * Add another {@link Widget} as a child of this one. Convenience method for
-     * {@link #addChild(Widget, int, boolean) addChild(child, -1, preventLayout)}.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
+     * Specify the list of the transform properties
      */
-    protected boolean addChild(Widget child, boolean preventLayout) {
-        return addChild(child, -1, preventLayout);
+    public enum TransformProperties {
+        position, scale, rotation, pivot, angle
     }
 
     /**
-     * Add another {@link Widget} as a child of this one. Overload to intercept all child adds.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param index
-     *            Position at which to add the child. Pass -1 to add at end.
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(Widget child, int index, boolean preventLayout) {
-        return addChild(child, child.getSceneObject(), index, preventLayout);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one. Convenience method for
-     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
-     * -1, false)}.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(final Widget child,
-                               final GVRSceneObject childRootSceneObject) {
-        return addChild(child, childRootSceneObject, -1, false);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one. Convenience method for
-     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
-     * index, false)}.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @param index
-     *            Position at which to add the child. Pass -1 to add at end.
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(final Widget child,
-            final GVRSceneObject childRootSceneObject, final int index) {
-        return addChild(child, childRootSceneObject, index, false);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one. Convenience method for
-     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
-     * -1, preventLayout)}.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
-     */
-    protected boolean addChild(final Widget child,
-            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
-        return addChild(child, childRootSceneObject, -1, preventLayout);
-    }
-
-    /**
-     * Add another {@link Widget} as a child of this one.
+     * Override to provide a default layout for deriving {@link Widget Widgets}.  If no layout has
+     * been {@linkplain #applyLayout(Layout) applied} by the time {@link #create()} is called, this
+     * method will be called to provide a default layout.
      * <p>
-     * A {@link GVRSceneObject} other than the one directly managed by the child
-     * {@code Widget} can be specified as the child's root. This is useful in
-     * cases where the parent object needs to insert additional scene objects
-     * between the child and its parent.
+     *     <strong>NOTE:</strong> this means that if <em>any</em> layout has been applied prior to
+     *     {@code create()} being called, this method will <em>not be called</em>. Therefore, if
+     *     you want to apply an layout <em>in addition</em> to the default layout, you must do so
+     *     after {@code create()} has been called ({@link #onAttached()} is a good place) <em>or</em>
+     *     you must add the default layout explicitly.
+     * </p>
      * <p>
-     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
-     * relationship between the child {@code Widget} and the alternative root
-     * scene object.
-     *
-     * @param child
-     *            The {@code Widget} to add as a child.
-     * @param childRootSceneObject
-     *            The root {@link GVRSceneObject} of the child.
-     * @param index
-     *            Position at which to add the child. Pass -1 to add at end.
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was added; {@code false} if
-     *         {@code child} was previously added to this instance.
+     *     The default layout is handled this way because in the most common case a user applying a
+     *     custom layout wants to use it <em>instead</em> of the default and will set the layout
+     *     at construction or at least prior to attaching to a parent; we don't want the user
+     *     to have to explicitly remove the default layout in this case.
+     * </p>
+     * @return An instance derived from {@link Layout} or {@code null}.
      */
-    protected boolean addChild(final Widget child,
-                               final GVRSceneObject childRootSceneObject, final int index,
-                               boolean preventLayout) {
-        final boolean added = addChildInner(child, childRootSceneObject, index);
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "addChild [%s] %b", child, added);
-        if (added) {
-            onTransformChanged();
-            if (!preventLayout) {
-                invalidateAllLayouts();
-                requestLayout();
+    public Layout getDefaultLayout() {
+        return mDefaultLayout;
+    }
+
+    /**
+     * Apply the specified {@link Layout}. Optionally, a call to {@link #requestLayout()} can be
+     * prevented.
+     *
+     * @param layout
+     *          The {@code Layout} to apply
+     * @return {@code True} if the layout has been applied successfully, {@code false} otherwise.
+     */
+    public boolean applyLayout(Layout layout) {
+        boolean applied = false;
+        if (layout != null && isValidLayout(layout)) {
+            Layout defaultLayout  = getDefaultLayout();
+            if (layout != defaultLayout) {
+                mLayouts.remove(defaultLayout);
+            }
+            if(mLayouts.add(layout)) {
+                layout.onLayoutApplied(this, mViewPort);
+                applied = true;
             }
         }
-        return added;
+        return applied;
     }
 
     /**
-     * Remove a {@link Widget} as a child of this instance. Convenience method for
-     * {@link #removeChild(Widget, boolean) removeChild(child, false)}.
-     *
-     * @param child
-     *            The {@code Widget} to remove.
-     * @return {@code True} if {@code child} was a child of this instance and
-     *         was successfully removed; {@code false} if {@code child} is not a
-     *         child of this instance.
+     * Check if specified {@link Layout} has been applied.
+     * @param layout
+     *          The {@code Layout} to apply
+     * @return {@code True} if the layout has been applied, {@code false} otherwise.
      */
-    protected boolean removeChild(final Widget child) {
-        return removeChild(child, false);
+    public boolean hasLayout(Layout layout) {
+        return layout != null && mLayouts.contains(layout);
     }
 
     /**
-     * Remove a {@link Widget} as a child of this instance. Overload to intercept all child removes.
-     *
-     * @param child
-     *            The {@code Widget} to remove.
-     * @param preventLayout
-     *            Tell the {@code Widget} whether to layout after removal.
-     * @return {@code True} if (@code child} was a child of this instance and
-     *         was successfully removed; {@code false} if {@code child} is not a
-     *         child of this instance.
+     * Remove the layout {@link Layout} from the chain
+     * @param layout {@link Layout}
+     * @return true if layout has been removed successfully , false - otherwise
      */
-    protected boolean removeChild(Widget child, boolean preventLayout) {
-        return removeChild(child, child.getSceneObject(), preventLayout);
-    }
-
-    /**
-     * Remove a {@link Widget} as a child of this instance.
-     * <p>
-     * <b>NOTE:</b> if an alternative root scene object was used to
-     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
-     * {@code Widget}, the caller must pass the alternative root to this method.
-     * Otherwise there may be dangling scene objects. It is the responsibility
-     * of the caller to keep track of the relationship between the child
-     * {@code Widget} and the alternative root scene object.
-     *
-     * @param child
-     *            The {@code Widget} to remove.
-     * @param childRootSceneObject
-     * @return {@code True} if {@code child} was a child of this instance and
-     *         was successfully removed; {@code false} if {@code child} is not a
-     *         child of this instance.
-     */
-    protected boolean removeChild(final Widget child,
-                                  final GVRSceneObject childRootSceneObject) {
-        return removeChild(child, childRootSceneObject, false);
-    }
-
-    /**
-     * Remove a {@link Widget} as a child of this instance.
-     * <p>
-     * <b>NOTE:</b> if an alternative root scene object was used to
-     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
-     * {@code Widget}, the caller must pass the alternative root to this method.
-     * Otherwise there may be dangling scene objects. It is the responsibility
-     * of the caller to keep track of the relationship between the child
-     * {@code Widget} and the alternative root scene object.
-     *
-     * @param child
-     *            The {@code Widget} to remove.
-     * @param childRootSceneObject
-     * @param preventLayout
-     *            The {@code Widget} whether to call layout().
-     * @return {@code True} if {@code child} was a child of this instance and
-     *         was successfully removed; {@code false} if {@code child} is not a
-     *         child of this instance.
-     */
-    protected boolean removeChild(final Widget child,
-            final GVRSceneObject childRootSceneObject, boolean preventLayout) {
-        final boolean removed = mChildren.remove(child);
-
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild [%s] %b", child, removed);
-        if (removed) {
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild(): '%s' removed", child.getName());
-            if (childRootSceneObject.getParent() != getSceneObject()) {
-                Log.e(Log.SUBSYSTEM.WIDGET, TAG,
-                      "removeChild(): '%s' is not a child of '%s' GVRSceneObject!",
-                      child.getName(), getName());
-            }
-            getSceneObject().removeChildObject(childRootSceneObject);
-            child.doOnDetached();
-
-            final List<OnHierarchyChangedListener> listeners;
-            synchronized (mOnHierarchyChangedListeners) {
-                listeners = new ArrayList<>(mOnHierarchyChangedListeners);
-            }
-            for (OnHierarchyChangedListener listener : listeners) {
-                listener.onChildWidgetRemoved(this, child);
-            }
-
-            onTransformChanged();
-            if (!preventLayout) {
-                invalidateAllLayouts();
-                requestLayout();
-            }
-        } else {
-            Log.w(TAG, "removeChild(): '%s' is not a child of '%s'!",
-                  child.getName(), getName());
+    public boolean removeLayout(final Layout layout) {
+        boolean removed = mLayouts.remove(layout);
+        if (layout != null && removed) {
+            layout.onLayoutApplied(null, new Vector3Axis());
         }
         return removed;
     }
 
-    private GVRRenderData getRenderData() {
-        return mSceneObject.getRenderData();
+    /**
+     * {@link Layout.WidgetContainer} default implementation
+     */
+    @Override
+    public Widget get(final int dataIndex) {
+        return dataIndex >= size() ? null : getChildren().get(dataIndex);
     }
 
-    /* package */
-    // NOTE: If you find yourself wanting to make this public, don't! You're
-    // either working *against* Widget or Widget needs some extending.
-    // TODO: temporary changed to public access to solve the access issue in Layout.java
-
-    public GVRSceneObject getSceneObject() {
-        return mSceneObject;
+    @Override
+    public int size() {
+        return getChildren().size();
     }
 
-    /* package */
-    GVRTransform getTransform() {
-        return mSceneObject.getTransform();
+    @Override
+    public boolean isEmpty() {
+        return size() == 0;
     }
 
-    public Widget(final GVRContext context, @NonNull final JSONObject properties) {
-        this(context, properties, true);
+    @Override
+    public int getDataIndex(Widget widget) {
+        int id = -1;
+        if (!isEmpty()) {
+            id = indexOfChild(widget);
+        }
+        return id;
+    }
+
+    @Override
+    public boolean isDynamic() {
+        return false;
+    }
+
+    @Override
+    public void onLayoutChanged(final Layout layout) {
+        invalidateLayout(layout);
+        onTransformChanged();
+        requestLayout();
+    }
+
+
+
+
+
+    private static void loadAnimations(Context context) throws JSONException, NoSuchMethodException {
+        JSONObject json = JSONHelpers.loadJSONAsset(context, "animations.json");
+        if (json != null) {
+            JSONObject animationMetadata = json.optJSONObject("animations");
+            AnimationFactory.init(animationMetadata);
+            Log.v(Log.SUBSYSTEM.WIDGET, TAG, "loadAnimations(): loaded animation metadata: %s",
+                    animationMetadata);
+        } else {
+            Log.w(Log.SUBSYSTEM.JSON, TAG, "loadAnimations(): no animations.json");
+        }
+    }
+
+    private void initMetadata(JSONObject properties) {
+        setName(optString(properties, Properties.name, getName()));
+
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): properties: %s", getName(), properties);
+        UnmodifiableJSONObject objectMetadata = WidgetLib.getPropertyManager().getWidgetProperties(this);
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): objectMetadata: %s", getName(), objectMetadata);
+        final boolean preApplyAttribs = optBoolean(properties, Properties.preapply_attribs);
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): preApplyAttribs: %b", getName(), preApplyAttribs);
+        if (preApplyAttribs) {
+            // Allow JSON metadata to overwrite metadata from the model
+            mMetadata = merge(objectMetadata, properties);
+        } else {
+            mMetadata = merge(properties, objectMetadata);
+        }
+
+        // We do this a second time because the properties received by initMetadata() may have been
+        // overwritten if they were pre-applied
+        setName(optString(mMetadata, Properties.name, getName()));
+
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): merged metadata: %s", getName(), mMetadata);
+    }
+
+    private void setupProperties(JSONObject properties) {
+        final boolean hasRenderData = mRenderDataCache.hasRenderData();
+        mIsTouchable = hasRenderData && optBoolean(properties, Properties.touchable,
+                mIsTouchable);
+        mFocusEnabled = optBoolean(properties, Properties.focusenabled,
+                mFocusEnabled);
+        mIsSelected = hasRenderData && optBoolean(properties, Properties.selected, mIsSelected);
+        Visibility visibility = optEnum(properties, Properties.visibility,
+                mVisibility, true);
+        setVisibility(visibility);
+
+        // Set up transform positioning
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): %s", getName(), properties);
+        Vector3f position = optVector3f(properties, TransformProperties.position);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): position: %s", getName(), position);
+        if (position != null) {
+            setPosition(position.x, position.y, position.z);
+        }
+
+        // Set up transform scaling
+        if (hasVector3f(properties, TransformProperties.scale)) {
+            Vector3f scale = optVector3f(properties, TransformProperties.scale);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): scale: %s", getName(), scale);
+            if (scale != null) {
+                setScale(scale.x, scale.y, scale.z);
+            }
+        } else if (hasNumber(properties, TransformProperties.scale)) {
+            final float scale = optFloat(properties, TransformProperties.scale, 1);
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): scale: %.2f", getName(), scale);
+            setScale(scale);
+        }
+
+        // Set up transform rotation
+        JSONObject rotation = optJSONObject(properties, TransformProperties.rotation);
+        if (rotation != null) {
+            Vector3f scalars = asVector3f(rotation, new Vector3f(1, 1, 1));
+            float angle;
+            angle = getFloat(rotation, TransformProperties.angle);
+            if (hasVector3f(rotation, TransformProperties.pivot)) {
+                Vector3f pivot = optVector3f(rotation, TransformProperties.pivot);
+                rotateByAxisWithPivot(angle, scalars.x, scalars.y, scalars.z, pivot.x, pivot.y, pivot.z);
+            } else {
+                rotateByAxis(angle, scalars.x, scalars.y, scalars.z);
+            }
+        }
+
+        // Setup viewport
+        Vector3f viewport = optVector3f(properties, Properties.viewport);
+        if (viewport != null) {
+            mViewPort = new Vector3Axis(viewport);
+        } else {
+            mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
+        }
+    }
+
+    private void setupStatesAndLevels(JSONObject metaData) throws JSONException, NoSuchMethodException {
+        final boolean hasStates = has(metaData, Properties.states);
+        final boolean hasLevels = has(metaData, Properties.levels);
+        final boolean hasLevel = has(metaData, Properties.level);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                "setupStatesAndLevels(): for '%s'; states: %b, levels %b, level %b",
+                getName(), hasStates, hasLevels, hasLevel);
+        if (hasStates) {
+            if (hasLevels || hasLevel) {
+                throw RuntimeAssertion("Invalid metadata for '%s': both 'states' and 'levels' are present",
+                        getName());
+            }
+            setupStates(metaData);
+        } else if (hasLevels) {
+            if (hasLevel) {
+                mLevel = getInt(metaData, Properties.level);
+                setupLevels(metaData);
+            }
+        } else if (hasLevel) {
+            throw RuntimeAssertion("Invalid metadata for '%s': 'level' specified without level specifications",
+                    getName());
+        }
+    }
+
+    private void setupLevels(JSONObject metaData) throws JSONException,
+            NoSuchMethodException {
+        JSONArray levelsArray = optJSONArray(metaData, Properties.levels);
+
+        if (levelsArray != null) {
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupLevels(): for %s", getName());
+            for (int i = 0; i < levelsArray.length(); ++i) {
+                mLevelInfo.add(new WidgetState(this, levelsArray
+                        .getJSONObject(i)));
+            }
+        } else {
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupLevels(): No levels metadata for %s", getName());
+        }
+    }
+
+    private void setupStates(JSONObject metadata) throws JSONException,
+            NoSuchMethodException {
+        JSONObject states = optJSONObject(metadata, Properties.states);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupStates(): for '%s': %s", getName(), states);
+        mLevelInfo.add(new WidgetState(this, states));
+    }
+
+    /* package : Called by CheckableButton to update CHECKED state */
+    // NOT protected because states are defined internally and are not for
+    // external consumption
+    protected void updateState() {
+        final WidgetState.State state;
+        if (useParentState() || getFollowParentState()) {
+            state = mParent.getState();
+        } else {
+            state = getState();
+        }
+
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "updateState(): %s for '%s'", state, getName());
+        if (!mLevelInfo.isEmpty() && mLevel >= 0) {
+            mLevelInfo.get(mLevel).setState(state);
+        }
+
+        boolean updateChildren = isInFollowStateGroup()
+                || getChildrenFollowState();
+        for (Widget child : getChildren()) {
+            if (updateChildren || child.getFollowParentState()) {
+                child.updateState();
+            }
+        }
+    }
+
+    /* package : Overridden by CheckableButton to return CHECKED state */
+    // NOT protected because states are defined internally and are not for
+    // external consumption
+    protected WidgetState.State getState() {
+        final WidgetState.State state;
+        if (mIsPressed) {
+            state = WidgetState.State.PRESSED;
+        } else if (mIsSelected) {
+            state = WidgetState.State.SELECTED;
+        } else if (mIsFocused) {
+            state = WidgetState.State.FOCUSED;
+        } else {
+            state = WidgetState.State.NORMAL;
+        }
+        return state;
+    }
+
+    private boolean useParentFocusable() {
+        return mParent != null
+                && (mFollowParentFocus || mParent.mChildrenFollowFocus || mParent
+                .isInFollowFocusGroup());
+    }
+
+    private boolean useParentTouchHandler() {
+        return mParent != null
+                && (mFollowParentInput || mParent.mChildrenFollowInput || mParent
+                .isInFollowInputGroup());
+    }
+
+    private boolean useParentState() {
+        return mParent != null
+                && (mFollowParentState || mParent.mChildrenFollowState || mParent
+                .isInFollowStateGroup());
+    }
+
+    private final class OnTouchImpl implements TouchManager.OnTouch {
+        @Override
+        public boolean touch(GVRSceneObject sceneObject, final float[] coords) {// , float[] hit) {
+            return doOnTouch(coords);
+        }
+
+        @Override
+        public boolean onBackKey(GVRSceneObject sceneObject, final float[] coords) {
+            return doOnBackKey();
+        }
+
+        public Widget target() {
+            return Widget.this;
+        }
     }
 
     /**
@@ -2881,7 +2546,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     /**
      * Called when this {@link Widget} has had line-of-sight focus for more than
-     * {@link #getLongFocusTime()} milliseconds. Notifies all
+     * {@link #getLongFocusTimeout()} milliseconds. Notifies all
      * {@linkplain OnFocusListener#onLongFocus() listeners}; if none of the
      * listeners has completely handled the event, {@link #onLongFocus()} is
      * called.
@@ -2923,7 +2588,7 @@ public class Widget  implements Layout.WidgetContainer {
             for (Widget child : getChildren()) {
                 if (child.isTouchable()
                         && (mChildrenFollowInput
-                                || child.getFollowParentInput() || inFollowInputGroup)) {
+                        || child.getFollowParentInput() || inFollowInputGroup)) {
                     child.doOnTouch(coords);
                 }
             }
@@ -2954,7 +2619,7 @@ public class Widget  implements Layout.WidgetContainer {
      *         if no child of {@code groupWidget} has that name.
      */
     private static Widget findChildByNameInOneGroup(final String name,
-            final Widget groupWidget, ArrayList<Widget> groupChildren) {
+                                                    final Widget groupWidget, ArrayList<Widget> groupChildren) {
         Collection<Widget> children = groupWidget.getChildren();
         for (Widget child : children) {
             if (child.getName() != null && child.getName().equals(name)) {
@@ -2981,7 +2646,7 @@ public class Widget  implements Layout.WidgetContainer {
      *         if no child of {@code groups} has that name.
      */
     private static Widget findChildByNameInAllGroups(final String name,
-            List<Widget> groups) {
+                                                     List<Widget> groups) {
         if (groups.isEmpty()) {
             return null;
         }
@@ -3021,12 +2686,12 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private boolean handlesEventFor(final GVRSceneObject sceneObject,
-            final HandlesEvent handler) {
+                                    final HandlesEvent handler) {
         if (getSceneObject() == sceneObject) {
             final boolean handlesEvent = !handler.followsParentEvent(this)
                     && !handler.isInFollowEventGroup();
             Log.d(Log.SUBSYSTEM.WIDGET, TAG, "handlesEventFor(%s): handles '%s' for scene object %s",
-                  getName(), handler.getName(), sceneObject.getName());
+                    getName(), handler.getName(), sceneObject.getName());
             return handlesEvent;
         } else {
             final boolean childrenFollowEvent = handler
@@ -3034,10 +2699,10 @@ public class Widget  implements Layout.WidgetContainer {
             for (Widget child : getChildren()) {
                 if ((childrenFollowEvent || handler.followsParentEvent(child))
                         && (child.isSceneObject(sceneObject) || handler
-                                .handlesEvent(child, sceneObject))) {
+                        .handlesEvent(child, sceneObject))) {
                     Log.d(Log.SUBSYSTEM.WIDGET, TAG,
-                          "handlesEventFor(%s): handles '%s' for child '%s'",
-                          getName(), handler.getName(), child.getName());
+                            "handlesEventFor(%s): handles '%s' for child '%s'",
+                            getName(), handler.getName(), child.getName());
                     return true;
                 }
             }
@@ -3090,7 +2755,7 @@ public class Widget  implements Layout.WidgetContainer {
         final TouchManager touchManager = WidgetLib.getTouchManager();
         if (touchManager == null) {
             Log.e(TAG,
-                  "Attempted to register widget as touchable with NULL TouchManager!");
+                    "Attempted to register widget as touchable with NULL TouchManager!");
             return;
         }
 
@@ -3123,14 +2788,14 @@ public class Widget  implements Layout.WidgetContainer {
                 focusManager.register(getSceneObject(), mFocusableImpl);
             } else {
                 Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(): '%s' is not focus-enabled",
-                      getName());
+                        getName());
                 focusManager.unregister(getSceneObject(), needsOwnFocusable);
             }
         } else {
             touchManager.removeHandlerFor(getSceneObject());
             Log.d(Log.SUBSYSTEM.WIDGET, TAG,
-                  "registerPickable(): unregistering '%s'; focus-enabled: %b",
-                  getName(), mFocusEnabled);
+                    "registerPickable(): unregistering '%s'; focus-enabled: %b",
+                    getName(), mFocusEnabled);
             focusManager.unregister(getSceneObject(), needsOwnFocusable);
         }
 
@@ -3145,275 +2810,660 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    public enum Properties {
-        name, touchable, focusenabled, id, visibility, states, levels, level, model, selected,
-        scene_object, preapply_attribs, size, transform, viewport
+    /* package */
+    protected List<Widget> getChildren() {
+        return new ArrayList<>(mChildren);
     }
 
-    public enum TransformProperties {
-        position, scale, rotation, pivot, angle
+    /* package */
+    boolean hasChild(final Widget child) {
+        return mChildren.contains(child);
     }
 
-    private static void loadAnimations(Context context) throws JSONException, NoSuchMethodException {
-        JSONObject json = JSONHelpers.loadJSONAsset(context, "animations.json");
-        if (json != null) {
-            JSONObject animationMetadata = json.optJSONObject("animations");
-            AnimationFactory.init(animationMetadata);
-            Log.v(Log.SUBSYSTEM.WIDGET, TAG, "loadAnimations(): loaded animation metadata: %s",
-                    animationMetadata);
-        } else {
-            Log.w(Log.SUBSYSTEM.JSON, TAG, "loadAnimations(): no animations.json");
-        }
-    }
-
-    private void initMetadata(JSONObject properties) {
-        setName(optString(properties, Properties.name, getName()));
-
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): properties: %s", getName(), properties);
-        UnmodifiableJSONObject objectMetadata = WidgetLib.getPropertyManager().getWidgetProperties(this);
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): objectMetadata: %s", getName(), objectMetadata);
-        final boolean preApplyAttribs = optBoolean(properties, Properties.preapply_attribs);
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): preApplyAttribs: %b", getName(), preApplyAttribs);
-        if (preApplyAttribs) {
-            // Allow JSON metadata to overwrite metadata from the model
-            mMetadata = merge(objectMetadata, properties);
-        } else {
-            mMetadata = merge(properties, objectMetadata);
-        }
-
-        // We do this a second time because the properties received by initMetadata() may have been
-        // overwritten if they were pre-applied
-        setName(optString(mMetadata, Properties.name, getName()));
-
-        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "initMetadata(%s): merged metadata: %s", getName(), mMetadata);
-    }
-
-    private void setupProperties(JSONObject properties) {
-        final boolean hasRenderData = mRenderDataCache.hasRenderData();
-        mIsTouchable = hasRenderData && optBoolean(properties, Properties.touchable,
-                mIsTouchable);
-        mFocusEnabled = optBoolean(properties, Properties.focusenabled,
-                mFocusEnabled);
-        mIsSelected = hasRenderData && optBoolean(properties, Properties.selected, mIsSelected);
-        Visibility visibility = optEnum(properties, Properties.visibility,
-                mVisibility, true);
-        setVisibility(visibility);
-
-        // Set up transform positioning
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): %s", getName(), properties);
-        Vector3f position = optVector3f(properties, TransformProperties.position);
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): position: %s", getName(), position);
-        if (position != null) {
-            setPosition(position.x, position.y, position.z);
-        }
-
-        // Set up transform scaling
-        if (hasVector3f(properties, TransformProperties.scale)) {
-            Vector3f scale = optVector3f(properties, TransformProperties.scale);
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): scale: %s", getName(), scale);
-            if (scale != null) {
-                setScale(scale.x, scale.y, scale.z);
-            }
-        } else if (hasNumber(properties, TransformProperties.scale)) {
-            final float scale = optFloat(properties, TransformProperties.scale, 1);
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupProperties(%s): scale: %.2f", getName(), scale);
-            setScale(scale);
-        }
-
-        // Set up transform rotation
-        JSONObject rotation = optJSONObject(properties, TransformProperties.rotation);
-        if (rotation != null) {
-            Vector3f scalars = asVector3f(rotation, new Vector3f(1, 1, 1));
-            float angle;
-            angle = getFloat(rotation, TransformProperties.angle);
-            if (hasVector3f(rotation, TransformProperties.pivot)) {
-                Vector3f pivot = optVector3f(rotation, TransformProperties.pivot);
-                rotateByAxisWithPivot(angle, scalars.x, scalars.y, scalars.z, pivot.x, pivot.y, pivot.z);
-            } else {
-                rotateByAxis(angle, scalars.x, scalars.y, scalars.z);
-            }
-        }
-
-        // Setup viewport
-        Vector3f viewport = optVector3f(properties, Properties.viewport);
-        if (viewport != null) {
-            mViewPort = new Vector3Axis(viewport);
-        } else {
-            mViewPort = new Vector3Axis(getWidth(), getHeight(), getDepth());
-        }
-    }
-
-    private void setupStatesAndLevels(JSONObject metaData) throws JSONException, NoSuchMethodException {
-        final boolean hasStates = has(metaData, Properties.states);
-        final boolean hasLevels = has(metaData, Properties.levels);
-        final boolean hasLevel = has(metaData, Properties.level);
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG,
-                "setupStatesAndLevels(): for '%s'; states: %b, levels %b, level %b",
-                getName(), hasStates, hasLevels, hasLevel);
-        if (hasStates) {
-            if (hasLevels || hasLevel) {
-                throw RuntimeAssertion("Invalid metadata for '%s': both 'states' and 'levels' are present",
-                        getName());
-            }
-            setupStates(metaData);
-        } else if (hasLevels) {
-            if (hasLevel) {
-                mLevel = getInt(metaData, Properties.level);
-                setupLevels(metaData);
-            }
-        } else if (hasLevel) {
-            throw RuntimeAssertion("Invalid metadata for '%s': 'level' specified without level specifications",
-                    getName());
-        }
-    }
-
-    private void setupLevels(JSONObject metaData) throws JSONException,
-            NoSuchMethodException {
-        JSONArray levelsArray = optJSONArray(metaData, Properties.levels);
-
-        if (levelsArray != null) {
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupLevels(): for %s", getName());
-            for (int i = 0; i < levelsArray.length(); ++i) {
-                mLevelInfo.add(new WidgetState(this, levelsArray
-                        .getJSONObject(i)));
-            }
-        } else {
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupLevels(): No levels metadata for %s", getName());
-        }
-    }
-
-    private void setupStates(JSONObject metadata) throws JSONException,
-            NoSuchMethodException {
-        JSONObject states = optJSONObject(metadata, Properties.states);
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupStates(): for '%s': %s", getName(), states);
-        mLevelInfo.add(new WidgetState(this, states));
-    }
-
-    /* package : Called by CheckableButton to update CHECKED state */
-    // NOT protected because states are defined internally and are not for
-    // external consumption
-    protected void updateState() {
-        final WidgetState.State state;
-        if (useParentState() || getFollowParentState()) {
-            state = mParent.getState();
-        } else {
-            state = getState();
-        }
-
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "updateState(): %s for '%s'", state, getName());
-        if (!mLevelInfo.isEmpty() && mLevel >= 0) {
-            mLevelInfo.get(mLevel).setState(state);
-        }
-
-        boolean updateChildren = isInFollowStateGroup()
-                || getChildrenFollowState();
-        for (Widget child : getChildren()) {
-            if (updateChildren || child.getFollowParentState()) {
-                child.updateState();
-            }
-        }
-    }
-
-    /* package : Overridden by CheckableButton to return CHECKED state */
-    // NOT protected because states are defined internally and are not for
-    // external consumption
-    protected WidgetState.State getState() {
-        final WidgetState.State state;
-        if (mIsPressed) {
-            state = WidgetState.State.PRESSED;
-        } else if (mIsSelected) {
-            state = WidgetState.State.SELECTED;
-        } else if (mIsFocused) {
-            state = WidgetState.State.FOCUSED;
-        } else {
-            state = WidgetState.State.NORMAL;
-        }
-        return state;
-    }
-
-    private boolean useParentFocusable() {
-        return mParent != null
-                && (mFollowParentFocus || mParent.mChildrenFollowFocus || mParent
-                        .isInFollowFocusGroup());
-    }
-
-    private boolean useParentTouchHandler() {
-        return mParent != null
-                && (mFollowParentInput || mParent.mChildrenFollowInput || mParent
-                        .isInFollowInputGroup());
-    }
-
-    private boolean useParentState() {
-        return mParent != null
-                && (mFollowParentState || mParent.mChildrenFollowState || mParent
-                        .isInFollowStateGroup());
-    }
-
-    private final class OnTouchImpl implements TouchManager.OnTouch {
-        @Override
-        public boolean touch(GVRSceneObject sceneObject, final float[] coords) {// , float[] hit) {
-            return doOnTouch(coords);
-        }
-
-        @Override
-        public boolean onBackKey(GVRSceneObject sceneObject, final float[] coords) {
-            return doOnBackKey();
-        }
-
-        public Widget target() {
-            return Widget.this;
-        }
+    /* package */
+    int indexOfChild(final Widget child) {
+        return mChildren.indexOf(child);
     }
 
     /**
-     * Override to provide a default layout for deriving {@link Widget Widgets}.  If no layout has
-     * been {@linkplain #applyLayout(Layout) applied} by the time {@link #create()} is called, this
-     * method will be called to provide a default layout.
-     * <p>
-     *     <strong>NOTE:</strong> this means that if <em>any</em> layout has been applied prior to
-     *     {@code create()} being called, this method will <em>not be called</em>. Therefore, if
-     *     you want to apply an layout <em>in addition</em> to the default layout, you must do so
-     *     after {@code create()} has been called ({@link #onAttached()} is a good place) <em>or</em>
-     *     you must add the default layout explicitly.
-     * </p>
-     * <p>
-     *     The default layout is handled this way because in the most common case a user applying a
-     *     custom layout wants to use it <em>instead</em> of the default and will set the layout
-     *     at construction or at least prior to attaching to a parent; we don't want the user
-     *     to have to explicitly remove the default layout in this case.
-     * </p>
-     * @return An instance derived from {@link Layout} or {@code null}.
-     */
-    public Layout getDefaultLayout() {
-        return mDefaultLayout;
-    }
-
-    private Layout mDefaultLayout = new AbsoluteLayout();
-
-    /**
-     * Apply the specified {@link Layout}. Optionally, a call to {@link #requestLayout()} can be
-     * prevented.
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, int, boolean) addChild(child, -1, false)}.
      *
-     * @param layout
-     *          The {@code Layout} to apply
-     * @return {@code True} if the layout has been applied successfully, {@code false} otherwise.
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
      */
-    public boolean applyLayout(Layout layout) {
-        boolean applied = false;
-        if (layout != null && isValidLayout(layout)) {
-            Layout defaultLayout  = getDefaultLayout();
-            if (layout != defaultLayout) {
-                mLayouts.remove(defaultLayout);
-            }
-            if(mLayouts.add(layout)) {
-                layout.onLayoutApplied(this, mViewPort);
-                applied = true;
-            }
-        }
-        return applied;
+    protected boolean addChild(final Widget child) {
+        return addChild(child, -1, false);
     }
 
-    public void dump() {
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, int, boolean) addChild(child, index, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child, int index) {
+        return addChild(child, index, false);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, int, boolean) addChild(child, -1, preventLayout)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(Widget child, boolean preventLayout) {
+        return addChild(child, -1, preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Overload to intercept all child adds.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(Widget child, int index, boolean preventLayout) {
+        return addChild(child, child.getSceneObject(), index, preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
+     * -1, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+                               final GVRSceneObject childRootSceneObject) {
+        return addChild(child, childRootSceneObject, -1, false);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
+     * index, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+                               final GVRSceneObject childRootSceneObject, final int index) {
+        return addChild(child, childRootSceneObject, index, false);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one. Convenience method for
+     * {@link #addChild(Widget, GVRSceneObject, int, boolean) addChild(child, childRootSceneObject,
+     * -1, preventLayout)}.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+                               final GVRSceneObject childRootSceneObject, boolean preventLayout) {
+        return addChild(child, childRootSceneObject, -1, preventLayout);
+    }
+
+    /**
+     * Add another {@link Widget} as a child of this one.
+     * <p>
+     * A {@link GVRSceneObject} other than the one directly managed by the child
+     * {@code Widget} can be specified as the child's root. This is useful in
+     * cases where the parent object needs to insert additional scene objects
+     * between the child and its parent.
+     * <p>
+     * <b>NOTE:</b> it is the responsibility of the caller to keep track of the
+     * relationship between the child {@code Widget} and the alternative root
+     * scene object.
+     *
+     * @param child
+     *            The {@code Widget} to add as a child.
+     * @param childRootSceneObject
+     *            The root {@link GVRSceneObject} of the child.
+     * @param index
+     *            Position at which to add the child. Pass -1 to add at end.
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was added; {@code false} if
+     *         {@code child} was previously added to this instance.
+     */
+    protected boolean addChild(final Widget child,
+                               final GVRSceneObject childRootSceneObject, final int index,
+                               boolean preventLayout) {
+        final boolean added = addChildInner(child, childRootSceneObject, index);
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "addChild [%s] %b", child, added);
+        if (added) {
+            onTransformChanged();
+            if (!preventLayout) {
+                invalidateAllLayouts();
+                requestLayout();
+            }
+        }
+        return added;
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance. Convenience method for
+     * {@link #removeChild(Widget, boolean) removeChild(child, false)}.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(final Widget child) {
+        return removeChild(child, false);
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance. Overload to intercept all child removes.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param preventLayout
+     *            Tell the {@code Widget} whether to layout after removal.
+     * @return {@code True} if (@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(Widget child, boolean preventLayout) {
+        return removeChild(child, child.getSceneObject(), preventLayout);
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance.
+     * <p>
+     * <b>NOTE:</b> if an alternative root scene object was used to
+     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
+     * {@code Widget}, the caller must pass the alternative root to this method.
+     * Otherwise there may be dangling scene objects. It is the responsibility
+     * of the caller to keep track of the relationship between the child
+     * {@code Widget} and the alternative root scene object.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param childRootSceneObject
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(final Widget child,
+                                  final GVRSceneObject childRootSceneObject) {
+        return removeChild(child, childRootSceneObject, false);
+    }
+
+    /**
+     * Remove a {@link Widget} as a child of this instance.
+     * <p>
+     * <b>NOTE:</b> if an alternative root scene object was used to
+     * {@linkplain #addChild(Widget, GVRSceneObject) add} the child
+     * {@code Widget}, the caller must pass the alternative root to this method.
+     * Otherwise there may be dangling scene objects. It is the responsibility
+     * of the caller to keep track of the relationship between the child
+     * {@code Widget} and the alternative root scene object.
+     *
+     * @param child
+     *            The {@code Widget} to remove.
+     * @param childRootSceneObject
+     * @param preventLayout
+     *            The {@code Widget} whether to call layout().
+     * @return {@code True} if {@code child} was a child of this instance and
+     *         was successfully removed; {@code false} if {@code child} is not a
+     *         child of this instance.
+     */
+    protected boolean removeChild(final Widget child,
+                                  final GVRSceneObject childRootSceneObject, boolean preventLayout) {
+        final boolean removed = mChildren.remove(child);
+
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild [%s] %b", child, removed);
+        if (removed) {
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "removeChild(): '%s' removed", child.getName());
+            if (childRootSceneObject.getParent() != getSceneObject()) {
+                Log.e(Log.SUBSYSTEM.WIDGET, TAG,
+                        "removeChild(): '%s' is not a child of '%s' GVRSceneObject!",
+                        child.getName(), getName());
+            }
+            getSceneObject().removeChildObject(childRootSceneObject);
+            child.doOnDetached();
+
+            final List<OnHierarchyChangedListener> listeners;
+            synchronized (mOnHierarchyChangedListeners) {
+                listeners = new ArrayList<>(mOnHierarchyChangedListeners);
+            }
+            for (OnHierarchyChangedListener listener : listeners) {
+                listener.onChildWidgetRemoved(this, child);
+            }
+
+            onTransformChanged();
+            if (!preventLayout) {
+                invalidateAllLayouts();
+                requestLayout();
+            }
+        } else {
+            Log.w(TAG, "removeChild(): '%s' is not a child of '%s'!",
+                    child.getName(), getName());
+        }
+        return removed;
+    }
+
+    private GVRRenderData getRenderData() {
+        return mSceneObject.getRenderData();
+    }
+
+    /* package */
+    // NOTE: If you find yourself wanting to make this public, don't! You're
+    // either working *against* Widget or Widget needs some extending.
+    // TODO: temporary changed to public access to solve the access issue in Layout.java
+
+    public GVRSceneObject getSceneObject() {
+        return mSceneObject;
+    }
+
+    /* package */
+    GVRTransform getTransform() {
+        return mSceneObject.getTransform();
+    }
+
+    /**
+     * Called when the {@link Widget}'s transform is altered, whether by
+     * scaling, rotation, or translation. Flags the {@code Widget} for layout
+     * (client code will still have to call {@link #requestLayout()} to initiate
+     * the layout cycle) and invalidates its {@linkplain #getBoundingBox()
+     * bounding box}.
+     * <p>
+     * Deriving classes that override this method <em>really</em> need to call
+     * {@code super}: otherwise the {@code Widget} won't get laid out until
+     * somebody explicitly calls {@code requestLayout()} on it, and the cached
+     * bounding box will get out of date.
+     */
+    // TODO: temporary changed to public access to solve the access issue in Layout.java
+    public void onTransformChanged() {
+        Log.v(Log.SUBSYSTEM.WIDGET, TAG, "onTransformChanged(): %s mPreventTransformChanged = %b",
+                getName(), mPreventTransformChanged);
+
+        // Even if the calling code that altered the transform doesn't request a
+        // layout, we'll do a layout the next time a layout is requested on our
+        // part of the scene graph.
+        if (!mPreventTransformChanged) {
+            mChanged = true;
+
+            // Clear this to indicate that the bounding box has been invalidated and
+            // needs to be constructed and transformed anew.
+            mBoundingBox = null;
+        }
+    }
+
+    private boolean mPreventTransformChanged;
+
+    // TODO: temporary changed to public access to solve the access issue in Layout.java
+    public void preventTransformChanged(boolean prevent) {
+        mPreventTransformChanged = prevent;
+    }
+
+    private boolean addChildInner(final Widget child,
+                                  final GVRSceneObject childRootSceneObject, int index) {
+        if (child == this || child.getSceneObject() == getSceneObject()) {
+            Log.e(TAG, "Attempted to add widget '%s' to itself!", getName());
+            throw RuntimeAssertion("Attempted to add widget '%s' to itself!", getName());
+        }
+        final boolean added = mChildren.indexOf(child) == -1;
+        if (added) {
+            Widget parent = child.getParent();
+            if (parent != null) {
+                parent.removeChild(child, child.getSceneObject(), true);
+            }
+            if (index == -1 || index > mChildren.size()) {
+                mChildren.add(child);
+            } else {
+                mChildren.add(index, child);
+            }
+            if (child.getVisibility() == Visibility.VISIBLE &&
+                    child.getViewPortVisibility() != ViewPortVisibility.INVISIBLE) {
+                final GVRSceneObject childRootSceneObjectParent = childRootSceneObject.getParent();
+                if (childRootSceneObjectParent != getSceneObject()) {
+                    if (null != childRootSceneObjectParent) {
+                        childRootSceneObjectParent.removeChildObject(childRootSceneObject);
+                    }
+                    getSceneObject().addChildObject(childRootSceneObject);
+                } else {
+                    Log.v(Log.SUBSYSTEM.WIDGET, TAG,
+                            "addChildInner(): child '%s' already attached to this Group ('%s')",
+                            child.getName(), getName());
+                }
+            } else {
+                Log.v(TAG,
+                        "addChildInner(): child '%s' is not visible visibility = %s, mIsVisibleInViewPort = %s ",
+                        child.getName(), child.getVisibility(), child.getViewPortVisibility());
+            }
+            child.doOnAttached(this);
+
+            final List<OnHierarchyChangedListener> listeners;
+            synchronized (mOnHierarchyChangedListeners) {
+                listeners = new ArrayList<>(mOnHierarchyChangedListeners);
+            }
+            for (OnHierarchyChangedListener listener : listeners) {
+                listener.onChildWidgetAdded(this, child);
+            }
+        }
+
+        if (mClippingEnabled) {
+            setObjectClipped(child);
+        }
+
+        return added;
+    }
+
+    // TODO: temporary changed to public access to solve the access issue in Layout.java
+    public void checkTransformChanged() {
+        if (mTransformCache.save(this, true)) {
+            onTransformChanged();
+        }
+    }
+
+    /* package */
+    Widget createChild(GVRContext context, GVRSceneObject sceneObjectChild)
+            throws InstantiationException {
+        final Widget child = WidgetFactory.createWidget(sceneObjectChild);
+        return child;
+    }
+
+    /* package */
+    protected void createChildren(final GVRContext context,
+                                  final GVRSceneObject sceneObject) throws InstantiationException {
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating children", getName());
+        List<GVRSceneObject> children = sceneObject.getChildren();
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): child count: %d", getName(), children.size());
+        for (GVRSceneObject sceneObjectChild : children) {
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating child '%s'", getName(),
+                    sceneObjectChild.getName());
+            final Widget child = createChild(context, sceneObjectChild);
+            if (child != null) {
+                addChildInner(child);
+            }
+        }
+    }
+
+    protected boolean addOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
+        return mOnHierarchyChangedListeners.add(listener);
+    }
+
+    protected boolean removeOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
+        return mOnHierarchyChangedListeners.remove(listener);
+    }
+
+    /**
+     * Get the {@link GVRMaterial material} for the underlying
+     * {@link GVRSceneObject scene object}.
+     *
+     * @return The scene object's material or {@code null}.
+     */
+    private RenderDataCache.MaterialCache getMaterial() {
+        return mRenderDataCache.getMaterial();
+    }
+
+    /**
+     * Set the {@linkplain GVRMaterial material} for the underlying
+     * {@linkplain GVRSceneObject scene object}.
+     *
+     * @param material
+     *            The new material.
+     */
+    protected void setMaterial(final GVRMaterial material) {
+        final GVRRenderData renderData = getRenderData();
+        if (renderData != null) {
+            renderData.setMaterial(material);
+        }
+        mRenderDataCache.setMaterial(material);
+    }
+
+    /**
+     * Get the {@link GVRMesh mesh} for the underlying {@link GVRSceneObject
+     * scene object}.
+     *
+     * @return The scene object's mesh or {@code null}.
+     */
+    protected GVRMesh getMesh() {
+        return mRenderDataCache.getMesh();
+    }
+
+    /**
+     * Set the {@linkplain GVRMesh mesh} for the underlying
+     * {@linkplain GVRSceneObject scene object}.
+     *
+     * @param mesh
+     *            The new mesh.
+     */
+    protected void setMesh(final GVRMesh mesh) {
+        mRenderDataCache.setMesh(mesh);
+    }
+
+    protected JSONObject getObjectMetadata() {
+        return mMetadata;
+    }
+
+    /**
+     * A hook method called after the {@code Widget} instance has been
+     * {@linkplain GroupWidget#addChild(Widget) added} to another {@link Widget}
+     * as a child.
+     * <p>
+     * <b>NOTE:</b> The order of execution between this method and
+     * {@link #onCreate()} is <em>not</em> guaranteed. As a general rule, you
+     * should not write code that has dependencies between this method and
+     * {@code onCreate()}.
+     */
+    protected void onAttached() {
+
+    }
+
+    /**
+     * A hook method for doing any initialization (e.g., creation of {@link GVRBitmapTexture bitmap
+     * textures}).
+     * <p>
+     * If {@link #create()} has not been explicitly called, this method will be
+     * called automatically when the instance is added to another {@link Widget}
+     * as a child.
+     * <p>
+     * <b>NOTE:</b> The order of execution between the
+     * {@linkplain #onAttached() attach} and {@linkplain #onDetached() detach}
+     * hooks and this method is <em>not</em> guaranteed. As a general rule, you
+     * should not write code that has dependencies between the attachment hooks
+     * and this method!
+     *
+     * @see #create()
+     */
+    protected void onCreate() {
+
+    }
+
+    /**
+     * A hook method called after the {@code Widget} instance has been
+     * {@linkplain GroupWidget#removeChild(Widget) removed} from another
+     * {@link GroupWidget} as a child. At this point, the instance has no
+     * {@linkplain #getParent() parent}.
+     * <p>
+     * <b>NOTE:</b> The order of execution between this method and
+     * {@link #onCreate()} is <em>not</em> guaranteed. As a general rule, you
+     * should not write code that has dependencies between this method and
+     * {@code onCreate()}.
+     */
+    protected void onDetached() {
+
+    }
+
+    /**
+     * Hook method for handling changes in focus for this object.
+     *
+     * @param focused
+     *            {@code True} if the object has gained focus, {@code false} if
+     *            it has lost focus.
+     * @return {@code True} to accept focus, {@code false} if not.
+     */
+    protected boolean onFocus(boolean focused) {
+        return true;
+    }
+
+    /**
+     * Hook method for handling long focus events. Called when the object has
+     * held focus for longer than a certain period of time. This is similar to
+     * {@link android.view.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
+     * OnGestureListener.onLongPress()}.
+     */
+    protected void onLongFocus() {
+
+    }
+
+    /**
+     * Hook method for handling layout events. For {@link GroupWidget} in
+     * particular, this is where layout of children is done.
+     * {@code GroupWidgets} should call {@link #layout()} on their children,
+     * most likely before performing their own layout <em>of</em> their
+     * children.
+     * @return true if the widget has been relaidout, otherwise - false
+     */
+    protected boolean onLayout() {
+        boolean changed = isChanged();
+        boolean runLayout = false;
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout() called (%s) mChanged = %b ", getName(), changed);
+
+        FPSCounter.timeCheck("onLayout <START>: " + this + "<" + getName() + "> changed = " + changed);
+
+        float oldWidth = getLayoutWidth();
+        float oldHeight = getLayoutHeight();
+        float oldDepth = getLayoutDepth();
+
+        for (Widget child : getChildren()) {
+            if (child.layout()) {
+                invalidateAllLayouts();
+                runLayout = true;
+            }
+        }
+
+        if (mLayouts == null || mLayouts.isEmpty()) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: no layouts applied %s!", getName());
+        } else if (runLayout || changed) {
+
+            for (Layout layout : mLayouts) {
+                measureLayout(layout);
+                layout.layoutChildren();
+            }
+
+            float newWidth = getLayoutWidth();
+            float newHeight = getLayoutHeight();
+            float newDepth = getLayoutDepth();
+
+            changed = changed ||
+                    !equal(oldWidth, newWidth) ||
+                    !equal(oldHeight, newHeight) ||
+                    !equal(oldDepth, newDepth);
+
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout changed %s " +
+                            "old = [%f, %f, %f] new [%f, %f, %f]!",
+
+                    getName(), oldWidth, oldHeight, oldDepth, newWidth, newHeight, newDepth);
+        } else {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLayout: layout is not changed %s!", getName());
+        }
+
+        FPSCounter.timeCheck("onLayout <END>: " + this + "<" + getName() + "> changed = " + changed);
+        return changed;
+    }
+
+    protected boolean measureLayout(Layout layout) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] measure layout = %s", this, layout);
+        return layout.measureAll(null);
+    }
+
+    /**
+     * Hook method for handling back key events.
+     *
+     * @return {@code True} if the back key event was successfully processed,
+     *         {@code false} otherwise.
+     */
+    protected boolean onBackKey() {
+        return false;
+    }
+
+    /**
+     * Hook method for handling changes in selection state for this object.
+     *
+     * @param selected
+     *            {@code True} if the object has gained selection, {@code false} if it has lost
+     *            selection.
+     * @return {@code True} to accept selection, {@code false} if not. Returns {@code true} by
+     *            default.
+     */
+    protected boolean onSelected(boolean selected) {
+        return true;
+    }
+
+    /**
+     * Hook method for handling touch events.
+     *
+     * @return {@code True} if the touch event was successfully processed,
+     *         {@code false} otherwise.
+     */
+    protected boolean onTouch() {
+        return false;
+    }
+
+    /**
+     * Does layout on the {@link Widget}. If you override this method and don't
+     * call {@code super}, bad things will almost certainly happen.
+     * @return true if the widget has been relaidout, otherwise - false
+     */
+    @SuppressLint("WrongCall")
+    protected boolean layout() {
+        boolean relaidout = false;
+        Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): changed: %b, requested: %b", getName(),
+                isChanged(), mLayoutRequested);
+
+        if (isChanged() || mLayoutRequested) {
+            Log.v(Log.SUBSYSTEM.LAYOUT, TAG, "layout(%s): calling onLayout", getName());
+            relaidout = onLayout();
+        }
+
+        mLayoutRequested = false;
+        mChanged = false;
+        return relaidout;
+    }
+
+    protected void dump() {
         Log.d(TAG, "===== DUMP WIDGET ===== \n %s [%f, %f, %f]", toString(),
                 getLayoutWidth(), getLayoutHeight(), getLayoutDepth());
         for (Layout l:  mLayouts) {
@@ -3422,72 +3472,25 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Check if specified {@link Layout} has been applied.
-     * @param layout
-     *          The {@code Layout} to apply
-     * @return {@code True} if the layout has been applied, {@code false} otherwise.
+     * Execute a {@link Runnable} on the GL thread. If this method is called
+     * from the GL thread, the {@code Runnable} is executed immediately;
+     * otherwise, the {@code Runnable} will be executed in the next frame.
+     * <p>
+     * This differs from {@link GVRContext#runOnGlThread(Runnable)}: that method
+     * always queues the {@code Runnable} for execution in the next frame.
+     * <p>
+     * @param r {@link Runnable} to execute on the GL thread.
      */
-    public boolean hasLayout(Layout layout) {
-        return layout != null && mLayouts.contains(layout);
+    protected final void runOnGlThread(final Runnable r) {
+        getGVRContext().runOnGlThread(new Runnable() {
+            public void run() {
+                FPSCounter.timeCheck("runOnGlThread <START>: " + r);
+                r.run();
+                FPSCounter.timeCheck("runOnGlThread <END>: " + r);
+            }
+        });
     }
 
-    /**
-     * Remove the layout {@link Layout} from the chain
-     * @param layout {@link Layout}
-     * @return true if layout has been removed successfully , false - otherwise
-     */
-    public boolean removeLayout(final Layout layout) {
-        boolean removed = mLayouts.remove(layout);
-        if (layout != null && removed) {
-            layout.onLayoutApplied(null, new Vector3Axis());
-        }
-        return removed;
-    }
-
-    /*
-     * Any layout is valid by default. Subclass can override the method to add new check
-     */
-    protected boolean isValidLayout(Layout layout) {
-        return true;
-    }
-
-    protected final Set<Layout> mLayouts = new LinkedHashSet<>();
-
-    /**
-     * WidgetContainer default implementation
-     */
-    public Widget get(final int dataIndex) {
-        return dataIndex >= size() ? null : getChildren().get(dataIndex);
-    }
-
-    public int size() {
-        return getChildren().size();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    public int getDataIndex(Widget widget) {
-        int id = -1;
-        if (!isEmpty()) {
-            id = indexOfChild(widget);
-        }
-        return id;
-    }
-
-    @Override
-    public boolean isDynamic() {
-        return false;
-    }
-
-    @Override
-    public void onLayoutChanged(final Layout layout) {
-        invalidateLayout(layout);
-        onTransformChanged();
-        requestLayout();
-    }
 
     protected void invalidateLayout(final Layout layout) {
         // temporary  fix for the most common synchronisation issue
@@ -3536,6 +3539,203 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
+    /**
+     * Any layout is valid by default. Subclass can override the method to add new check
+     */
+    protected boolean isValidLayout(Layout layout) {
+        return true;
+    }
+
+
+    /**
+     * Process the layouts happened while the previous layout has been processing
+     * @param widget
+     */
+    protected void requestInnerLayout(Widget widget)  {
+        if (mParent != null) {
+            mParent.requestInnerLayout(widget);
+        }
+    }
+
+    protected Widget(final GVRContext context, final GVRMesh mesh) {
+        this(context, new GVRSceneObject(context, mesh, sDefaultTexture));
+    }
+
+
+    /**
+     * Initialize the instance. This method is called
+     * automatically for you when the instance is
+     * {@linkplain GroupWidget#addChild(Widget) attached} to another
+     * {@code Widget}, but you may call it explicitly to do early
+     * initialization. However many times this method is called, the creation
+     * code will only be executed <em>once</em>.
+     * <p>
+     * Override {@link #onCreate()} to implement your initialization.
+     */
+    private final void create() {
+        if (!mIsCreated) {
+            // Set the default layout if necessary
+            if (mLayouts.isEmpty()) {
+                applyLayout(getDefaultLayout());
+            }
+            doOnCreate();
+            mIsCreated = true;
+        }
+    }
+
+    /**
+     * Determine whether the calling thread is the GL thread.
+     *
+     * @return {@code True} if called from the GL thread, {@code false} if
+     *         called from another thread.
+     */
+    protected final boolean isGLThread() {
+        final Thread glThread = sGLThread.get();
+        return glThread != null && glThread.equals(Thread.currentThread());
+    }
+
+    private void updateViewPort(float size, Layout.Axis axis) {
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "Widget[%s] setViewPort : viewport = %s size = %f", this, mViewPort, size);
+        if (mViewPort.get(axis) != size) {
+            mViewPort.set(size, axis);
+            for (Layout layout : mLayouts) {
+                layout.onLayoutApplied(this, mViewPort);
+            }
+        }
+    }
+
+    private Widget setStencilTest(boolean flag) {
+        mRenderDataCache.setStencilTest(flag);
+        return this;
+    }
+
+    private Widget setStencilFunc(int func, int ref, int mask) {
+        mRenderDataCache.setStencilFunc(func, ref, mask);
+        return this;
+    }
+
+    private Widget setStencilMask(int mask) {
+        mRenderDataCache.setStencilMask(mask);
+        return this;
+    }
+
+    private static void setObjectClipped(Widget widget) {
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setObjectClipped for %s", widget.getName());
+
+        widget.setStencilTest(true)
+                .setStencilFunc(GLES30.GL_EQUAL, 1, 0xFF)
+                .setStencilMask(0x00);
+
+        widget.mClippingEnabled = true;
+
+        for (Widget child : widget.getChildren()) {
+            setObjectClipped(child);
+        }
+    }
+
+    private final class FocusableImpl implements FocusManager.Focusable {
+        /**
+         * Hook method for handling changes in focus for this object.
+         *
+         * @param focused
+         *            {@code True} if the object has gained focus, {@code false}
+         *            if it has lost focus.
+         */
+        @Override
+        public boolean onFocus(boolean focused) {
+            return Widget.this.doOnFocus(focused);
+        }
+
+        /**
+         * Hook method for handling long focus events. Called when the object
+         * has held focus for longer than a certain period of time. This is
+         * similar to
+         * {@link android.view.GestureDetector.OnGestureListener#onLongPress(MotionEvent)
+         * OnGestureListener.onLongPress()}.
+         */
+        @Override
+        public void onLongFocus() {
+            Widget.this.doOnLongFocus();
+        }
+
+        @Override
+        public boolean isFocusEnabled() {
+            return Widget.this.isFocusEnabled();
+        }
+
+        @Override
+        public long getLongFocusTimeout() {
+            return Widget.this.getLongFocusTimeout();
+        }
+
+        @Override
+        public String toString() {
+            return target().getName();
+        }
+
+        Widget target() {
+            return Widget.this;
+        }
+    }
+
+    private FocusableImpl mFocusableImpl = new FocusableImpl();
+
+    private static final GVRSceneObject makeQuad(GVRContext context, final float width,
+                                                 final float height) {
+        GVRSceneObject sceneObject = new GVRSceneObject(context, width, height);
+        setupDefaultMaterial(context, sceneObject);
+        return sceneObject;
+    }
+
+    private static void setupDefaultMaterial(GVRContext context, GVRSceneObject sceneObject) {
+        GVRRenderData renderData = sceneObject.getRenderData();
+        if (renderData != null) {
+            GVRMaterial material = new GVRMaterial(context,
+                    GVRShaderType.Texture.ID);
+            material.setMainTexture(sDefaultTexture);
+            renderData.setMaterial(material);
+        }
+    }
+
+    private static JSONObject packageSceneObjectWithAttributes(GVRSceneObject sceneObject,
+                                                               NodeEntry attributes)
+            throws InstantiationException {
+        final JSONObject json;
+
+        if (attributes != null) {
+            json = attributes.toJSON();
+            put(json, Properties.preapply_attribs, true);
+        } else {
+            json = new JSONObject();
+        }
+
+        put(json, Properties.scene_object, sceneObject);
+
+        return json;
+    }
+
+    // private static final String pattern = Widget.class.getSimpleName()
+    // + "name : %s size = (%f, %f, %f) \n"
+    // + "touchable = %b focus_enabled = %b Visible = %s selected = %b";
+    //
+    // public String toString() {
+    // return String.format(pattern, getName(), getWidth(), getHeight(),
+    // getDepth(),
+    // mIsTouchable, mFocusEnabled, mVisibility, mIsSelected);
+    // }
+
+    private static GVRModelSceneObject loadSceneObjectFromModel(GVRContext context, String modelFile) {
+        final GVRAssetLoader loader = context.getAssetLoader();
+        final EnumSet<GVRImportSettings> settings = GVRImportSettings.getRecommendedSettings();
+        try {
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "loadSceneObjectFromModel(): attemping to load '%s'", modelFile);
+            return loader.loadModel(modelFile, settings, true, null);
+        } catch (IOException e) {
+            Log.e(TAG, e, "loadSceneObjectFromModel(): failed to load model for Widget: %s", modelFile);
+            throw new RuntimeException("Failed to load Widget model from " + modelFile, e);
+        }
+    }
+
     private static void getGvrfHierarchy(GVRSceneObject sceneObject, String space) {
         if (sceneObject == null) return;
 
@@ -3552,21 +3752,40 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    public void printGvrfHierarchy() {
+    private void printGvrfHierarchy() {
         Log.d(TAG, "========= GVRF Hierarchy for %s =========", getName());
         getGvrfHierarchy(mSceneObject, "");
     }
 
-    private final GVRSceneObject mSceneObject;
+    private static JSONObject packageSceneObject(GVRSceneObject sceneObject) {
+        final JSONObject json = new JSONObject();
+        put(json, Properties.scene_object, sceneObject);
+        return json;
+    }
 
+    private final GVRSceneObject mSceneObject;
     private final GVRContext mContext;
+    private boolean mClippingEnabled;
+    private Vector3Axis mViewPort;
+
+    private int mLevel = 0;
+    private List<WidgetState> mLevelInfo = new ArrayList<>();
+
+    private JSONObject mMetadata;
+    private final List<Widget> mChildren = new ArrayList<>();
+    private Widget mParent;
+    private String mName;
+
 
     private final RenderDataCache mRenderDataCache;
     private final TransformCache mTransformCache;
     private BoundingBox mBoundingBox;
+
     private boolean mLayoutRequested;
     private boolean mChanged = true;
     private boolean mIsCreated;
+    private Layout mDefaultLayout = new AbsoluteLayout();
+    protected final Set<Layout> mLayouts = new LinkedHashSet<>();
 
     private boolean mFocusEnabled = true;
     private boolean mChildrenFollowFocus = false;
@@ -3601,8 +3820,14 @@ public class Widget  implements Layout.WidgetContainer {
 
     private boolean mIsFocused;
     private long mLongFocusTimeout = FocusManager.LONG_FOCUS_TIMEOUT;
+
     private boolean mChildrenFollowInput = false;
     private boolean mFollowParentInput = false;
+    private boolean mIsPressed;
+    private boolean mIsSelected;
+    private boolean mIsTouchable = true;
+    private OnTouchImpl mTouchHandler = new OnTouchImpl();
+
     private HandlesEvent mHandlesTouchEvent = new HandlesEvent() {
 
         @Override
@@ -3629,36 +3854,21 @@ public class Widget  implements Layout.WidgetContainer {
         public String getName() {
             return "touch";
         }
-
     };
-    private boolean mIsPressed;
-    private boolean mIsSelected;
-    private boolean mIsTouchable = true;
 
     private boolean mChildrenFollowState;
     private boolean mFollowParentState;
 
     private Visibility mVisibility = Visibility.VISIBLE;
     private ViewPortVisibility mIsVisibleInViewPort = ViewPortVisibility.FULLY_VISIBLE;
-    private Widget mParent;
-    private String mName;
-
-    private JSONObject mMetadata;
-
-    private int mLevel = 0;
-    private List<WidgetState> mLevelInfo = new ArrayList<>();
-
-    private final List<Widget> mChildren = new ArrayList<>();
 
     private final Set<OnBackKeyListener> mBackKeyListeners = new LinkedHashSet<>();
     private final Set<OnFocusListener> mFocusListeners = new LinkedHashSet<>();
     private final Set<OnTouchListener> mTouchListeners = new LinkedHashSet<>();
     private final Set<OnHierarchyChangedListener> mOnHierarchyChangedListeners = new LinkedHashSet<>();
 
-    private OnTouchImpl mTouchHandler = new OnTouchImpl();
-
     private static WeakReference<Thread> sGLThread = new WeakReference<>(null);
     private static GVRTexture sDefaultTexture;
 
-    private static final String TAG = Widget.class.getSimpleName();
+    private static final String TAG = org.gearvrf.utility.Log.tag(Widget.class);
 }

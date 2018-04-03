@@ -238,58 +238,40 @@ public class WidgetFactory {
         return createWidget(rootNode, widgetClass);
     }
 
-    private static Widget createWidget(final GVRSceneObject sceneObject,
-            NodeEntry attributes, Class<? extends Widget> widgetClass)
-            throws InstantiationException {
-        try {
-            Constructor<? extends Widget> ctor = widgetClass
-                    .getConstructor(GVRContext.class, GVRSceneObject.class,
-                                    NodeEntry.class);
-            return ctor.newInstance(sceneObject
-                    .getGVRContext(), sceneObject, attributes);
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
-            e.printStackTrace();
-            Log.e(TAG, e, "createWidget()");
-            throw new InstantiationException(e.getLocalizedMessage());
-        }
-    }
-
     /** Model loading */
 
-    public static final String ROOT_NODE_NAME = "RootNode";
-    public static GVRSceneObject getRootNode(GVRSceneObject node) {
-        GVRSceneObject root = null;
-        if (ROOT_NODE_NAME.equals(node.getName())) {
-            root = node;
-        } else if (node.getChildrenCount() > 0) {
-            for (GVRSceneObject child: node.getChildren()) {
-                root = getRootNode(child);
-                if (root != null) {
-                    break;
-                }
-            }
-        }
-        return root;
-    }
-
+    /**
+     * Load model from file
+     * @param gvrContext
+     * @param modelFile
+     * @return root object
+     * @throws IOException
+     */
     public static GVRSceneObject loadModel(final GVRContext gvrContext,
                                            final String modelFile) throws IOException {
         return loadModel(gvrContext, modelFile, new HashMap<String, Integer>());
     }
 
+    /**
+     * Load model from file starting from the specific node name
+     * @param gvrContext
+     * @param modelFile
+     * @param nodeName name of the starting node
+     * @return root object
+     * @throws IOException
+     */
     public static GVRSceneObject loadModel(final GVRContext gvrContext,
                                            final String modelFile, final String nodeName) throws IOException {
         return loadModel(gvrContext, modelFile, nodeName, new HashMap<String, Integer>());
     }
 
-    public static GVRSceneObject loadModel(final GVRContext gvrContext,
+    private static GVRSceneObject loadModel(final GVRContext gvrContext,
                                            final String modelFile, final HashMap<String, Integer> duplicates)
             throws IOException {
         return loadModel(gvrContext, modelFile, null, duplicates);
     }
 
-    public static GVRSceneObject loadModel(
+    private static GVRSceneObject loadModel(
             final GVRContext gvrContext, final String modelFile,
             String nodeName, final HashMap<String, Integer> duplicates) throws IOException {
         GVRSceneObject assimpScene = gvrContext.getAssetLoader().loadModel(modelFile, org.gearvrf.GVRImportSettings.getRecommendedSettings(), true, null);
@@ -308,7 +290,7 @@ public class WidgetFactory {
         return root;
     }
 
-    public static void printOutScene(final GVRSceneObject scene, int level) {
+    private static void printOutScene(final GVRSceneObject scene, int level) {
         Log.d(TAG, "model:: %d) name = %s [%s], renderData = %s transfrom = %s",
                 level, scene.getName(), scene, scene.getRenderData(), scene.getTransform());
         if (scene.children() != null) {
@@ -318,11 +300,70 @@ public class WidgetFactory {
         }
     }
 
-    public static GVRSceneObject findByName(final String name,
+    private static GVRSceneObject getRootNode(GVRSceneObject node) {
+        GVRSceneObject root = null;
+        if (ROOT_NODE_NAME.equals(node.getName())) {
+            root = node;
+        } else if (node.getChildrenCount() > 0) {
+            for (GVRSceneObject child: node.getChildren()) {
+                root = getRootNode(child);
+                if (root != null) {
+                    break;
+                }
+            }
+        }
+        return root;
+    }
+
+    private static GVRSceneObject findByName(final String name,
                                             final GVRSceneObject root) {
         Log.d(TAG, "findByName(): searching for '%s' on node '%s'", name,
                 root.getName());
         return findByName(name, root, 0);
+    }
+
+    private static void avoidNameDuplication(final GVRSceneObject root,
+                                            final Map<String, Integer> map, int level) {
+        Log.d(TAG, "avoidNameDuplication(): %d '%s'", level, root.getName());
+        NodeEntry entry = new NodeEntry(root);
+        Log.d(TAG, "avoidNameDuplication(): entry: %s", entry);
+        if (entry != null) {
+            String entryName = entry.getName();
+            int num = 1;
+            boolean duplicated = map.containsKey(entryName);
+            if (duplicated) {
+                String name = root.getName();
+                num = ((map.get(entryName)));
+                root.setName(name.replace(entryName, entryName + num));
+                Log.w(TAG, "Duplicated scene object: %s renamed to %s", name,
+                        root.getName());
+                num++;
+            }
+            map.put(entryName, num);
+        }
+
+        if (root.children() != null) {
+            for (GVRSceneObject child : root.children()) {
+                avoidNameDuplication(child, map, level + 1);
+            }
+        }
+    }
+
+    private static Widget createWidget(final GVRSceneObject sceneObject,
+                                       NodeEntry attributes, Class<? extends Widget> widgetClass)
+            throws InstantiationException {
+        try {
+            Constructor<? extends Widget> ctor = widgetClass
+                    .getConstructor(GVRContext.class, GVRSceneObject.class,
+                            NodeEntry.class);
+            return ctor.newInstance(sceneObject
+                    .getGVRContext(), sceneObject, attributes);
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            e.printStackTrace();
+            Log.e(TAG, e, "createWidget()");
+            throw new InstantiationException(e.getLocalizedMessage());
+        }
     }
 
     private static GVRSceneObject findByName(final String name,
@@ -350,32 +391,6 @@ public class WidgetFactory {
         return obj;
     }
 
-    public static void avoidNameDuplication(final GVRSceneObject root,
-                                            final Map<String, Integer> map, int level) {
-        Log.d(TAG, "avoidNameDuplication(): %d '%s'", level, root.getName());
-        NodeEntry entry = new NodeEntry(root);
-        Log.d(TAG, "avoidNameDuplication(): entry: %s", entry);
-        if (entry != null) {
-            String entryName = entry.getName();
-            int num = 1;
-            boolean duplicated = map.containsKey(entryName);
-            if (duplicated) {
-                String name = root.getName();
-                num = ((map.get(entryName)));
-                root.setName(name.replace(entryName, entryName + num));
-                Log.w(TAG, "Duplicated scene object: %s renamed to %s", name,
-                        root.getName());
-                num++;
-            }
-            map.put(entryName, num);
-        }
-
-        if (root.children() != null) {
-            for (GVRSceneObject child : root.children()) {
-                avoidNameDuplication(child, map, level + 1);
-            }
-        }
-    }
-
+    private static final String ROOT_NODE_NAME = "RootNode";
     private static String TAG = WidgetFactory.class.getSimpleName();
 }

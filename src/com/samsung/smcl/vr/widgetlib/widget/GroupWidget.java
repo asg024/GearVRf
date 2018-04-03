@@ -13,6 +13,9 @@ import com.samsung.smcl.vr.widgetlib.widget.layout.Layout;
 
 public class GroupWidget extends Widget {
 
+    /**
+     * Make {@link OnHierarchyChangedListener listener } interface publicly accessible for GroupWidget
+     */
     public interface OnHierarchyChangedListener extends Widget.OnHierarchyChangedListener {
 
     }
@@ -29,6 +32,19 @@ public class GroupWidget extends Widget {
         super(context, sceneObject);
     }
 
+    /**
+     * A constructor for wrapping existing {@link GVRSceneObject} instances.
+     * Deriving classes should override and do whatever processing is
+     * appropriate.
+     *
+     * @param context
+     *            The current {@link GVRContext}
+     * @param sceneObject
+     *            The {@link GVRSceneObject} to wrap.
+     * @param attributes
+     *            TODO
+     * @throws InstantiationException
+     */
     public GroupWidget(final GVRContext context,
             final GVRSceneObject sceneObject, NodeEntry attributes)
             throws InstantiationException {
@@ -47,6 +63,13 @@ public class GroupWidget extends Widget {
         super(context, width, height);
     }
 
+    /**
+     * Core {@link GroupWidget} constructor.
+     *
+     * @param context A valid {@link GVRContext}.
+     * @param properties A structured set of properties for the {@code GroupWidget} instance. See
+     *                       {@code widget.json} for schema.
+     */
     public GroupWidget(GVRContext context, @NonNull JSONObject properties) {
         super(context, properties);
     }
@@ -62,16 +85,27 @@ public class GroupWidget extends Widget {
         super(context);
     }
 
+    /**
+     * Adds listener for hierarchy change. Make this method publicly accessible for GroupWidget
+     * @param listener
+     * @return
+     */
     public boolean addOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
         return super.addOnHierarchyChangedListener(listener);
     }
 
+    /**
+     * Removes listener for hierarchy change. Make this method publicly accessible for GroupWidget
+     * @param listener
+     * @return
+     */
     public boolean removeOnHierarchyChangedListener(OnHierarchyChangedListener listener) {
         return super.removeOnHierarchyChangedListener(listener);
     }
 
     /**
-     * Add another {@link Widget} as a child of this one.
+     * Add another {@link Widget} as a child of this one. Make this method publicly accessible for
+     * GroupWidget
      *
      * @param child
      *            The {@code Widget} to add as a child.
@@ -84,7 +118,8 @@ public class GroupWidget extends Widget {
     }
 
     /**
-     * Add another {@link Widget} as a child of this one.
+     * Add another {@link Widget} as a child of this one. Make this method publicly accessible for
+     * GroupWidget
      *
      * @param child
      *            The {@code Widget} to add as a child.
@@ -191,10 +226,18 @@ public class GroupWidget extends Widget {
         return super.getChildren();
     }
 
+    /**
+     * Gets child by index
+     * @param index
+     * @return
+     */
     public Widget getChild(int index) {
         return getChildren().get(index);
     }
 
+    /**
+     * Removes all children
+     */
     public void clear() {
         List<Widget> children = getChildren();
         Log.d(TAG, "clear(%s): removing %d children", getName(), children.size());
@@ -204,6 +247,11 @@ public class GroupWidget extends Widget {
         requestLayout();
     }
 
+    /**
+     * Checks if the child is currently in ViewPort
+     * @param dataIndex child index
+     * @return true if the child is in viewport, false - otherwise
+     */
     protected boolean inViewPort(final int dataIndex) {
         boolean inViewPort = true;
 
