@@ -22,7 +22,6 @@ import java.lang.ref.WeakReference;
 public class WidgetLib {
 
     private static WeakReference<WidgetLib> mInstance;
-    private final GVRContext mGvrContext;
     private final FocusManager mFocusManager;
     private final TouchManager mTouchManager;
     private final ContentSceneController mContentSceneController;
@@ -30,13 +29,15 @@ public class WidgetLib {
     private final SimpleAnimationTracker mSimpleAnimationTracker;
     private final MainThread mMainThread;
     private final PropertyManager mPropertyManager;
+    private final CommandBuffer mCommandBuffer;
 
     /**
      * Initialize an instance of Widget Lib. It has to be done before any usage of library.
      * The application needs to hold onto the returned WidgetLib reference for as long as the
      * library is going to be used.
-     * @param gvrContext
-     * @param customPropertiesAsset
+     * @param gvrContext A valid {@link GVRContext} instance
+     * @param customPropertiesAsset An optional asset JSON file containing custom and overridden
+     *                              properties for the application
      * @return Instance of Widget library
      * @throws InterruptedException
      * @throws JSONException
@@ -121,9 +122,12 @@ public class WidgetLib {
         return get().mPropertyManager;
     }
 
+    public static CommandBuffer getCommandBuffer() {
+        return get().mCommandBuffer;
+    }
+
     private WidgetLib(GVRContext gvrContext, String customPropertiesAsset)
             throws InterruptedException, JSONException, NoSuchMethodException {
-        mGvrContext = gvrContext;
         mFocusManager = new FocusManager(gvrContext);
         mTouchManager = new TouchManager(gvrContext);
         mContentSceneController = new ContentSceneController(gvrContext);
@@ -132,8 +136,9 @@ public class WidgetLib {
         mMainThread = new MainThread(gvrContext);
         mPropertyManager = new PropertyManager(gvrContext.getContext(), "default_metadata.json",
                 customPropertiesAsset);
+        mCommandBuffer = new CommandBuffer(gvrContext);
 
-        Widget.init(mGvrContext);
+        Widget.init(gvrContext);
     }
 
     private static WidgetLib get() {

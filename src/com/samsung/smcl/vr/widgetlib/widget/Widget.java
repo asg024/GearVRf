@@ -19,7 +19,6 @@ import com.samsung.smcl.vr.widgetlib.widget.layout.Layout;
 import com.samsung.smcl.vr.widgetlib.widget.layout.basic.AbsoluteLayout;
 
 import com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers;
-import com.samsung.smcl.vr.widgetlib.widget.properties.PropertyManager;
 import com.samsung.smcl.vr.widgetlib.widget.properties.UnmodifiableJSONObject;
 import com.samsung.smcl.vr.widgetlib.R;
 
@@ -1798,30 +1797,9 @@ public class Widget  implements Layout.WidgetContainer {
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "change visibility for widget<%s> to visibility = %s",
                 getName(), visibility);
         if (mParent != null) {
-            final GVRSceneObject parentSceneObject = mParent
-                    .getSceneObject();
-            switch (visibility) {
-                case VISIBLE:
-                    final GVRSceneObject sceneObjectParent = mSceneObject.getParent();
-                    if (sceneObjectParent != parentSceneObject &&
-                            mIsVisibleInViewPort != ViewPortVisibility.INVISIBLE ) {
-                        if (null != sceneObjectParent) {
-                            sceneObjectParent.removeChildObject(mSceneObject);
-                        }
-                        parentSceneObject.addChildObject(mSceneObject);
-                        getGVRContext().getMainScene().bindShaders(parentSceneObject);
-                    }
-                    break;
-                case HIDDEN:
-                case GONE:
-                    if (mVisibility == Visibility.VISIBLE) {
-                        parentSceneObject.removeChildObject(mSceneObject);
-                    }
-                    break;
-                case PLACEHOLDER:
-                    getSceneObject().detachRenderData();
-                    break;
-            }
+            UpdateVisibilityCommand command = UpdateVisibilityCommand.acquire();
+            command.setup(this, mVisibility, visibility, mIsVisibleInViewPort);
+            WidgetLib.getCommandBuffer().add(command);
             if (mVisibility == Visibility.GONE
                     || visibility == Visibility.GONE) {
                 mParent.onTransformChanged();
