@@ -535,7 +535,7 @@ public class Widget  implements Layout.WidgetContainer {
      * {@link #setChildrenFollowInput(boolean)}, with the only difference being
      * that the child is independently grouping itself with the parent for
      * purposes of managing input. If either feature is enabled, the child will
-     * be receive input with the parent.
+     * receive input with the parent.
      *
      * @param follow
      *            {@code true} to enable this {@link Widget} to follow its
@@ -549,19 +549,18 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * An interface to indicate if widget has been either added to or removed from the hierarchy
-     * recently.
+     * An interface to indicate when a widget has been either added to or removed from the hierarchy.
      */
     protected interface OnHierarchyChangedListener {
         /**
-         * Calls on adding the widget to hierarchy
+         * Called when a child Widget is added to hierarchy
          * @param parent parent widget
          * @param child added child
          */
         void onChildWidgetAdded(Widget parent, Widget child);
 
         /**
-         * Calls on removing the widget from hierarchy
+         * Called when a child Widget is removed from hierarchy
          * @param parent parent widget
          * @param child removed child
          */
@@ -733,7 +732,7 @@ public class Widget  implements Layout.WidgetContainer {
      * {@link #setChildrenFollowState(boolean)}, with the only difference being
      * that the child is independently grouping itself with the parent for
      * purposes of managing state change. If either feature is enabled, the child will
-     * change the state with the parent.
+     * change its state with the parent.
      *
      * @param follow
      *            {@code true} to enable this {@link Widget} to follow its
@@ -778,8 +777,8 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Sets the state of the {@link Widget} to {@link WidgetState.State#PRESSED pressed} if
-     * "press" event came and processed by the widget but "release" event has not been delivered yet.
+     * Sets the state of the {@link Widget} to {@link WidgetState.State#PRESSED pressed} if a
+     * "press" event occured and was processed by the widget but a "release" event has not been delivered yet.
      * This state may be accompanied by visual changes -- material, animation, displayed mesh --
      * if it has been specified in the {@code Widget's} metadata.
      *
@@ -796,7 +795,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     /**
      * @return {@code True} if the {@link Widget Widget's} state is set to
-     *         {@linkplain #setPressed(boolean) "pressed", {@code false} if
+     *         {@linkplain #setPressed(boolean) "pressed"}, {@code false} if
      *         it is not.
      */
     public boolean isPressed() {
@@ -880,8 +879,8 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Enable clipping for the widget. Widget content including its children will be clipped by
-     * rectangular View Port. By dafault the clipping is disabled.
+     * Enable clipping for the Widget. Widget content including its children will be clipped by a
+     * rectangular View Port. By default clipping is disabled.
      */
     public void enableClipRegion() {
         if (mClippingEnabled) {
@@ -976,13 +975,13 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * This group of methods get the mesh size of the scene object. It does not take into account
-     * the children meshes.
+     * This group of methods get the mesh size of the Widget. It does not take into account
+     * the meshes of child Widgets.
      */
 
 
     /**
-     * Gest widget mesh width
+     * Gets Widget mesh width
      * @return width
      */
     public float getWidth() {
@@ -990,7 +989,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gest widget mesh height
+     * Gets Widget mesh height
      * @return height
      */
     public float getHeight() {
@@ -998,7 +997,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gest widget mesh depth
+     * Gets Widget mesh depth
      * @return depth
      */
     public float getDepth() {
@@ -1006,15 +1005,15 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * This group of methods get the layout size of the widget. It might be different from mesh size
-     * and bounds size. If Viewport is set up and clipping is enabled the layout size is equal to
-     * viewport size, otherwise - the layout size is the actual widget content size. If more than
-     * one layout is applied to the widget the size is calculated based on their total. The layout
-     * size is used for measuring and laying out the widget inside its parent.
+     * This group of methods get the layout size of the Widget. It might be different from mesh size
+     * and bounds size. If Viewport is set up and clipping is enabled, the layout size is equal to
+     * viewport size; otherwise the layout size is the actual Widget content size. If more than
+     * one layout is applied to the widget, the size is calculated based on their total volume. The
+     * layout size is used for measuring and laying out the Widget inside its parent.
      */
 
     /**
-     * Gest widget layout dimension
+     * Gets Widget layout dimension
      * @param axis
      * @return dimension
      */
@@ -1028,7 +1027,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gest widget layout  width
+     * Gets Widget layout width
      * @return width
      */
     public float getLayoutWidth() {
@@ -1036,7 +1035,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gest widget layout height
+     * Gets Widget layout height
      * @return height
      */
     public float getLayoutHeight() {
@@ -1044,7 +1043,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gest widget layout depth
+     * Gets Widget layout depth
      * @return depth
      */
     public float getLayoutDepth() {
@@ -1053,13 +1052,13 @@ public class Widget  implements Layout.WidgetContainer {
 
 
     /**
-     * This group of methods get the actual size of the widget, how much space the content occupies
-     * including children. It might be different from mesh size and layout size.
+     * This group of methods get the actual size of the Widget: how much space the Widget occupies
+     * including its children. It might be different from mesh size and layout size.
      */
 
 
     /**
-     * Gets widget bounds width
+     * Gets Widget bounds width
      * @return width
      */
     public float getBoundsWidth() {
@@ -1073,7 +1072,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gets widget bounds height
+     * Gets Widget bounds height
      * @return height
      */
     public float getBoundsHeight(){
@@ -1087,7 +1086,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gets widget bounds depth
+     * Gets Widget bounds depth
      * @return depth
      */
     public float getBoundsDepth() {
@@ -1722,7 +1721,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Modify the widget's material current color
+     * Modify the Widget's material current color
      * @param color
      */
     public void setColor(final int color) {
@@ -1730,7 +1729,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Modify the widget's material current color
+     * Modify the Widget's material current color
      * @param rgb
      */
     public void setColor(final float[] rgb) {
@@ -1738,7 +1737,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Modify the widget's material current color
+     * Modify the Widget's material current color
      * @param r
      * @param g
      * @param b
@@ -1748,7 +1747,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Gets the widget's material current color
+     * Gets the Widget's material current color
      * @return color
      */
     public float[] getColor() {
@@ -1766,7 +1765,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Set the widget's opacity. This is dependent on the shader; see
+     * Set the Widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
      *
      * @param opacity
@@ -1777,7 +1776,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Get the widget's opacity. This is dependent on the shader; see
+     * Get the Widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
      *
      * @return Current opacity value, between {@code 0.0f} and {@code 0.1f},
@@ -1891,7 +1890,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Checks if the widget transform has been changed and layout is required. As soon as layout
+     * Checks if the Widget transform has been changed and layout is required. As soon as layout
      * process is finished {@link #mChanged} is cleared.
      * @return true if the transform has been changed , otherwise - false
      */
@@ -1900,15 +1899,15 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Checks if the layout is in progress for that widget
-     * @return true if layout  is not finished yet, otherwise - false
+     * Checks if the layout is in progress for that Widget
+     * @return true if layout  is in progress, otherwise - false
      */
     public boolean isInLayout() {
         return mParent != null && mParent.isInLayout();
     }
 
     /**
-     * Checks if the layout requested has been posted. {@link #mLayoutRequested} is cleared as soon
+     * Checks if the layout has been requested. {@link #mLayoutRequested} is cleared as soon
      * as layout request is processed.
      * @return true if layout for Widget is requested, otherwise - false
      */
@@ -2000,7 +1999,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Finds the widget in hierarchy
+     * Finds the Widget in hierarchy
      * @param name
      * @return
      */
@@ -2062,8 +2061,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
-     * Apply the specified {@link Layout}. Optionally, a call to {@link #requestLayout()} can be
-     * prevented.
+     * Apply the specified {@link Layout}.
      *
      * @param layout
      *          The {@code Layout} to apply

@@ -21,6 +21,7 @@ import java.util.Set;
  * {@link #ROOT_NODE_NAME} in the model. Each node is represented by scene object with set of
  * parameters specifying the widget type, look and feel.
  */
+@Deprecated
 public class NodeEntry {
     private final static Set<String> mandatoryKeys = new HashSet<>();
     private final static Set<String> caseSensitiveKeys = new HashSet<>();

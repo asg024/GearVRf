@@ -40,13 +40,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-
-// TODO: Add support for animation (in particular, we need to handle layout changes)
-// TODO: Scrolling (this is different from rotating, a la AppRing)
-// TODO: Check the synchronization between data set update and items layout
-
 /**
- * A group widget that shows items in the list. Adapter must be associated with this layout.
+ * The {@link ListWidget} is a {@link GroupWidget} extension that displays a list of scrollable items.
+ * The list items are automatically inserted to the list using an Adapter that pulls content from a
+ * source and converts each item result into a {@link Widget} that's placed into the list.
  * The {@link ListWidget} can apply {@link LinearLayout} or {@link RingLayout} or {@link GridLayout}
  *
  * The extended features for the {@link ListWidget} are
@@ -56,9 +53,6 @@ import java.util.Set;
  * - scrolling
  */
 public class ListWidget extends GroupWidget implements ScrollableList {
-
-    private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
-
     /**
      * Interface definition for a callback to be invoked when an item in this {@link ListWidget}
      *  has been focused.
@@ -67,6 +61,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         /**
          * Callback method to be invoked when an item in this {@link ListWidget} has been focused.
+         * @param list {@link ListWidget} instance
          * @param focused true if the item is focused, false - otherwise
          * @param dataIndex item position in the list
          */
@@ -74,12 +69,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
         /**
          * Callback method to be invoked when the long focus occurred for the item in this {@link ListWidget} .
+         * @param list {@link ListWidget} instance
          * @param dataIndex item position in the list
          */
         void onLongFocus(ListWidget list, int dataIndex);
     }
-
-    private final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<>();
 
     /**
      * Add a listener for {@linkplain OnItemFocusListener#onFocus(boolean) focus}
@@ -109,10 +103,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return mItemFocusListeners.remove(listener);
     }
 
-    private boolean mItemFocusEnabled = true;
-
     /**
-     * @return Whether the {@link ListWidget} allows it items to be focused.
+     * @return Whether the {@link ListWidget} allows its items to be focused.
      */
     public boolean getItemFocusEnabled() {
         return mItemFocusEnabled;
@@ -152,12 +144,13 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
     /**
      * Interface definition for a callback to be invoked when an item in this {@link ListWidget}
-     *  has been focused.
+     * has been touched.
      */
     public interface OnItemTouchListener {
         /**
          * Called when a list item is touched (tapped).
          *
+         * @param list {@link ListWidget} instance
          * @param dataIndex target by touch event.
          *
          * @return {@code True} to indicate that no further processing of the
@@ -167,11 +160,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         boolean onTouch(ListWidget list, int dataIndex);
     }
 
-    private final Set<OnItemTouchListener> mItemTouchListeners = new LinkedHashSet<>();
-
     /**
-     * Add a listener for {@linkplain OnItemTouchListener#onTouch notification
-     * for this object.
+     * Add a listener for {@linkplain OnItemTouchListener#onTouch notification for this object.
      *
      * @param listener
      *            An implementation of {@link OnItemTouchListener}.
@@ -200,10 +190,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return removed;
     }
 
-    private boolean mItemTouchable = true;
-
     /**
-     * @return Whether the {@link ListWidget} allows it items to be touchable.
+     * @return Whether the {@link ListWidget} allows its items to be touchable.
      */
     public boolean getItemTouchable() {
         return mItemTouchable;
@@ -236,37 +224,14 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         }
     }
 
-    OnHierarchyChangedListener mOnListItemsUpdatedListener = new OnHierarchyChangedListener() {
-        public void onChildWidgetAdded(Widget parent, Widget child) {
-            Widget item = ((ListItemHostWidget)child).getGuest();
-            if (item != null) {
-                doOnItemAdded(item);
-            }
-        }
-        public void onChildWidgetRemoved(Widget parent, Widget child) {
-            Widget item = ((ListItemHostWidget)child).getGuest();
-            if (item != null) {
-                doOnItemRemoved(item);
-            }
-        }
-    };
-
-    protected void doOnItemAdded(Widget item) {
-        item.setFocusEnabled(mItemFocusEnabled);
-        item.setTouchable(mItemTouchable);
-
-        item.addFocusListener(mOnFocusListener);
-        item.addTouchListener(mOnTouchListener);
-    }
-
-    protected void doOnItemRemoved(Widget item) {
-        item.setTouchable(false);
-        item.setFocusEnabled(false);
-
-        item.removeFocusListener(mOnFocusListener);
-        item.removeTouchListener(mOnTouchListener);
-    }
-
+    /**
+     * Construct a new {@code ListWidget} instance with defined properties. Adapter is not setup
+     *
+     * @param gvrContext
+     *            The active {@link GVRContext}.
+     * @param properties A structured set of properties for the {@code ListWidget} instance. See
+     *                       {@code widget.json} for schema.
+     */
     public ListWidget(final GVRContext gvrContext, final JSONObject properties) {
         super(gvrContext, properties);
         init(gvrContext, null);
@@ -286,93 +251,14 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         init(gvrContext, adapter);
     }
 
-    private ContentWidget mContent;
-    private float mAnimationRate;
-    private Easing mAnimationEasing;
-
+    /**
+     * Definition of properties for the {@code ListWidget}
+     */
     public enum Properties { transition_animation, rate, easing }
 
-    private void init(final GVRContext gvrContext, final Adapter adapter) {
-        JSONObject properties = getObjectMetadata();
-        JSONObject transitionAnimationProperties = optJSONObject(properties,
-                Properties.transition_animation, true);
-        Log.d(TAG, "init(%s): transition_animation: %s", getName(), transitionAnimationProperties);
-        mAnimationRate = optFloat(transitionAnimationProperties, Properties.rate, ANIMATION_SPEED);
-        mAnimationEasing = optEnum(transitionAnimationProperties, Properties.easing, Easing.LINEAR);
-        Log.d(TAG, "init(%s): easing: %s", getName(), mAnimationEasing);
-
-        mContent = new ContentWidget(gvrContext);
-        mContent.setName("Content<" + getName() + ">");
-        mContent.addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
-        addChild(mContent);
-//      if (adapter != null) {
-            onChanged(adapter);
-  //      }
-    }
-
-    private OnFocusListener mOnFocusListener = new OnFocusListener() {
-        @Override
-        public boolean onFocus(final Widget widget, final boolean focused) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget, focused);
-            Widget parent = widget.getParent();
-            if (parent instanceof ListItemHostWidget) {
-                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
-                for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onFocus(ListWidget.this, focused, dataIndex);
-                }
-            } else {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Focused widget is not a list item!");
-            }
-            return false;
-        }
-
-        @Override
-        public boolean onLongFocus(Widget widget) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLongFocus(%s) widget= %s", getName(), widget.getName());
-            Widget parent = widget.getParent();
-            boolean ret = false;
-            if (parent instanceof ListItemHostWidget) {
-                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
-                for (OnItemFocusListener listener : mItemFocusListeners) {
-                    listener.onLongFocus(ListWidget.this, dataIndex);
-                }
-                ret = true;
-            } else {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Long focused widget is not a list item!");
-            }
-            return ret;
-        }
-    };
-
-
-    private OnTouchListener mOnTouchListener = new OnTouchListener() {
-        @Override
-        public boolean onTouch(Widget widget, final float[] coords) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch(%s) widget= %s mSelectOnTouchEnabled=%b ",
-                    getName(), widget, mSelectOnTouchEnabled);
-            Widget parent = widget.getParent();
-            if (parent instanceof ListItemHostWidget) {
-                ListItemHostWidget host = (ListItemHostWidget) parent;
-                int dataIndex = host.getDataIndex();
-                if (mSelectOnTouchEnabled) {
-                    toggleItem(dataIndex);
-                }
-
-                for (OnItemTouchListener listener : mItemTouchListeners) {
-                    listener.onTouch(ListWidget.this, dataIndex);
-                }
-            } else {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch widget is not a list item!");
-            }
-            return false;
-        }
-    };
-
     /**
-     * Set the {@link Adapter} for the {@code ListLayout}. The list will
+     * Set the {@link Adapter} for the {@code ListWidget}. The list will
      * immediately attempt to load data from the adapter.
-     * {@link Adapter#getView} is
-     * guaranteed to be called from the GL thread.
      *
      * @param adapter
      *            An adapter or {@code null} to clear the list.
@@ -381,16 +267,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         onChanged(adapter);
     }
 
-    protected void onChanged() {
-        onChanged(mAdapter);
-    }
-
-    private Set<DataSetObserver> mObservers = new HashSet<>();
-
     /**
      * The callback is called *after* the list relayout (affected by adapter change) has been done.
-     * Add DataSetObserver listener directly to the adapter if you rae interested in the callback
-     * immediately after adapter onCahnged().
+     * Add DataSetObserver listener directly to the adapter if you are interested in the callback
+     * immediately after {@link #onChanged()}.
      * @param observer
      */
     public void registerDataSetObserver(final DataSetObserver observer) {
@@ -433,196 +313,60 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return ret;
     }
 
+    @Override
     public boolean hasLayout(Layout layout) {
         return mContent.hasLayout(layout);
     }
 
-
-    protected void onChanged(final Adapter adapter) {
-        runOnGlThread(new Runnable() {
-            @Override
-            public void run() {
-                if (adapter != mAdapter) {
-                    mOnInvalidated = true;
-                    if (mAdapter != null) {
-                        try {
-                            mAdapter.unregisterDataSetObserver(mInternalObserver);
-                        } catch (IllegalStateException e) {
-                            Log.w(TAG, "onChanged(%s): internal observer not registered on adapter!", getName());
-                        }
-                        clear();
-                        notifyOnInvalidated();
-                    }
-                    mAdapter = adapter;
-                    if (mAdapter != null) {
-                        mAdapter.registerDataSetObserver(mInternalObserver);
-                    }
-
-                }
-                onChangedImpl(-1);
-            }
-        });
-    }
-
-    private Set<ListOnChangedListener> mOnChangedListeners = new HashSet<>();
-
-    protected interface ListOnChangedListener {
+    /**
+     * Listening the list changes
+     */
+    public interface ListOnChangedListener {
+        /**
+         * Calling from {@link #onChanged()} before any relayout happens but after the data set
+         * is refreshed.
+         * @param list
+         */
         void onChangedStart(ListWidget list);
+        /**
+         * Calling from {@link ContentWidget#measureLayout(Layout)}} before actual relayout happens
+         * but after all measurements are done
+         * @param list
+         * @param numOfMeasuredViews number of views in the list after the rearrangement.
+         */
         void onChangedFinished(ListWidget list, int numOfMeasuredViews);
     }
 
+    /**
+     * Add {@link ListOnChangedListener listener}
+     * @param listener
+     */
     public void addListOnChangedListener(final ListOnChangedListener listener) {
         mOnChangedListeners.add(listener);
     }
 
+    /**
+     * Remove {@link ListOnChangedListener listener}
+     * @param listener
+     */
     public void removeListOnChangedListener(final ListOnChangedListener listener) {
         mOnChangedListeners.remove(listener);
     }
 
+    @Override
+    public boolean isTransitionAnimationEnabled() {
+        return mContent.mEnableTransitionAnimation;
+    }
+
+    @Override
+    public void enableTransitionAnimation(final boolean enable) {
+        mContent.enableTransitionAnimation(enable);
+    }
 
     /**
-     * This method is called if the data set has been changed. Subclass might want to override this method to
-     * add some extra logic.
-     *
-     * Go through all items in the list:
-     * - reuse the existing views in the list
-     * - add new views in the list if needed
-     * - trim the unused views
-     * - request re-layout
-     *
-     * @param preferableCenterPosition the preferable center position. If it is -1 - keep the
-     * current center position.
+     * Get all view from the list content
+     * @return list of views currently visible
      */
-    protected void onChangedImpl(final int preferableCenterPosition) {
-        for (ListOnChangedListener listener: mOnChangedListeners) {
-            listener.onChangedStart(this);
-        }
-
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedImpl(%s): items [%d] views [%d] mLayouts.size() = %d " +
-              "preferableCenterPosition = %d",
-              getName(), getDataCount(), getViewCount(), mContent.mLayouts.size(), preferableCenterPosition);
-
-        // TODO: selectively recycle data based on the changes in the data set
-        mPreferableCenterPosition = preferableCenterPosition;
-        recycleChildren();
-    }
-
-
-    private int mPreferableCenterPosition = -1;
-
-    private class ContentWidget extends GroupWidget {
-
-        ContentWidget(GVRContext gvrContext) {
-            super(gvrContext, 0, 0);
-        }
-        @Override
-        protected boolean measureLayout(Layout layout) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] measure layout = %s", this, layout);
-            int centerPosition = mPreferableCenterPosition;
-            // scrolling is in progress, do not remeasure the layout!
-            Collection<Widget> measuredChildren = new LinkedHashSet<>();
-            layout.measureUntilFull(centerPosition, measuredChildren);
-            centerPosition = layout.getCenterChild();
-
-            for (Widget next: measuredChildren) {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout<next>: [%s] %s", next.getName(), next);
-            }
-
-            List<ListItemHostWidget> views = getAllHosts();
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d]", measuredChildren.size(), views.size());
-            int count = 0;
-            for (ListItemHostWidget host : views) {
-                if (!measuredChildren.contains(host)) {
-                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] %s recycling", host.getName(), host);
-                    recycle(host);
-                } else {
-                    count++;
-                }
-            }
-
-            for (ListOnChangedListener listener : mOnChangedListeners) {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mOnChangedListeners listener[%s] count[%d]", listener, count);
-                listener.onChangedFinished(ListWidget.this, count);
-            }
-            mTrimRequest = true;
-
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measure layout mPreferableCenterPosition = %d, newPosition = %d",
-                    mPreferableCenterPosition, centerPosition);
-
-            return true;
-        }
-
-        @Override
-        protected boolean onLayout() {
-            boolean changed = false;
-
-            if (!isScrolling()) {
-                changed = super.onLayout();
-            } else {
-                for (Layout layout : mLayouts) {
-                    layout.layoutChildren();
-                }
-            }
-
-            if (mTrimRequest) {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Trim %d items ", mRecycledViews.size());
-                mRecycledViews.clear();
-                mTrimRequest = false;
-            }
-
-            notifyOnInvalidated();
-            notifyOnChanged();
-            return changed;
-        }
-
-        @Override
-        public boolean isChanged() {
-            return isScrolling() ? true : super.isChanged();
-        }
-
-        /**
-         * WidgetContainer implementation through Adapter
-         */
-        @Override
-        public ListItemHostWidget get(final int dataIndex) {
-            return getRecycleableView(dataIndex);
-        }
-
-        @Override
-        public int size() {
-            return getDataCount();
-        }
-
-        @Override
-        public int getDataIndex(Widget widget) {
-            return widget instanceof ListItemHostWidget ?
-                    ((ListItemHostWidget) widget).getDataIndex() :
-                    super.getDataIndex(widget);
-        }
-
-        @Override
-        public boolean isDynamic() {
-            return true;
-        }
-
-        @Override
-        public void onTransformChanged() {
-            super.onTransformChanged();
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mContent onTransformChanged: position = [%f, %f, %f]",
-                    getPositionX(), getPositionY(), getPositionZ());
-
-        }
-    }
-
-    private List<ListItemHostWidget> getAllHosts() {
-        List<ListItemHostWidget> hosts = new ArrayList<>();
-        for (Widget child: mContent.getChildren()) {
-            hosts.add((ListItemHostWidget)child);
-        }
-        return hosts;
-    }
-
-
     public List<Widget> getAllViews() {
         List<Widget> views = new ArrayList<>();
         for (Widget child: mContent.getChildren()) {
@@ -634,7 +378,11 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return views;
     }
 
-
+    /**
+     * Get view from the list content by index
+     * @return Widget by data set index, the index it is presented by in Adapter. It is not the
+     * same as the index in the widget list due to some items from data set might be invisible.
+     */
     public Widget getView(int dataIndex) {
         Widget view = null;
         for (Widget child: mContent.getChildren()) {
@@ -647,99 +395,282 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return view;
     }
 
-    private List<ListItemHostWidget> mRecycledViews = new ArrayList<>();
-    private boolean mTrimRequest;
-
-
+    /**
+     * clear all views from the list
+     */
     public void clear() {
         clearSelection(false);
         mContent.clear();
     }
 
-    protected void recycleChildren() {
-        for (ListItemHostWidget host: getAllHosts()) {
-            recycle(host);
-        }
-        mContent.onTransformChanged();
-        mContent.requestLayout();
-    }
-
-    protected void onRecycle(Widget view, int dataIndex) {
-    }
-
-    private void recycle(ListItemHostWidget host) {
-        mContent.removeChild(host, true);
-
-        if (!host.isRecycled()) {
-            Widget view = host.getGuest();
-            onRecycle(view, host.getDataIndex());
-
-            mContent.invalidateAllLayouts(host);
-
-            host.recycle();
-            if (!mRecycledViews.contains(host)) {
-                mRecycledViews.add(host);
-            }
-        }
-    }
-
-
-    public boolean isScrolling() {
-        return mScroller == null ? false : mScroller.doScrolling();
-    }
-
     /**
-     * This method is called if the data set has been scrolled.
+     * Stop scrolling immediately with interrupting the scrolling animation
      */
-    protected void onScrollImpl(final Vector3Axis offset, final LayoutScroller.OnScrollListener listener) {
-        if (!isScrolling()) {
-            mScroller = new ScrollingProcessor(offset, listener);
-            mScroller.scroll();
-        }
-    }
-
-    ScrollingProcessor mScroller = null;
-    protected void onScrollImpl(final int scrollToPosition, final LayoutScroller.OnScrollListener listener) {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onScrollImpl(): scrollToPosition = %d animated = %b",
-              scrollToPosition, isTransitionAnimationEnabled());
-
-        if (isTransitionAnimationEnabled()) {
-            if (!isScrolling()) {
-                mScroller = new ScrollingProcessor(scrollToPosition, listener);
-                mScroller.scroll();
-            }
-        } else {
-            WidgetLib.getMainThread().
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (listener != null) {
-                                listener.onScrollStarted(getCurrentPosition());
-                            }
-                        }
-                    });
-            onChangedImpl(scrollToPosition);
-            WidgetLib.getMainThread().
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (listener != null) {
-                                listener.onScrollFinished(getCurrentPosition());
-                            }
-                        }
-                    });
-        }
-    }
-
-
     public void stopScrolling() {
         if (isScrolling()) {
             mScroller.stopScrolling();
         }
     }
 
+    /**
+     * Enable/disable multi-selection option
+     * @param enable
+     */
+    public void enableMultiSelection(boolean enable) {
+        if (enable != mMultiSelectionSupported) {
+            clearSelection();
+            mMultiSelectionSupported = enable;
+        }
+    }
+
+    /**
+     * Enable/disable select on touch
+     * @param enable
+     */
+    public void enableSelectOnTouch(boolean enable) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "enableSelectOnTouch %s enable = %b", getName(), enable);
+        mSelectOnTouchEnabled = enable;
+    }
+
+    /**
+     * @return {@code true} if the multi-selection option is enabled
+     *         {@code false} otherwise.
+     */
+    public boolean isMultiSelectionEnabled() {
+        return mMultiSelectionSupported;
+    }
+
+    /**
+     * @return {@code true} if the select on touch option is enabled
+     *         {@code false} otherwise.
+     */
+    public boolean isSelectOnTouchEnabled() {
+        return mSelectOnTouchEnabled;
+    }
+
+
+    /**
+     * Clear the selection of all the items if any.
+     * @return {@code true} if at least one item was deselected,
+     *         {@code false} otherwise.
+     */
+    public boolean clearSelection() {
+        return clearSelection(true);
+    }
+
+    /**
+     * Clear the selection of all the items if any.
+     * @param requestLayout request layout after that if the flag is true, no request layout
+     *                      processing otherwise
+     * @return {@code true} if at least one item was deselected,
+     *         {@code false} otherwise.
+     */
+    public boolean clearSelection(boolean requestLayout) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "clearSelection [%d]", mSelectedItemsList.size());
+
+        boolean updateLayout = false;
+        List<ListItemHostWidget>  views = getAllHosts();
+        for (ListItemHostWidget host: views) {
+            if (host.isSelected()) {
+                host.setSelected(false);
+                updateLayout = true;
+                if (requestLayout) {
+                    host.requestLayout();
+                }
+            }
+        }
+        clearSelectedItemsList();
+        return updateLayout;
+    }
+
+    /**
+     * Select or deselect an item at position {@code pos}.
+     *
+     * @param dataIndex
+     *            item position in the adapter
+     * @param select
+     *            operation to perform select or deselect.
+     * @return {@code true} if the requested operation is successful,
+     *         {@code false} otherwise.
+     */
+    public boolean selectItem(int dataIndex, boolean select) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selectItem [%d] select [%b]", dataIndex, select);
+        if (dataIndex < 0 || dataIndex >= mContent.size()) {
+            throw new IndexOutOfBoundsException("Selection index [" + dataIndex + "] is out of bounds!");
+        }
+
+        updateSelectedItemsList(dataIndex, select);
+
+        ListItemHostWidget hostWidget = getHostView(dataIndex, false);
+        if (hostWidget != null) {
+            hostWidget.setSelected(select);
+            hostWidget.requestLayout();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Reverse the selection state fo the view
+     * @param dataIndex
+     * @return {@code true} if the requested operation is successful,
+     *         {@code false} otherwise.
+     */
+    public boolean toggleItem(int dataIndex) {
+        return selectItem(dataIndex, !isSelected(dataIndex));
+    }
+
+    /**
+     * Clear the list of selected items
+     */
+    public void clearSelectedItemsList() {
+        mSelectedItemsList.clear();
+    }
+
+    public boolean updateSelectedItemsList(List<Integer> dataIndexs, boolean select) {
+        boolean updated = false;
+        for (int dataIndex: dataIndexs) {
+            updated = updateSelectedItemsList(dataIndex, select) || updated;
+        }
+        return updated;
+    }
+
+    /**
+     * Update the selection state of the item
+     * @param dataIndex data set index
+     * @param select if it is true the item is marked as selected, otherwise - unselected
+     * @return true if the selection state has been changed successfully, otherwise - false
+     */
+    public boolean updateSelectedItemsList(int dataIndex, boolean select) {
+        boolean done = false;
+        boolean contains =  isSelected(dataIndex);
+        if (select) {
+            if (!contains) {
+                if (!mMultiSelectionSupported) {
+                    clearSelection(false);
+                }
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateSelectedItemsList add index = %d", dataIndex);
+                mSelectedItemsList.add(dataIndex);
+                done = true;
+            }
+        } else {
+            if (contains) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateSelectedItemsList remove index = %d", dataIndex);
+                mSelectedItemsList.remove(dataIndex);
+                done = true;
+            }
+        }
+        return done;
+    }
+
+    /**
+     * Check whether the item at position {@code pos} is selected.
+     *
+     * @param dataIndex
+     *            item position in adapter
+     * @return {@code true} if the item is selected, {@code false} otherwise.
+     */
+    public boolean isSelected(int dataIndex) {
+        return dataIndex < mContent.size() && mSelectedItemsList.contains(dataIndex);
+    }
+
+    /**
+     * @return get the list of selected views.
+     */
+    public Set<Integer> getSelectedItems() {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getSelectedItems: size = %d", mSelectedItemsList.size());
+        for (int id: mSelectedItemsList) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selected: <%d>", id);
+        }
+
+        return new HashSet<>(mSelectedItemsList);
+    }
+
+    //  =================== Scrolling <start> =========================
+
+    @Override
+    public boolean scrollToPosition(final int dataIndex,
+                                    final LayoutScroller.OnScrollListener listener) {
+        if (isScrolling()) {
+            return false;
+        }
+
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPosition, position = %d", dataIndex);
+
+        boolean scrolled = false;
+        if (dataIndex >= 0 && dataIndex < getScrollingItemsCount()) {
+            onScrollImpl(dataIndex, listener);
+            scrolled = true;
+        } else {
+            Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Scroll out of bounds pos = [%d] getDataCount() = [%d]",
+                    dataIndex, getScrollingItemsCount());
+        }
+        return scrolled;
+    }
+
+    /**
+     * Scroll all items in the {@link ListWidget} by {@code rotation} degrees}.
+     *
+     * @param xOffset
+     * @param yOffset
+     * @param zOffset
+     *            The amount to scroll, in degrees.
+     */
+    @Override
+    public boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset,
+                                  final LayoutScroller.OnScrollListener listener) {
+        if (isScrolling()) {
+            return false;
+        }
+
+        Vector3Axis offset = new Vector3Axis(xOffset, yOffset, zOffset);
+        if (offset.isInfinite() || offset.isNaN()) {
+            Log.e(TAG, new IllegalArgumentException(),
+                    "Invalid scrolling delta: %s", offset);
+            return false;
+        }
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollBy(%s): offset %s", getName(), offset);
+
+        onScrollImpl(offset, listener);
+        return true;
+    }
+
+    @Override
+    public int getScrollingItemsCount() {
+        return getDataCount();
+    }
+
+    @Override
+    public int getCurrentPosition() {
+        int pos = 0;
+        for (Layout layout : mContent.mLayouts) {
+            pos = layout.getCenterChild();
+        }
+        return pos;
+    }
+
+    /**
+     * Get offset of the item along X
+     * TODO: This feature is not implemented, we do not have plan to implemented it soonish.
+     * TODO: It is in use in VRTop 1.0 only,  the interface has to be cleanup as soon as VRTop 1.0
+     * TODO: will be moved out from Wonderwall project.
+     *
+     * @param position:  the position in the dataset.
+     * @return  the x-offset of the view displaying the data at position;
+     *          if that data is not being displayed, return Float.NaN.
+     */
+    public float getItemOffsetX(int position) {
+        if (position < 0 || position >= getDataCount()) {
+            return Float.NaN;
+        }
+        return Float.NaN;
+    }
+
+    //===================== Scrolling <end> =============================
+
     //  Scrolling processor
-    class ScrollingProcessor {
+    private class ScrollingProcessor {
         private int mScrollToPosition = -1;
         private Vector3Axis mScrollByOffset = new Vector3Axis(Float.NaN, Float.NaN, Float.NaN);
         private SimpleAnimationTracker animationTracker = WidgetLib.getSimpleAnimationTracker();
@@ -1242,303 +1173,256 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         private Widget mGuestWidget;
         private int mDataIndex = -1;
     }
-
-    private boolean mMultiSelectionSupported;
-    private boolean mSelectOnTouchEnabled;
+    private boolean isScrolling() {
+        return mScroller == null ? false : mScroller.doScrolling();
+    }
 
     /**
-     * Enable/disable multi-selection option
-     * @param enable
+     * This method is called if the data set has been scrolled.
      */
-    public void enableMultiSelection(boolean enable) {
-        if (enable != mMultiSelectionSupported) {
-            clearSelection();
-            mMultiSelectionSupported = enable;
+    private void onScrollImpl(final Vector3Axis offset, final LayoutScroller.OnScrollListener listener) {
+        if (!isScrolling()) {
+            mScroller = new ScrollingProcessor(offset, listener);
+            mScroller.scroll();
+        }
+    }
+
+    private ScrollingProcessor mScroller = null;
+    private void onScrollImpl(final int scrollToPosition, final LayoutScroller.OnScrollListener listener) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onScrollImpl(): scrollToPosition = %d animated = %b",
+                scrollToPosition, isTransitionAnimationEnabled());
+
+        if (isTransitionAnimationEnabled()) {
+            if (!isScrolling()) {
+                mScroller = new ScrollingProcessor(scrollToPosition, listener);
+                mScroller.scroll();
+            }
+        } else {
+            WidgetLib.getMainThread().
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null) {
+                                listener.onScrollStarted(getCurrentPosition());
+                            }
+                        }
+                    });
+            onChangedImpl(scrollToPosition);
+            WidgetLib.getMainThread().
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null) {
+                                listener.onScrollFinished(getCurrentPosition());
+                            }
+                        }
+                    });
         }
     }
 
     /**
-     * Enable/disable select on touch
-     * @param enable
+     * Recycle all views in the list. The host views might be used for the future data to
+     * save resources on creating new widgets.
      */
-    public void enableSelectOnTouch(boolean enable) {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "enableSelectOnTouch %s enable = %b", getName(), enable);
-        mSelectOnTouchEnabled = enable;
+    protected void recycleChildren() {
+        for (ListItemHostWidget host: getAllHosts()) {
+            recycle(host);
+        }
+        mContent.onTransformChanged();
+        mContent.requestLayout();
     }
 
     /**
-     * @return {@code true} if the multi-selection option is enabled
-     *         {@code false} otherwise.
+     * Calling before recycling the host
+     * @param view hosting view
+     * @param dataIndex data set index
      */
-    public boolean isMultiSelectionEnabled() {
-        return mMultiSelectionSupported;
+    protected void onRecycle(Widget view, int dataIndex) {
     }
 
-    /**
-     * @return {@code true} if the select on touch option is enabled
-     *         {@code false} otherwise.
-     */
-    public boolean isSelectOnTouchEnabled() {
-        return mSelectOnTouchEnabled;
-    }
+    private void recycle(ListItemHostWidget host) {
+        mContent.removeChild(host, true);
 
+        if (!host.isRecycled()) {
+            Widget view = host.getGuest();
+            onRecycle(view, host.getDataIndex());
 
-    /**
-     * Clear the selection of all the items if any.
-     * @return {@code true} if at least one item was deselected,
-     *         {@code false} otherwise.
-     */
-    public boolean clearSelection() {
-        return clearSelection(true);
-    }
+            mContent.invalidateAllLayouts(host);
 
-    public boolean clearSelection(boolean requestLayout) {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "clearSelection [%d]", mSelectedItemsList.size());
-
-        boolean updateLayout = false;
-        List<ListItemHostWidget>  views = getAllHosts();
-        for (ListItemHostWidget host: views) {
-            if (host.isSelected()) {
-                host.setSelected(false);
-                updateLayout = true;
-                if (requestLayout) {
-                    host.requestLayout();
-                }
+            host.recycle();
+            if (!mRecycledViews.contains(host)) {
+                mRecycledViews.add(host);
             }
         }
-        clearSelectedItemsList();
-        return updateLayout;
     }
 
     /**
-     * Select or deselect an item at position {@code pos}.
+     * This method is called if the data set has been changed. Subclass might want to override this method to
+     * add some extra logic.
      *
-     * @param dataIndex
-     *            item position in the adapter
-     * @param select
-     *            operation to perform select or deselect.
-     * @return {@code true} if the requested operation is successful,
-     *         {@code false} otherwise.
+     * Go through all items in the list:
+     * - reuse the existing views in the list
+     * - add new views in the list if needed
+     * - trim the unused views
+     * - request re-layout
+     *
+     * @param preferableCenterPosition the preferable center position. If it is -1 - keep the
+     * current center position.
      */
-    public boolean selectItem(int dataIndex, boolean select) {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selectItem [%d] select [%b]", dataIndex, select);
-        if (dataIndex < 0 || dataIndex >= mContent.size()) {
-            throw new IndexOutOfBoundsException("Selection index [" + dataIndex + "] is out of bounds!");
+    private void onChangedImpl(final int preferableCenterPosition) {
+        for (ListOnChangedListener listener: mOnChangedListeners) {
+            listener.onChangedStart(this);
         }
 
-        updateSelectedItemsList(dataIndex, select);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onChangedImpl(%s): items [%d] views [%d] mLayouts.size() = %d " +
+                        "preferableCenterPosition = %d",
+                getName(), getDataCount(), getViewCount(), mContent.mLayouts.size(), preferableCenterPosition);
 
-        ListItemHostWidget hostWidget = getHostView(dataIndex, false);
-        if (hostWidget != null) {
-            hostWidget.setSelected(select);
-            hostWidget.requestLayout();
+        // TODO: selectively recycle data based on the changes in the data set
+        mPreferableCenterPosition = preferableCenterPosition;
+        recycleChildren();
+    }
+
+
+    private class ContentWidget extends GroupWidget {
+
+        ContentWidget(GVRContext gvrContext) {
+            super(gvrContext, 0, 0);
+        }
+        @Override
+        protected boolean measureLayout(Layout layout) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "[%s] measure layout = %s", this, layout);
+            int centerPosition = mPreferableCenterPosition;
+            // scrolling is in progress, do not remeasure the layout!
+            Collection<Widget> measuredChildren = new LinkedHashSet<>();
+            layout.measureUntilFull(centerPosition, measuredChildren);
+            centerPosition = layout.getCenterChild();
+
+            for (Widget next: measuredChildren) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout<next>: [%s] %s", next.getName(), next);
+            }
+
+            List<ListItemHostWidget> views = getAllHosts();
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: [%d] [%d]", measuredChildren.size(), views.size());
+            int count = 0;
+            for (ListItemHostWidget host : views) {
+                if (!measuredChildren.contains(host)) {
+                    Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureLayout: item [%s] %s recycling", host.getName(), host);
+                    recycle(host);
+                } else {
+                    count++;
+                }
+            }
+
+            for (ListOnChangedListener listener : mOnChangedListeners) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mOnChangedListeners listener[%s] count[%d]", listener, count);
+                listener.onChangedFinished(ListWidget.this, count);
+            }
+            mTrimRequest = true;
+
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measure layout mPreferableCenterPosition = %d, newPosition = %d",
+                    mPreferableCenterPosition, centerPosition);
+
             return true;
         }
 
-        return false;
-    }
+        @Override
+        protected boolean onLayout() {
+            boolean changed = false;
 
-    public boolean toggleItem(int dataIndex) {
-        return selectItem(dataIndex, !isSelected(dataIndex));
-    }
-
-    public void clearSelectedItemsList() {
-        mSelectedItemsList.clear();
-    }
-
-    public boolean updateSelectedItemsList(List<Integer> dataIndexs, boolean select) {
-        boolean updated = false;
-        for (int dataIndex: dataIndexs) {
-            updated = updateSelectedItemsList(dataIndex, select) || updated;
-        }
-        return updated;
-    }
-
-    public boolean updateSelectedItemsList(int dataIndex, boolean select) {
-        boolean done = false;
-        boolean contains =  isSelected(dataIndex);
-        if (select) {
-            if (!contains) {
-                if (!mMultiSelectionSupported) {
-                    clearSelection(false);
+            if (!isScrolling()) {
+                changed = super.onLayout();
+            } else {
+                for (Layout layout : mLayouts) {
+                    layout.layoutChildren();
                 }
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateSelectedItemsList add index = %d", dataIndex);
-                mSelectedItemsList.add(dataIndex);
-                done = true;
             }
-        } else {
-            if (contains) {
-                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateSelectedItemsList remove index = %d", dataIndex);
-                mSelectedItemsList.remove(dataIndex);
-                done = true;
+
+            if (mTrimRequest) {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Trim %d items ", mRecycledViews.size());
+                mRecycledViews.clear();
+                mTrimRequest = false;
             }
+
+            notifyOnInvalidated();
+            notifyOnChanged();
+            return changed;
         }
-        return done;
+
+        @Override
+        public boolean isChanged() {
+            return isScrolling() ? true : super.isChanged();
+        }
+
+        /**
+         * WidgetContainer implementation through Adapter
+         */
+        @Override
+        public ListItemHostWidget get(final int dataIndex) {
+            return getRecycleableView(dataIndex);
+        }
+
+        @Override
+        public int size() {
+            return getDataCount();
+        }
+
+        @Override
+        public int getDataIndex(Widget widget) {
+            return widget instanceof ListItemHostWidget ?
+                    ((ListItemHostWidget) widget).getDataIndex() :
+                    super.getDataIndex(widget);
+        }
+
+        @Override
+        public boolean isDynamic() {
+            return true;
+        }
+
+        @Override
+        public void onTransformChanged() {
+            super.onTransformChanged();
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "mContent onTransformChanged: position = [%f, %f, %f]",
+                    getPositionX(), getPositionY(), getPositionZ());
+
+        }
     }
 
-    /**
-     * Check whether the item at position {@code pos} is selected.
-     *
-     * @param dataIndex
-     *            item position in adapter
-     * @return {@code true} if the item is selected, {@code false} otherwise.
-     */
-    public boolean isSelected(int dataIndex) {
-        return dataIndex < mContent.size() && mSelectedItemsList.contains(dataIndex);
+    private List<ListItemHostWidget> getAllHosts() {
+        List<ListItemHostWidget> hosts = new ArrayList<>();
+        for (Widget child: mContent.getChildren()) {
+            hosts.add((ListItemHostWidget)child);
+        }
+        return hosts;
     }
 
-    /**
-     * @return get the list of selected views.
-     */
-    public Set<Integer> getSelectedItems() {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getSelectedItems: size = %d", mSelectedItemsList.size());
-        for (int id: mSelectedItemsList) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "selected: <%d>", id);
-        }
+    private void onChanged(final Adapter adapter) {
+        runOnGlThread(new Runnable() {
+            @Override
+            public void run() {
+                if (adapter != mAdapter) {
+                    mOnInvalidated = true;
+                    if (mAdapter != null) {
+                        try {
+                            mAdapter.unregisterDataSetObserver(mInternalObserver);
+                        } catch (IllegalStateException e) {
+                            Log.w(TAG, "onChanged(%s): internal observer not registered on adapter!", getName());
+                        }
+                        clear();
+                        notifyOnInvalidated();
+                    }
+                    mAdapter = adapter;
+                    if (mAdapter != null) {
+                        mAdapter.registerDataSetObserver(mInternalObserver);
+                    }
 
-        return new HashSet<>(mSelectedItemsList);
+                }
+                onChangedImpl(-1);
+            }
+        });
     }
 
-    protected Set<Integer> mSelectedItemsList = new HashSet<>();
-
-    //  =================== Scrolling <start> =========================
-
-    @Override
-    public boolean scrollToPosition(final int dataIndex,
-                                    final LayoutScroller.OnScrollListener listener) {
-        if (isScrolling()) {
-            return false;
-        }
-
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPosition, position = %d", dataIndex);
-
-        boolean scrolled = false;
-        if (dataIndex >= 0 && dataIndex < getScrollingItemsCount()) {
-            onScrollImpl(dataIndex, listener);
-            scrolled = true;
-        } else {
-            Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Scroll out of bounds pos = [%d] getDataCount() = [%d]",
-                    dataIndex, getScrollingItemsCount());
-        }
-        return scrolled;
-    }
-
-    /**
-     * Rotate the items in the {@link ListWidget} until the item at {@code pos} is
-     * rotated to {@code rotation}.
-     *
-     * Do not call from the GL thread; notice the waitAfterStep.
-     *
-     * @param dataIndex
-     *            Position of the item in the data set
-     * @param xOffset
-     * @param yOffset
-     * @param zOffset
-     */
-    public void scrollItemTo(final int dataIndex,
-            final float xOffset, final float yOffset, final float zOffset) {
-        if (dataIndex < 0 || dataIndex >= getScrollingItemsCount()) {
-            return;
-        }
-        Vector3Axis offset = new Vector3Axis(xOffset, yOffset, zOffset);
-        if (offset.isInfinite() || offset.isNaN()) {
-            return;
-        }
-
-        // -(offset - 180)
-        Vector3Axis requiredOffset = new Vector3Axis(offset.add(-180, -180, -180).mul(-1));
-        Vector3Axis currentOffset = new Vector3Axis(getItemOffsetX(dataIndex),
-                       getItemOffsetY(dataIndex), getItemOffsetZ(dataIndex));
-        Vector3Axis deltaOffset = requiredOffset.delta(currentOffset);
-
-        scrollByOffset(deltaOffset.get(Axis.X),
-                       deltaOffset.get(Axis.Y), deltaOffset.get(Axis.Z), null);
-    }
-
-    /**
-     * Scroll all items in the {@link ListWidget} by {@code rotation} degrees}.
-     *
-     * @param xOffset
-     * @param yOffset
-     * @param zOffset
-     *            The amount to scroll, in degrees.
-     */
-    @Override
-    public boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset,
-                                  final LayoutScroller.OnScrollListener listener) {
-        if (isScrolling()) {
-            return false;
-        }
-
-        Vector3Axis offset = new Vector3Axis(xOffset, yOffset, zOffset);
-        if (offset.isInfinite() || offset.isNaN()) {
-            Log.e(TAG, new IllegalArgumentException(),
-                  "Invalid scrolling delta: %s", offset);
-            return false;
-        }
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollBy(%s): offset %s", getName(), offset);
-
-        onScrollImpl(offset, listener);
-        return true;
-    }
-
-    @Override
-    public int getScrollingItemsCount() {
-        return getDataCount();
-    }
-
-    public int getCurrentPosition() {
-        int pos = 0;
-        for (Layout layout : mContent.mLayouts) {
-            pos = layout.getCenterChild();
-        }
-        return pos;
-    }
-
-    /**
-     * Get offset of the item along X
-     *
-     * @param position:  the position in the dataset.
-     * @return  the x-offset of the view displaying the data at position;
-     *          if that data is not being displayed, return Float.NaN.
-     */
-    public float getItemOffsetX(int position) {
-        if (position < 0 || position >= getDataCount()) {
-            return Float.NaN;
-        }
-        return Float.NaN;
-    }
-
-    /**
-     * Get offset of the item along Y
-     *
-     * @param position:  the position in the dataset.
-     * @return  the y-offset of the view displaying the data at position;
-     *          if that data is not being displayed, return Float.NaN.
-     */
-    public float getItemOffsetY(int position) {
-        if (position < 0 || position >= getDataCount()) {
-            return Float.NaN;
-        }
-        return Float.NaN;
-    }
-
-    /**
-     * Get offset of the item along Z
-     *
-     * @param position:  the position in the dataset.
-     * @return  the z-offset of the view displaying the data at position;
-     *          if that data is not being displayed, return Float.NaN.
-     */
-    public float getItemOffsetZ(int position) {
-        if (position < 0 || position >= getDataCount()) {
-            return Float.NaN;
-        }
-        return Float.NaN;
-    }
-
-
-    //===================== Scrolling <end> =============================
+    private Set<ListOnChangedListener> mOnChangedListeners = new HashSet<>();
 
     protected ListItemHostWidget getHostView(int dataIndex) {
         return getHostView(dataIndex, true);
@@ -1577,24 +1461,84 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         return mAdapter == null ? 0 : mAdapter.getCount();
     }
 
-    public Adapter mAdapter;
-    private boolean mOnChanged;
-    private boolean mOnInvalidated;
-
-    @Override
-    public boolean isTransitionAnimationEnabled() {
-        return mContent.mEnableTransitionAnimation;
-    }
-
-    @Override
-    public void enableTransitionAnimation(final boolean enable) {
-        mContent.enableTransitionAnimation(enable);
-    }
-
     @Override
     protected boolean inViewPort(final int dataIndex) {
         return mContent.inViewPort(dataIndex);
     }
+
+    private void init(final GVRContext gvrContext, final Adapter adapter) {
+        JSONObject properties = getObjectMetadata();
+        JSONObject transitionAnimationProperties = optJSONObject(properties,
+                Properties.transition_animation, true);
+        Log.d(TAG, "init(%s): transition_animation: %s", getName(), transitionAnimationProperties);
+        mAnimationRate = optFloat(transitionAnimationProperties, Properties.rate, ANIMATION_SPEED);
+        mAnimationEasing = optEnum(transitionAnimationProperties, Properties.easing, Easing.LINEAR);
+        Log.d(TAG, "init(%s): easing: %s", getName(), mAnimationEasing);
+
+        mContent = new ContentWidget(gvrContext);
+        mContent.setName("Content<" + getName() + ">");
+        mContent.addOnHierarchyChangedListener(mOnListItemsUpdatedListener);
+        addChild(mContent);
+        onChanged(adapter);
+    }
+
+    private OnFocusListener mOnFocusListener = new OnFocusListener() {
+        @Override
+        public boolean onFocus(final Widget widget, final boolean focused) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onFocus(%s) widget= %s focused [%b]", getName(), widget, focused);
+            Widget parent = widget.getParent();
+            if (parent instanceof ListItemHostWidget) {
+                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                for (OnItemFocusListener listener : mItemFocusListeners) {
+                    listener.onFocus(ListWidget.this, focused, dataIndex);
+                }
+            } else {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Focused widget is not a list item!");
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onLongFocus(Widget widget) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onLongFocus(%s) widget= %s", getName(), widget.getName());
+            Widget parent = widget.getParent();
+            boolean ret = false;
+            if (parent instanceof ListItemHostWidget) {
+                int dataIndex = ((ListItemHostWidget) parent).getDataIndex();
+                for (OnItemFocusListener listener : mItemFocusListeners) {
+                    listener.onLongFocus(ListWidget.this, dataIndex);
+                }
+                ret = true;
+            } else {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "Long focused widget is not a list item!");
+            }
+            return ret;
+        }
+    };
+
+
+    private OnTouchListener mOnTouchListener = new OnTouchListener() {
+        @Override
+        public boolean onTouch(Widget widget, final float[] coords) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch(%s) widget= %s mSelectOnTouchEnabled=%b ",
+                    getName(), widget, mSelectOnTouchEnabled);
+            Widget parent = widget.getParent();
+            if (parent instanceof ListItemHostWidget) {
+                ListItemHostWidget host = (ListItemHostWidget) parent;
+                int dataIndex = host.getDataIndex();
+                if (mSelectOnTouchEnabled) {
+                    toggleItem(dataIndex);
+                }
+
+                for (OnItemTouchListener listener : mItemTouchListeners) {
+                    listener.onTouch(ListWidget.this, dataIndex);
+                }
+            } else {
+                Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "onTouch widget is not a list item!");
+            }
+            return false;
+        }
+    };
 
     private DataSetObserver mInternalObserver = new DataSetObserver() {
         @Override
@@ -1619,6 +1563,67 @@ public class ListWidget extends GroupWidget implements ScrollableList {
         ListWidget.this.onChanged();
     }
 
-    private static final String TAG = ListWidget.class.getSimpleName();
+    private OnHierarchyChangedListener mOnListItemsUpdatedListener = new OnHierarchyChangedListener() {
+        public void onChildWidgetAdded(Widget parent, Widget child) {
+            Widget item = ((ListItemHostWidget)child).getGuest();
+            if (item != null) {
+                doOnItemAdded(item);
+            }
+        }
+        public void onChildWidgetRemoved(Widget parent, Widget child) {
+            Widget item = ((ListItemHostWidget)child).getGuest();
+            if (item != null) {
+                doOnItemRemoved(item);
+            }
+        }
+    };
 
+
+    protected void onChanged() {
+        onChanged(mAdapter);
+    }
+
+    protected void doOnItemAdded(Widget item) {
+        item.setFocusEnabled(mItemFocusEnabled);
+        item.setTouchable(mItemTouchable);
+
+        item.addFocusListener(mOnFocusListener);
+        item.addTouchListener(mOnTouchListener);
+    }
+
+    protected void doOnItemRemoved(Widget item) {
+        item.setTouchable(false);
+        item.setFocusEnabled(false);
+
+        item.removeFocusListener(mOnFocusListener);
+        item.removeTouchListener(mOnTouchListener);
+    }
+
+    private static final String TAG = ListWidget.class.getSimpleName();
+    private Set<DataSetObserver> mObservers = new HashSet<>();
+
+
+    private static final float ANIMATION_SPEED = 20f; // 20 unit per sec
+    private final Set<OnItemFocusListener> mItemFocusListeners = new LinkedHashSet<>();
+    private boolean mItemFocusEnabled = true;
+
+    private final Set<OnItemTouchListener> mItemTouchListeners = new LinkedHashSet<>();
+    private boolean mItemTouchable = true;
+
+    private int mPreferableCenterPosition = -1;
+
+    private ContentWidget mContent;
+    private float mAnimationRate;
+    private Easing mAnimationEasing;
+
+    public Adapter mAdapter;
+    private boolean mOnChanged;
+    private boolean mOnInvalidated;
+
+    private List<ListItemHostWidget> mRecycledViews = new ArrayList<>();
+    private boolean mTrimRequest;
+
+    private boolean mMultiSelectionSupported;
+    private boolean mSelectOnTouchEnabled;
+    protected Set<Integer> mSelectedItemsList = new HashSet<>();
 }
