@@ -4,6 +4,7 @@ import org.gearvrf.GVRContext;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTextureParameters;
+import org.gearvrf.scene_objects.GVRTextViewSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONObject;
 
@@ -17,7 +18,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
-import android.widget.TextView;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 
@@ -26,17 +26,17 @@ import com.samsung.smcl.vr.widgetlib.widget.NodeEntry;
 
 import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getFutureBitmapTexture;
 
+/**
+ * Lightweight version of TextWidget.
+ * Standard {@link TextWidget} is using {@link GVRTextViewSceneObject} to display the text. It is
+ * quite heavy object. Using many of them in the same scene might affect UI performance.
+ * LightTextWidget implementation is using canvas.drawText to display the text.
+ */
+
 @SuppressWarnings("deprecation")
 public class LightTextWidget extends Widget implements TextContainer {
-
-    private final TextParams params = new TextParams();
-
-    public static TextContainer copy(TextContainer src, TextContainer dest) {
-        return TextParams.copy(src, dest);
-    }
-
     /**
-     * Construct a wrapper for an existing {@link GVRSceneObject}.
+     * Construct LightTextWidget wrapper for an existing {@link GVRSceneObject}.
      *
      * @param context     The current {@link GVRContext}.
      * @param sceneObject The {@link GVRSceneObject} to wrap.
@@ -46,14 +46,20 @@ public class LightTextWidget extends Widget implements TextContainer {
         init((CharSequence) null);
     }
 
+    /**
+     * Construct LightTextWidget wrapper for an existing {@link GVRSceneObject}.
+     *
+     * @param context     The current {@link GVRContext}.
+     * @param properties A structured set of properties for the {@code LightTextWidget} instance.
+     *                   See {@code lighttextwidget.json} for schema.
+     */
     public LightTextWidget(GVRContext context, JSONObject properties) {
         super(context, properties);
         init((CharSequence) null);
     }
 
     /**
-     * Deriving classes should override and do whatever processing is
-     * appropriate.
+     * A constructor for wrapping existing {@link GVRSceneObject} instances.
      *
      * @param context     The current {@link GVRContext}
      * @param sceneObject The {@link GVRSceneObject} to wrap.
@@ -68,7 +74,7 @@ public class LightTextWidget extends Widget implements TextContainer {
     }
 
     /**
-     * Shows a {@link TextView} on a {@linkplain Widget widget} with view's
+     * Shows a {@link LightTextWidget} on a {@linkplain Widget widget} with view's
      * default height and width.
      *
      * @param context current {@link GVRContext}
@@ -86,7 +92,7 @@ public class LightTextWidget extends Widget implements TextContainer {
     }
 
     /**
-     * Shows a {@link TextView} on a {@linkplain Widget widget} with view's
+     * Shows a {@link LightTextWidget} on a {@linkplain Widget widget} with view's
      * default height and width.
      *
      * @param context current {@link GVRContext}
@@ -105,9 +111,150 @@ public class LightTextWidget extends Widget implements TextContainer {
         init(text);
     }
 
+    /**
+     * Construct LightTextWidget wrapper for an existing {@link GVRSceneObject}.
+     *
+     * @param context     The current {@link GVRContext}.
+     * @param sceneObject The {@link GVRSceneObject} to wrap.
+     * @param text
+     */
     public LightTextWidget(GVRContext context, GVRSceneObject sceneObject, CharSequence text) {
         super(context, sceneObject);
         init(text);
+    }
+
+    /**
+     * Copy text settings from one TextContainer to another one
+     * @param src TextContainer the text settings are copied from
+     * @param dest TextContainer the text settings are copied to
+     * @return updated TextContainer
+     */
+    public static TextContainer copy(TextContainer src, TextContainer dest) {
+        return TextParams.copy(src, dest);
+    }
+
+    @Override
+    public Drawable getBackGround() {
+        return params.getBackGround();
+    }
+
+    @Override
+    public int getBackgroundColor() {
+        return params.getBackgroundColor();
+    }
+
+    @Override
+    public int getGravity() {
+        return params.getGravity();
+    }
+
+    @Override
+    public IntervalFrequency getRefreshFrequency() {
+        return params.getRefreshFrequency();
+    }
+
+    @Override
+    public CharSequence getText() {
+        return params.getText();
+    }
+
+    @Override
+    public int getTextColor() {
+        return params.getTextColor();
+    }
+
+    @Override
+    public float getTextSize() {
+        return params.getTextSize();
+    }
+
+    @Override
+    public String getTextString() {
+        return params.getTextString();
+    }
+
+    @Override
+    public void setBackGround(Drawable drawable) {
+        params.setBackGround(drawable);
+        apply();
+    }
+
+    @Override
+    public void setBackgroundColor(int color) {
+        params.setBackgroundColor(color);
+        apply();
+    }
+
+    /**
+     * @param gravity Supported gravities: {@link Gravity#TOP}, {@link Gravity#BOTTOM}, {@link Gravity#LEFT},
+     *                {@link Gravity#RIGHT}, {@link Gravity#CENTER_HORIZONTAL}, {@link Gravity#CENTER_VERTICAL},
+     *                {@link Gravity#CENTER}
+     */
+    @Override
+    public void setGravity(int gravity) {
+        params.setGravity(gravity);
+        apply();
+    }
+
+    @Override
+    public void setRefreshFrequency(IntervalFrequency frequency) {
+        params.setRefreshFrequency(frequency);
+    }
+
+    @Override
+    public void setText(CharSequence text) {
+        params.setText(text);
+        apply();
+    }
+
+    @Override
+    public void setTextColor(int color) {
+        params.setTextColor(color);
+        apply();
+    }
+
+    /**
+     * Text size to the given value, interpreted as "scaled pixel" units.
+     */
+    @Override
+    public void setTextSize(float size) {
+        params.setTextSize(size);
+        apply();
+    }
+
+    @Override
+    public void setTypeface(Typeface typeface) {
+        Log.d(TAG, "setTypeface(%s): setting typeface: %s", getName(), typeface);
+        params.setTypeface(typeface);
+        apply();
+    }
+
+    @Override
+    public Typeface getTypeface() {
+        return params.getTypeface();
+    }
+
+    /**
+     * Gets the text parameters for the LightTextWidget
+     * @return the copy of {@link TextParams}. Changing this instance does not actually affect
+     * LightTextWidget. To change the parameters of TextWidget, {@link #setTextParams} should be used.
+     */
+    public TextParams getTextParams() {
+        return params;
+    }
+
+    /**
+     * Sets the text parameters for the LightTextWidget
+     * @return the copy of {@link TextParams}. Changing this instance does not actually effect
+     * LightTextWidget. To change the parameters of TextWidget, {@link #setTextParams} should be used.
+     */
+    public void setTextParams(final TextContainer textInfo) {
+        LightTextWidget.copy(textInfo, this);
+    }
+
+    @Override
+    public String toString() {
+        return params.toString();
     }
 
     private void init(CharSequence text) {
@@ -129,7 +276,6 @@ public class LightTextWidget extends Widget implements TextContainer {
 
 
     private static final String TAG = LightTextWidget.class.getSimpleName();
-    public static final float TEXT_SCALE = 5;
 
     private void apply() {
         Log.d(TAG, "apply(%s): apply...", getName());
@@ -251,102 +397,7 @@ public class LightTextWidget extends Widget implements TextContainer {
         setTexture(texture);
     }
 
-    public Drawable getBackGround() {
-        return params.getBackGround();
-    }
+    private final TextParams params = new TextParams();
+    private static final float TEXT_SCALE = 5;
 
-    public int getBackgroundColor() {
-        return params.getBackgroundColor();
-    }
-
-    public int getGravity() {
-        return params.getGravity();
-    }
-
-    public IntervalFrequency getRefreshFrequency() {
-        return params.getRefreshFrequency();
-    }
-
-    public CharSequence getText() {
-        return params.getText();
-    }
-
-    public int getTextColor() {
-        return params.getTextColor();
-    }
-
-    public float getTextSize() {
-        return params.getTextSize();
-    }
-
-    public String getTextString() {
-        return params.getTextString();
-    }
-
-    public void setBackGround(Drawable drawable) {
-        params.setBackGround(drawable);
-        apply();
-    }
-
-    public void setBackgroundColor(int color) {
-        params.setBackgroundColor(color);
-        apply();
-    }
-
-    /**
-     * @param gravity Supported gravities: {@link Gravity#TOP}, {@link Gravity#BOTTOM}, {@link Gravity#LEFT},
-     *                {@link Gravity#RIGHT}, {@link Gravity#CENTER_HORIZONTAL}, {@link Gravity#CENTER_VERTICAL},
-     *                {@link Gravity#CENTER}
-     */
-    public void setGravity(int gravity) {
-        params.setGravity(gravity);
-        apply();
-    }
-
-    public void setRefreshFrequency(IntervalFrequency frequency) {
-        params.setRefreshFrequency(frequency);
-    }
-
-    public void setText(CharSequence text) {
-        params.setText(text);
-        apply();
-    }
-
-    public void setTextColor(int color) {
-        params.setTextColor(color);
-        apply();
-    }
-
-    /**
-     * Text size to the given value, interpreted as "scaled pixel" units.
-     */
-    public void setTextSize(float size) {
-        params.setTextSize(size);
-        apply();
-    }
-
-    @Override
-    public void setTypeface(Typeface typeface) {
-        Log.d(TAG, "setTypeface(%s): setting typeface: %s", getName(), typeface);
-        params.setTypeface(typeface);
-        apply();
-    }
-
-    @Override
-    public Typeface getTypeface() {
-        return params.getTypeface();
-    }
-
-    public TextParams getTextParams() {
-        return params;
-    }
-
-    public void setTextParams(final TextContainer textInfo) {
-        LightTextWidget.copy(textInfo, this);
-    }
-
-    @Override
-    public String toString() {
-        return params.toString();
-    }
 }

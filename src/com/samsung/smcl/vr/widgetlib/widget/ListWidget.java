@@ -161,7 +161,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Add a listener for {@linkplain OnItemTouchListener#onTouch notification for this object.
+     * Add a listener for {@linkplain OnItemTouchListener#onTouch} notification for this object.
      *
      * @param listener
      *            An implementation of {@link OnItemTouchListener}.
@@ -319,17 +319,17 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Listening the list changes
+     * Listener for list changes
      */
     public interface ListOnChangedListener {
         /**
-         * Calling from {@link #onChanged()} before any relayout happens but after the data set
+         * Called from {@link #onChanged()} before any relayout happens but after the data set
          * is refreshed.
          * @param list
          */
         void onChangedStart(ListWidget list);
         /**
-         * Calling from {@link ContentWidget#measureLayout(Layout)}} before actual relayout happens
+         * Called from {@link ContentWidget#measureLayout(Layout)}} before actual relayout happens
          * but after all measurements are done
          * @param list
          * @param numOfMeasuredViews number of views in the list after the rearrangement.
@@ -364,7 +364,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Get all view from the list content
+     * Get all views from the list content
      * @return list of views currently visible
      */
     public List<Widget> getAllViews() {
@@ -379,9 +379,10 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Get view from the list content by index
-     * @return Widget by data set index, the index it is presented by in Adapter. It is not the
-     * same as the index in the widget list due to some items from data set might be invisible.
+     * Get view from the list content by {@linkplain Adapter#getItem(int) data set index}.  This may
+     * not be the same as the {@linkplain GroupWidget#getChild(int) Widget child index}.
+     * @return Child Widget if the data at {@code dataIndex} is currently visible in the
+     * {@code ListWidget}, {@code null} if it is not.
      */
     public Widget getView(int dataIndex) {
         Widget view = null;
@@ -396,7 +397,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * clear all views from the list
+     * Clear all views from the list
      */
     public void clear() {
         clearSelection(false);
@@ -404,7 +405,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Stop scrolling immediately with interrupting the scrolling animation
+     * Stop scrolling immediately; interrupting the scrolling animation
      */
     public void stopScrolling() {
         if (isScrolling()) {
@@ -450,7 +451,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
 
 
     /**
-     * Clear the selection of all the items if any.
+     * Clear the selection of all items.
      * @return {@code true} if at least one item was deselected,
      *         {@code false} otherwise.
      */
@@ -459,9 +460,9 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Clear the selection of all the items if any.
-     * @param requestLayout request layout after that if the flag is true, no request layout
-     *                      processing otherwise
+     * Clear the selection of all items.
+     * @param requestLayout request layout after clear selection if the flag is true, no layout
+     *                      requested otherwise
      * @return {@code true} if at least one item was deselected,
      *         {@code false} otherwise.
      */
@@ -512,7 +513,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Reverse the selection state fo the view
+     * Reverse the selection state for the view
      * @param dataIndex
      * @return {@code true} if the requested operation is successful,
      *         {@code false} otherwise.
@@ -1221,7 +1222,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Recycle all views in the list. The host views might be used for the future data to
+     * Recycle all views in the list. The host views might be reused for other data to
      * save resources on creating new widgets.
      */
     protected void recycleChildren() {
@@ -1233,7 +1234,7 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * Calling before recycling the host
+     * Called before recycling the host
      * @param view hosting view
      * @param dataIndex data set index
      */
@@ -1257,8 +1258,8 @@ public class ListWidget extends GroupWidget implements ScrollableList {
     }
 
     /**
-     * This method is called if the data set has been changed. Subclass might want to override this method to
-     * add some extra logic.
+     * This method is called if the data set has been changed. Subclasses might want to override
+     * this method to add some extra logic.
      *
      * Go through all items in the list:
      * - reuse the existing views in the list

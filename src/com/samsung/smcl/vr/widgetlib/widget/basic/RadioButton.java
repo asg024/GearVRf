@@ -8,15 +8,44 @@ import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRSceneObject;
 
+/**
+ * A radio button is a two-states button that can be either checked or unchecked. When the radio
+ * button is unchecked, the user can press or click it to check it. However, contrary to a
+ * CheckBox, a radio button cannot be unchecked by the user once checked.
+ * Radio buttons are normally used together in a RadioGroup.
+ */
 public class RadioButton extends CheckableButton {
+    /**
+     * Create new instance of RadioButton with specified size
+     * @param context
+     * @param width button width
+     * @param height button height
+     */
     public RadioButton(GVRContext context, float width, float height) {
         super(context, width, height);
     }
 
-    public RadioButton(GVRContext context, GVRSceneObject sceneObject, NodeEntry attributes) throws InstantiationException {
+    /**
+     * Create new instance of RadioButton wrapping around GVRF sceneObject; parsed from the model
+     *
+     * @param context
+     * @param sceneObject
+     * @param attributes
+     * @throws InstantiationException
+     */
+    @Deprecated
+    public RadioButton(GVRContext context, GVRSceneObject sceneObject, NodeEntry attributes)
+            throws InstantiationException {
         super(context, sceneObject, attributes);
     }
 
+    /**
+     * Create new instance of RadioButton wrapping around GVRF sceneObject
+     *
+     * @param context
+     * @param sceneObject
+     * @throws InstantiationException
+     */
     public RadioButton(GVRContext context, GVRSceneObject sceneObject) {
         super(context, sceneObject);
     }
@@ -25,6 +54,10 @@ public class RadioButton extends CheckableButton {
         super(context, mesh);
     }
 
+    /**
+     * Change the checked state of the button to the inverse of its current state.
+     * If the radio button is already checked, this method will not toggle the radio button.
+     */
     @Override
     public void toggle() {
         if (!isChecked()) {

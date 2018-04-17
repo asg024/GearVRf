@@ -21,6 +21,12 @@ import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.optPoi
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.optString;
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.put;
 
+/**
+ * A user interface element that displays text to the user. {@link GVRTextViewSceneObject} is used
+ * to represent the text. {@link GVRTextViewSceneObject} is actually using standard Android
+ * {@link TextView} for text UI.
+ *
+ */
 @SuppressWarnings("deprecation")
 public class TextWidget extends Widget implements TextContainer {
 
@@ -59,29 +65,17 @@ public class TextWidget extends Widget implements TextContainer {
         init();
     }
 
+    /**
+     * Core {@link TextWidget} constructor.
+     *
+     * @param context A valid {@link GVRContext}.
+     * @param properties A structured set of properties for the {@code TextWidget} instance. See
+     *                       {@code textcontainer.json} for schema.
+     */
     public TextWidget(GVRContext context, JSONObject properties) {
         super(context, createPackagedTextView(context, properties));
         mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
         init();
-    }
-
-    private void init() {
-        JSONObject properties = getObjectMetadata();
-
-        TextParams params = new TextParams();
-        params.setText(getText());
-        params.setFromJSON(getGVRContext().getActivity(), properties);
-        setTextParams(params);
-    }
-
-    private static JSONObject createPackagedTextView(GVRContext context, JSONObject properties) {
-        properties = copy(properties);
-        PointF size = optPointF(properties, Widget.Properties.size, new PointF(0, 0));
-        String text = optString(properties, TextContainer.Properties.text);
-        GVRTextViewSceneObject textViewSceneObject =
-                new GVRTextViewSceneObject(context, size.x, size.y, text);
-        put(properties, Widget.Properties.scene_object, textViewSceneObject);
-        return properties;
     }
 
     /**
@@ -130,62 +124,95 @@ public class TextWidget extends Widget implements TextContainer {
         mTextViewSceneObject = (GVRTextViewSceneObject) getSceneObject();
     }
 
+    /**
+     * Gets the text parameters for the TextWidget
+     * @return the copy of {@link TextParams}. Changing this instance does not actually affect
+     * TextWidget. To change the parameters of TextWidget, {@link #setTextParams} should be used.
+     */
+    public TextParams getTextParams() {
+        return (TextParams) TextParams.copy(this, new TextParams());
+    }
+
+    /**
+     * Sets the text parameters for the TextWidget
+     * @return the copy of {@link TextParams}. Changing this instance does not actually effect
+     * TextWidget. To change the parameters of TextWidget, {@link #setTextParams} should be used.
+     */
+    public void setTextParams(final TextContainer textInfo) {
+        TextParams.copy(textInfo, this);
+    }
+
+    @Override
     public Drawable getBackGround() {
         return mTextViewSceneObject.getBackGround();
     }
 
+    @Override
     public int getBackgroundColor() {
         return mBackgroundColor;
     }
 
+    @Override
     public int getGravity() {
         return mTextViewSceneObject.getGravity();
     }
 
+    @Override
     public IntervalFrequency getRefreshFrequency() {
         return mTextViewSceneObject.getRefreshFrequency();
     }
 
+    @Override
     public CharSequence getText() {
         return mTextViewSceneObject.getText();
     }
 
+    @Override
     public int getTextColor() {
         return mTextColor;
     }
 
+    @Override
     public float getTextSize() {
         return mTextViewSceneObject.getTextSize();
     }
 
+    @Override
     public String getTextString() {
         return mTextViewSceneObject.getTextString();
     }
 
+    @Override
     public void setBackGround(Drawable drawable) {
         mTextViewSceneObject.setBackGround(drawable);
     }
 
+    @Override
     public void setBackgroundColor(int color) {
         mTextViewSceneObject.setBackgroundColor(color);
     }
 
+    @Override
     public void setGravity(int gravity) {
         mTextViewSceneObject.setGravity(gravity);
     }
 
+    @Override
     public void setRefreshFrequency(IntervalFrequency frequency) {
         mTextViewSceneObject.setRefreshFrequency(frequency);
     }
 
+    @Override
     public void setText(CharSequence text) {
         mTextViewSceneObject.setText(text);
     }
 
+    @Override
     public void setTextColor(int color) {
         mTextViewSceneObject.setTextColor(color);
     }
 
+    @Override
     public void setTextSize(float size) {
         mTextViewSceneObject.setTextSize(size);
     }
@@ -200,12 +227,23 @@ public class TextWidget extends Widget implements TextContainer {
         return null;
     }
 
-    public TextParams getTextParams() {
-        return (TextParams) TextParams.copy(this, new TextParams());
+    private void init() {
+        JSONObject properties = getObjectMetadata();
+
+        TextParams params = new TextParams();
+        params.setText(getText());
+        params.setFromJSON(getGVRContext().getActivity(), properties);
+        setTextParams(params);
     }
 
-    public void setTextParams(final TextContainer textInfo) {
-        TextParams.copy(textInfo, this);
+    private static JSONObject createPackagedTextView(GVRContext context, JSONObject properties) {
+        properties = copy(properties);
+        PointF size = optPointF(properties, Widget.Properties.size, new PointF(0, 0));
+        String text = optString(properties, TextContainer.Properties.text);
+        GVRTextViewSceneObject textViewSceneObject =
+                new GVRTextViewSceneObject(context, size.x, size.y, text);
+        put(properties, Widget.Properties.scene_object, textViewSceneObject);
+        return properties;
     }
 
     private GVRTextViewSceneObject maybeWrap(GVRSceneObject sceneObject) {

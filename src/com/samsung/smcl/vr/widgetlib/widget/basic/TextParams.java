@@ -23,6 +23,12 @@ import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.optJSO
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.optString;
 
 public class TextParams implements TextContainer {
+    /**
+     * Copy text settings from one TextContainer to another one
+     * @param src TextContainer the text settings are copied from
+     * @param dest TextContainer the text settings are copied to
+     * @return updated TextContainer
+     */
     public static TextContainer copy(TextContainer src, TextContainer dest) {
         dest.setBackGround(src.getBackGround());
 
@@ -43,6 +49,11 @@ public class TextParams implements TextContainer {
         return dest;
     }
 
+    /**
+     * Set text parameters from the properties
+     * @param activity
+     * @param properties JSON text properties
+     */
     public void setFromJSON(Activity activity, JSONObject properties) {
         String backgroundResStr = optString(properties, Properties.background);
         if (backgroundResStr != null && !backgroundResStr.isEmpty()) {
@@ -153,6 +164,13 @@ public class TextParams implements TextContainer {
     public String getTextString() {
         return mText != null ? mText.toString() : null;
     }
+
+    @Override
+    public String toString() {
+        return String.format(STRING_FORMAT, mBackground, mBackgroundColor, mGravity, mTextColor,
+                mTextSize, mText);
+    }
+
     private Drawable mBackground;
     private int mBackgroundColor = Color.TRANSPARENT;
     private int mGravity = Gravity.CENTER;
@@ -165,12 +183,6 @@ public class TextParams implements TextContainer {
 
     private static final String STRING_FORMAT = "background [%s], backgroundColor [%d], " +
             "gravity [%d], textColor [%d], textSize [%f], text [%s]";
-
-    @Override
-    public String toString() {
-        return String.format(STRING_FORMAT, mBackground, mBackgroundColor, mGravity, mTextColor,
-                mTextSize, mText);
-    }
 
     private static final String TAG = TextParams.class.getSimpleName();
 }

@@ -34,10 +34,21 @@ import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.put;
  */
 public class Button extends Widget implements TextContainer {
 
+    /**
+     * Specify the list of Button JSON properties
+     */
     public enum Properties {
         text_widget_size
     }
 
+    /**
+     * Create Button instance with specific graphic and text area size
+     * @param context
+     * @param width The width of graphic part
+     * @param height The height of graphic part
+     * @param textWidgetWidth Width occupied for text
+     * @param textWidgetHeight Height occupied for text
+     */
     public Button(GVRContext context, float width, float height,
                   float textWidgetWidth, float textWidgetHeight) {
         super(context, width, height);
@@ -47,22 +58,51 @@ public class Button extends Widget implements TextContainer {
         mTextWidgetHeight = textWidgetHeight;
     }
 
+    /**
+     * Create Button instance with specific graphic size. The space occupied for text should be
+     * specified in properties.
+     *
+     * @param context
+     * @param width The width of graphic part
+     * @param height The height of graphic part
+     */
     public Button(GVRContext context, float width, float height) {
         super(context, width, height);
         mTextContainer = init();
     }
 
+    /**
+     * Create Button instance wrapping around the GVRF scene object
+     *
+     * @param context
+     * @param sceneObject GVRF scene object
+     * @param attributes NodeEntry parsed from the model
+     * @throws InstantiationException
+     */
     public Button(GVRContext context, GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
         mTextContainer = init();
     }
 
+    /**
+     * Create Button instance wrapping around the GVRF scene object
+     *
+     * @param context
+     * @param sceneObject GVRF scene object
+     * @throws InstantiationException
+     */
     public Button(GVRContext context, GVRSceneObject sceneObject) {
         super(context, sceneObject);
         mTextContainer = init();
     }
 
+    /**
+     * Create Button instance with all parameters specified in properties.
+     *
+     * @param context
+     * @param properties
+     */
     public Button(GVRContext context, JSONObject properties) {
         super(context, properties);
         mTextContainer = init();
@@ -174,6 +214,11 @@ public class Button extends Widget implements TextContainer {
     @Override
     public String getTextString() {
         return mTextContainer.getTextString();
+    }
+
+    @Override
+    public Layout getDefaultLayout() {
+        return mDefaultLayout;
     }
 
     protected Button(GVRContext context, GVRMesh mesh) {
@@ -296,11 +341,6 @@ public class Button extends Widget implements TextContainer {
         TextParams params = new TextParams();
                 params.setFromJSON(getGVRContext().getActivity(), textProperties);
         return params;
-    }
-
-    @Override
-    public Layout getDefaultLayout() {
-        return mDefaultLayout;
     }
 
     private static class Graphic extends Widget {
