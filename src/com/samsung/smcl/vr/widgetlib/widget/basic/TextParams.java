@@ -50,7 +50,7 @@ public class TextParams implements TextContainer {
     }
 
     /**
-     * Set text parameters from the properties
+     * Set text parameters from properties
      * @param activity
      * @param properties JSON text properties
      */

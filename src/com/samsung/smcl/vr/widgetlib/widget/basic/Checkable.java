@@ -5,13 +5,13 @@ package com.samsung.smcl.vr.widgetlib.widget.basic;
  */
 public interface Checkable {
     /**
-     * Interface definition for a callback to be invoked when the checked state of Widget is changed.
+     * Interface definition for a callback to be invoked when the Checkable's checked state is changed.
      */
     interface OnCheckChangedListener {
         /**
-         * Called on changing the checked state of Widget
-         * @param checkable checkable Widget whose state has changed.
-         * @param checked  The new checked state of Widget
+         * Called on changing the checked state
+         * @param checkable checkable whose state has changed.
+         * @param checked  The new checked state
          */
         void onCheckChanged(Checkable checkable, boolean checked);
     }
@@ -31,19 +31,19 @@ public interface Checkable {
     boolean removeOnCheckChangedListener(OnCheckChangedListener listener);
 
     /**
-     * Check if Widget is checked or not
-     * @return The current checked state of the Widget
+     * Check if Checkable is checked or not
+     * @return The current checked state
      */
     boolean isChecked();
 
     /**
-     * Change the checked state of the Widget
+     * Change the checked state of the Checkable
      * @param checked The new checked state
      */
     void setChecked(boolean checked);
 
     /**
-     * Change the checked state of the Widget to the inverse of its current state
+     * Change the checked state of the Checkable to the inverse of its current state
      */
     void toggle();
 }

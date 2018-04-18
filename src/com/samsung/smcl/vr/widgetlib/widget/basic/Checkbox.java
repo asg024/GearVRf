@@ -9,7 +9,7 @@ import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRSceneObject;
 
 /**
- * A checkbox is a specific type of two-states button that can be either checked or unchecked.
+ * A checkbox is a specific type of two-state button that can be either checked or unchecked.
  */
 public class Checkbox extends CheckableButton {
 
@@ -31,7 +31,6 @@ public class Checkbox extends CheckableButton {
      * @throws InstantiationException
      */
     @Deprecated
-
     public Checkbox(GVRContext context, GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);

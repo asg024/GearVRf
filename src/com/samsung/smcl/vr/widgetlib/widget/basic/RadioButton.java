@@ -9,7 +9,7 @@ import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRSceneObject;
 
 /**
- * A radio button is a two-states button that can be either checked or unchecked. When the radio
+ * A radio button is a two-state button that can be either checked or unchecked. When the radio
  * button is unchecked, the user can press or click it to check it. However, contrary to a
  * CheckBox, a radio button cannot be unchecked by the user once checked.
  * Radio buttons are normally used together in a RadioGroup.

@@ -57,7 +57,7 @@ public class TextWidget extends Widget implements TextContainer {
      *            A set of class-specific attributes.
      * @throws InstantiationException
      */
-    @SuppressWarnings("deprecation")
+    @Deprecated
     public TextWidget(GVRContext context, GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);

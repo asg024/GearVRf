@@ -59,8 +59,8 @@ public class Button extends Widget implements TextContainer {
     }
 
     /**
-     * Create Button instance with specific graphic size. The space occupied for text should be
-     * specified in properties.
+     * Create Button instance with specific graphic size. By default, the text area size will be
+     * the same as the graphic size, but this may be specified in properties.
      *
      * @param context
      * @param width The width of graphic part
@@ -79,6 +79,7 @@ public class Button extends Widget implements TextContainer {
      * @param attributes NodeEntry parsed from the model
      * @throws InstantiationException
      */
+    @Deprecated
     public Button(GVRContext context, GVRSceneObject sceneObject,
             NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);

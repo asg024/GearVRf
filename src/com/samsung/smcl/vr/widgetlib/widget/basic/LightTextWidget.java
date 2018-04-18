@@ -28,9 +28,9 @@ import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getFutureBi
 
 /**
  * Lightweight version of TextWidget.
- * Standard {@link TextWidget} is using {@link GVRTextViewSceneObject} to display the text. It is
- * quite heavy object. Using many of them in the same scene might affect UI performance.
- * LightTextWidget implementation is using canvas.drawText to display the text.
+ * Standard {@link TextWidget} uses {@link GVRTextViewSceneObject} to display the text, making
+ * TextWidget a quite heavy object. Using many of them in the same scene might affect UI performance.
+ * LightTextWidget implementation uses canvas.drawText to display the text.
  */
 
 @SuppressWarnings("deprecation")
@@ -47,7 +47,7 @@ public class LightTextWidget extends Widget implements TextContainer {
     }
 
     /**
-     * Construct LightTextWidget wrapper for an existing {@link GVRSceneObject}.
+     * Core {@link LightTextWidget} constructor.
      *
      * @param context     The current {@link GVRContext}.
      * @param properties A structured set of properties for the {@code LightTextWidget} instance.
@@ -59,14 +59,14 @@ public class LightTextWidget extends Widget implements TextContainer {
     }
 
     /**
-     * A constructor for wrapping existing {@link GVRSceneObject} instances.
+     * A constructor for wrapping existing {@link GVRSceneObject} instances parsed from a model.
      *
      * @param context     The current {@link GVRContext}
      * @param sceneObject The {@link GVRSceneObject} to wrap.
      * @param attributes  A set of class-specific attributes.
      * @throws InstantiationException
      */
-    @SuppressWarnings("deprecation")
+    @Deprecated
     public LightTextWidget(GVRContext context, GVRSceneObject sceneObject,
                            NodeEntry attributes) throws InstantiationException {
         super(context, sceneObject, attributes);
@@ -74,16 +74,11 @@ public class LightTextWidget extends Widget implements TextContainer {
     }
 
     /**
-     * Shows a {@link LightTextWidget} on a {@linkplain Widget widget} with view's
-     * default height and width.
+     * Shows a {@link LightTextWidget} on a {@linkplain Widget widget}
      *
      * @param context current {@link GVRContext}
      * @param width   Widget height, in GVRF scene graph units.
      *                <p>
-     *                Please note that your widget's size is independent of the size
-     *                of the internal {@code TextView}: a large mismatch between the
-     *                scene object's size and the view's size will result in
-     *                'spidery' or 'blocky' text.
      * @param height  Widget width, in GVRF scene graph units.
      */
     public LightTextWidget(GVRContext context, float width, float height) {
@@ -92,16 +87,11 @@ public class LightTextWidget extends Widget implements TextContainer {
     }
 
     /**
-     * Shows a {@link LightTextWidget} on a {@linkplain Widget widget} with view's
-     * default height and width.
+     * Shows a {@link LightTextWidget} on a {@linkplain Widget widget}
      *
      * @param context current {@link GVRContext}
      * @param width   Widget height, in GVRF scene graph units.
      *                <p>
-     *                Please note that your widget's size is independent of the size
-     *                of the internal {@code TextView}: a large mismatch between the
-     *                scene object's size and the view's size will result in
-     *                'spidery' or 'blocky' text.
      * @param height  Widget width, in GVRF scene graph units.
      * @param text    {@link CharSequence} to show on the textView
      */
@@ -245,8 +235,6 @@ public class LightTextWidget extends Widget implements TextContainer {
 
     /**
      * Sets the text parameters for the LightTextWidget
-     * @return the copy of {@link TextParams}. Changing this instance does not actually effect
-     * LightTextWidget. To change the parameters of TextWidget, {@link #setTextParams} should be used.
      */
     public void setTextParams(final TextContainer textInfo) {
         LightTextWidget.copy(textInfo, this);
