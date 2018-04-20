@@ -19,33 +19,153 @@ import java.util.Set;
 
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.*;
 
+/**
+ * A page indicator widget which identifies the current page in relation to all available pages
+ * on the current row. Pages are represented as dots. The current page can be highlighted with a
+ * different color or size dot.
+ */
 public class PageIndicatorWidget extends CheckableGroup {
-    private final Set<OnPageSelectedListener> mListeners = new LinkedHashSet<>();
-
-    private PointF mPageIndicatorButtonSize;
-    private int mCurrentPage;
-    private static final String TAG = PageIndicatorWidget.class.getSimpleName();
-    private boolean mTouchEnabled;
-
+    /**
+     * Listener for page selection
+     */
     public interface OnPageSelectedListener {
+        /**
+         * This method is called when a new page becomes selected.
+         * @param pageId  position index of the new selected page
+         */
         void onPageSelected(final int pageId);
     }
 
+    /**
+     * Core {@link PageIndicatorWidget} constructor.
+     *
+     * @param context A valid {@link GVRContext}.
+     * @param properties A structured set of properties for the {@code PageIndicatorWidget} instance.
+     *                   See {@code pageindicatorwidget.json} for schema.
+     */
     public PageIndicatorWidget(GVRContext context, JSONObject properties) {
         super(context, properties);
         init();
     }
 
+    /**
+     * Create instance of PageIndicatorWidget with specified number of pages, default selected page
+     * @param context
+     * @param numIndicators number of pages
+     * @param defaultPageId default selected page
+     */
     public PageIndicatorWidget(GVRContext context, int numIndicators, int defaultPageId) {
         this(context, packProperties(numIndicators, defaultPageId));
         init();
     }
 
+    /**
+     * Create instance of PageIndicatorWidget with specified number of pages, default selected page
+     * page indicator size and touch feature.
+     *
+     * @param context
+     * @param numIndicators number of pages
+     * @param defaultPageId default selected page
+     * @param indicatorWidth page indicator width
+     * @param indicatorHeight page indicator height
+     * @param touchEnabled true if touch enable and the page can be selected by touching on page dot.
+     *                     The page cannot be unselected by touching on dot;
+     */
     public PageIndicatorWidget(GVRContext context, int numIndicators, int defaultPageId,
                                float indicatorWidth, float indicatorHeight, boolean touchEnabled) {
         super(context, packProperties(numIndicators, defaultPageId, indicatorWidth, indicatorHeight,
                 touchEnabled));
         init();
+    }
+
+    /**
+     * Add {@link OnPageSelectedListener Page selection listener}
+     * @param listener
+     * @return true if listener has been added successfully
+     */
+    public boolean addOnPageSelectedListener(OnPageSelectedListener listener) {
+        final boolean added;
+        synchronized (mListeners) {
+            added = mListeners.add(listener);
+        }
+        if (added) {
+            listener.onPageSelected(mCurrentPage);
+        }
+        return added;
+    }
+
+    /**
+     * Remove {@link OnPageSelectedListener Page selection listener}
+     * @param listener
+     * @return true if listener has been removed successfully
+     */
+    public boolean removeOnPageSelectedListener(OnPageSelectedListener listener) {
+        synchronized (mListeners) {
+            return mListeners.remove(listener);
+        }
+    }
+
+    /**
+     * Gets total number of pages
+     * @return number of pages
+     */
+    public int getPageCount() {
+        return getCheckableCount();
+    }
+
+    /**
+     * Sets number of pages. If the index of currently selected page is bigger than the total number
+     * of pages, first page will be selected instead.
+     * @return difference between the previous number of pages and new one. Negative value is
+     * returned if new number of pages is less then it was before.
+     */
+    public int setPageCount(final int num) {
+        int diff = num - getCheckableCount();
+        if (diff > 0) {
+            addIndicatorChildren(diff);
+        } else if (diff < 0) {
+            removeIndicatorChildren(-diff);
+        }
+        if (mCurrentPage >=num ) {
+            mCurrentPage = 0;
+        }
+        setCurrentPage(mCurrentPage);
+        return diff;
+    }
+
+    /**
+     * Gets current selected page
+     * @return index of currently selected page
+     */
+    public int getCurrentPage() {
+        return mCurrentPage;
+    }
+
+    /**
+     * Sets selected page implicitly
+     * @param page new selected page
+     * @return true if the page has been selected  successfully
+     */
+    public boolean setCurrentPage(final int page) {
+        Log.d(TAG, "setPageId pageId = %d", page);
+        return (page >= 0 && page < getCheckableCount()) && check(page);
+    }
+
+    @Override
+    protected <T extends Widget & Checkable> void notifyOnCheckChanged(final T checkableWidget) {
+        super.notifyOnCheckChanged(checkableWidget);
+        if (checkableWidget.isChecked()) {
+            mCurrentPage = getCheckableChildren().indexOf(checkableWidget);
+            Log.d(TAG, "onCheckChanged mCurrentPage = %d", mCurrentPage);
+
+            final Object[] listeners;
+            synchronized (mListeners) {
+                listeners = mListeners.toArray();
+            }
+            for (Object listener : listeners) {
+                ((OnPageSelectedListener) listener).onPageSelected(mCurrentPage);
+            }
+        }
     }
 
     private static JSONObject packProperties(int numIndicators, int defaultPageId) {
@@ -137,67 +257,6 @@ public class PageIndicatorWidget extends CheckableGroup {
         requestLayout();
     }
 
-    @Override
-    protected <T extends Widget & Checkable> void notifyOnCheckChanged(final T checkableWidget) {
-        super.notifyOnCheckChanged(checkableWidget);
-        if (checkableWidget.isChecked()) {
-            mCurrentPage = getCheckableChildren().indexOf(checkableWidget);
-            Log.d(TAG, "onCheckChanged mCurrentPage = %d", mCurrentPage);
-
-            final Object[] listeners;
-            synchronized (mListeners) {
-                listeners = mListeners.toArray();
-            }
-            for (Object listener : listeners) {
-                ((OnPageSelectedListener) listener).onPageSelected(mCurrentPage);
-            }
-        }
-    }
-
-    public boolean addOnPageSelectedListener(OnPageSelectedListener listener) {
-        final boolean added;
-        synchronized (mListeners) {
-            added = mListeners.add(listener);
-        }
-        if (added) {
-            listener.onPageSelected(mCurrentPage);
-        }
-        return added;
-    }
-
-    public boolean removeOnPageSelectedListener(OnPageSelectedListener listener) {
-        synchronized (mListeners) {
-            return mListeners.remove(listener);
-        }
-    }
-
-    public int getPageCount() {
-        return getCheckableCount();
-    }
-
-    public int setPageCount(final int num) {
-        int diff = num - getCheckableCount();
-        if (diff > 0) {
-            addIndicatorChildren(diff);
-        } else if (diff < 0) {
-            removeIndicatorChildren(-diff);
-        }
-        if (mCurrentPage >=num ) {
-            mCurrentPage = 0;
-        }
-        setCurrentPage(mCurrentPage);
-        return diff;
-    }
-
-    public int getCurrentPage() {
-        return mCurrentPage;
-    }
-
-    public boolean setCurrentPage(final int page) {
-        Log.d(TAG, "setPageId pageId = %d", page);
-        return (page >= 0 && page < getCheckableCount()) && check(page);
-    }
-
     private class PageIndicatorButton extends CheckableButton {
         @SuppressWarnings("unused")
         private final String TAG = PageIndicatorButton.class.getSimpleName();
@@ -224,4 +283,11 @@ public class PageIndicatorWidget extends CheckableGroup {
             return mTouchEnabled && super.onTouch();
         }
     }
+
+    private final Set<OnPageSelectedListener> mListeners = new LinkedHashSet<>();
+
+    private PointF mPageIndicatorButtonSize;
+    private int mCurrentPage;
+    private static final String TAG = PageIndicatorWidget.class.getSimpleName();
+    private boolean mTouchEnabled;
 }
