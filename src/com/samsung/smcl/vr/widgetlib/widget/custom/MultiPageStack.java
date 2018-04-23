@@ -28,14 +28,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-
+/**
+ *  MultiPageWidget extension applying {@link OrientedLayout.Orientation#STACK stack layout} to the
+ *  list of pages.
+ */
 public class MultiPageStack extends MultiPageWidget {
-    private static final float DEFAULT_PAGE_PADDING_Z = 5;
-    private static final float DEFAULT_PAGE_PADDING_Y = -6;
-    private static final float DEFAULT_PAGE_PADDING_X = -5;
-
-    private final LinearLayout mStackLayout, mShiftLayout;
-
+    /**
+     * Create the instance of MultiPageStack
+     * @param context
+     * @param pageWidth width of one page
+     * @param pageHeight height of one page
+     * @param pageCount number of pages
+     * @param maxVisiblePageCount max number of pages visible on the screen at the same time
+     * @param adapter data set adapter
+     */
     public MultiPageStack(final GVRContext context, final float pageWidth, final float pageHeight,
                           final int pageCount, final int maxVisiblePageCount,
                           final Adapter adapter) {
@@ -67,6 +73,11 @@ public class MultiPageStack extends MultiPageWidget {
         applyListLayout(mShiftLayout);
     }
 
+    /**
+     * Sets padding between the pages
+     * @param padding
+     * @param axis
+     */
     public void setPadding(float padding, Layout.Axis axis) {
         OrientedLayout layout = null;
         switch(axis) {
@@ -92,6 +103,11 @@ public class MultiPageStack extends MultiPageWidget {
 
     }
 
+    /**
+     * Sets page shift orientation. The pages might be shifted horizontally or vertically relative
+     * to each other to make the content of each page on the screen at least partially visible
+     * @param orientation
+     */
     public void setShiftOrientation(OrientedLayout.Orientation orientation) {
         if (mShiftLayout.getOrientation() != orientation &&
                 orientation != OrientedLayout.Orientation.STACK) {
@@ -112,115 +128,121 @@ public class MultiPageStack extends MultiPageWidget {
     }
 
     private static final String TAG = tag(MultiPageStack.class);
-}
 
+    /**
+     * Private adapter class for list of pages
+     */
+    private static class PageAdapter extends BaseAdapter {
+        private static final String TAG = tag(PageAdapter.class);
+        private int mPageCount;
+        private final GVRContext mGvrContext;
+        private final float mPageWidth, mPageHeight;
 
-class PageAdapter extends BaseAdapter {
-    private static final String TAG = tag(PageAdapter.class);
-    private int mPageCount;
-    private final GVRContext mGvrContext;
-    private final float mPageWidth, mPageHeight;
+        private final Map<Integer, ListWidget> mPages;
 
-    private final Map<Integer, ListWidget> mPages;
+        private final List<Future<GVRTexture>> mPageBgTextures;
 
-    private final List<Future<GVRTexture>> mPageBgTextures;
+        private final static int[] mPageRainbowColors = {
+                Color.RED,
+                0xFFFFA500, // ORANGE
+                Color.YELLOW,
+                Color.GREEN,
+                Color.CYAN,
+                Color.BLUE,
+                Color.MAGENTA,
+        };
 
-    private final static int[] mPageRainbowColors = {
-            Color.RED,
-            0xFFFFA500, // ORANGE
-            Color.YELLOW,
-            Color.GREEN,
-            Color.CYAN,
-            Color.BLUE,
-            Color.MAGENTA,
-    };
+        private final static int[] mPageGrayColors = {
+                Color.LTGRAY,
+                Color.GRAY,
+        };
 
-    private final static int[] mPageGrayColors = {
-            Color.LTGRAY,
-            Color.GRAY,
-    };
+        PageAdapter(GVRContext gvrContext, int pageCount, float pageWidth,
+                    float pageHeight) {
+            mGvrContext = gvrContext;
+            mPageCount = pageCount;
+            mPageWidth = pageWidth;
+            mPageHeight = pageHeight;
+            mPages = new HashMap<>(pageCount);
 
-    PageAdapter(GVRContext gvrContext, int pageCount, float pageWidth,
-                float pageHeight) {
-        mGvrContext = gvrContext;
-        mPageCount = pageCount;
-        mPageWidth = pageWidth;
-        mPageHeight = pageHeight;
-        mPages = new HashMap<>(pageCount);
-
-        mPageBgTextures = new ArrayList<>(mPageGrayColors.length);
-        for (int color: mPageGrayColors){
-            mPageBgTextures.add(getFutureColorBitmapTexture(mGvrContext, color));
+            mPageBgTextures = new ArrayList<>(mPageGrayColors.length);
+            for (int color: mPageGrayColors){
+                mPageBgTextures.add(getFutureColorBitmapTexture(mGvrContext, color));
+            }
         }
-    }
 
-    void setCount(int pageCount) {
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setCount: pageCount = %d", pageCount);
-        mPageCount = pageCount;
-        mPages.clear();
-        notifyDataSetChanged();
-    }
+        private void setCount(int pageCount) {
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setCount: pageCount = %d", pageCount);
+            mPageCount = pageCount;
+            mPages.clear();
+            notifyDataSetChanged();
+        }
 
-    @Override
-    public int getCount() {
-        return mPageCount;
-    }
+        @Override
+        public int getCount() {
+            return mPageCount;
+        }
 
-    @Override
-    public Object getItem(int position) {
-        return null;
-    }
-
-    @Override
-    public long getItemId(int position) {
-        return position;
-    }
-
-    @Override
-    public boolean hasUniformViewSize() {
-        return true;
-    }
-
-    @Override
-    public float getUniformWidth() {
-        return mPageWidth;
-    }
-
-    @Override
-    public float getUniformHeight() {
-        return mPageHeight;
-    }
-
-    @Override
-    public float getUniformDepth() {
-        return 0.1f;
-    }
-
-    @Override
-    public Widget getView(final int position, Widget convertView, GroupWidget parent) {
-        if (position < 0 && position >= mPageCount) {
+        @Override
+        public Object getItem(int position) {
             return null;
         }
 
-        ListWidget page = mPages.get(position);
-        if (page == null) {
-            if (convertView != null && convertView instanceof ListWidget) {
-                page = ((ListWidget)convertView);
-                page.clear();
-            } else {
-                ListWidget widget = new ListWidget(mGvrContext,
-                        null, mPageWidth, mPageHeight);
-                widget.setName("Page:" + position);
-                page = widget;
-            }
-            int bgId = position % mPageBgTextures.size();
-
-            page.setTexture(mPageBgTextures.get(bgId));
-            mPages.put(position, page);
+        @Override
+        public long getItemId(int position) {
+            return position;
         }
 
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getView[%d] %s", position, page);
-        return page;
+        @Override
+        public boolean hasUniformViewSize() {
+            return true;
+        }
+
+        @Override
+        public float getUniformWidth() {
+            return mPageWidth;
+        }
+
+        @Override
+        public float getUniformHeight() {
+            return mPageHeight;
+        }
+
+        @Override
+        public float getUniformDepth() {
+            return 0.1f;
+        }
+
+        @Override
+        public Widget getView(final int position, Widget convertView, GroupWidget parent) {
+            if (position < 0 && position >= mPageCount) {
+                return null;
+            }
+
+            ListWidget page = mPages.get(position);
+            if (page == null) {
+                if (convertView != null && convertView instanceof ListWidget) {
+                    page = ((ListWidget)convertView);
+                    page.clear();
+                } else {
+                    ListWidget widget = new ListWidget(mGvrContext,
+                            null, mPageWidth, mPageHeight);
+                    widget.setName("Page:" + position);
+                    page = widget;
+                }
+                int bgId = position % mPageBgTextures.size();
+
+                page.setTexture(mPageBgTextures.get(bgId));
+                mPages.put(position, page);
+            }
+
+            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getView[%d] %s", position, page);
+            return page;
+        }
     }
 
+    private final LinearLayout mStackLayout, mShiftLayout;
+    private static final float DEFAULT_PAGE_PADDING_Z = 5;
+    private static final float DEFAULT_PAGE_PADDING_Y = -6;
+    private static final float DEFAULT_PAGE_PADDING_X = -5;
 }
