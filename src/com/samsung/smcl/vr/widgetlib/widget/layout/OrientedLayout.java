@@ -6,7 +6,7 @@ import com.samsung.smcl.vr.widgetlib.widget.Widget;
 
 /**
  * A Layout that arranges its children oriented along x, y or z axis. The orientation can be
- * set by calling setOrientation(). The default orientation is horizontal.
+ * set by calling setOrientation(). The default orientation is {@link  Orientation#HORIZONTAL}
  */
 public abstract class OrientedLayout extends AbsoluteLayout {
 
@@ -21,10 +21,6 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         HORIZONTAL, VERTICAL, STACK
     }
 
-
-    private static final String pattern = "\nOL attributes====== orientation = %s " +
-            "outerPaddingEnabled [%b]";
-
     /**
      * Return the string representation of the LinearLayout
      */
@@ -33,6 +29,9 @@ public abstract class OrientedLayout extends AbsoluteLayout {
                 mOuterPaddingEnabled);
     }
 
+    /**
+     * Core constructor for OrientedLayout with default parameters.
+     */
     public OrientedLayout() {
         super();
     }
@@ -97,68 +96,12 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         }
     }
 
+    /**
+     * Checks if the outer padding is enabled
+     * @return true if the outer padding is enabled, otherwise - false
+     */
     public boolean isOuterPaddingEnabled() {
         return mOuterPaddingEnabled;
-    }
-
-    protected OrientedLayout(final OrientedLayout rhs) {
-        super(rhs);
-        mOrientation = rhs.mOrientation;
-        mOuterPaddingEnabled = rhs.mOuterPaddingEnabled;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof OrientedLayout)) return false;
-        if (!super.equals(o)) return false;
-
-        OrientedLayout that = (OrientedLayout) o;
-
-        return mOrientation == that.mOrientation &&
-                mOuterPaddingEnabled == that.mOuterPaddingEnabled;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (mOuterPaddingEnabled ? 1 : 0);
-        result = 31 * result + mOrientation.hashCode();
-        return result;
-    }
-
-    private float getSize(int[] children, Axis axis) {
-        boolean calculateMaxSize = getOrientationAxis() != axis;
-        float size = 0;
-        for (int i = 0; i < children.length ; ++i) {
-            int child = children[i];
-            float sizeWithPadding = getMeasuredChildSizeWithPadding(child, axis);
-            if (Float.isNaN(sizeWithPadding)) {
-                // child is not measured yet
-                sizeWithPadding = getChildSize(child, axis);
-                if (i > 0 || mOuterPaddingEnabled) {
-                    sizeWithPadding += getDividerPadding(axis) / 2;
-                }
-                if (i < children.length - 1 || mOuterPaddingEnabled) {
-                    sizeWithPadding += getDividerPadding(axis) / 2;
-                }
-            }
-            if (Float.isNaN(sizeWithPadding)) {
-                return Float.NaN;
-            }
-
-            if (calculateMaxSize) {
-                size = Math.max(size, sizeWithPadding);
-            } else {
-                size += sizeWithPadding;
-            }
-        }
-        return size;
-    }
-
-    protected float getDataOffset(final int dataIndex) {
-        return 0;
     }
 
     @Override
@@ -192,6 +135,70 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         return getSize(children, Axis.Z);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof OrientedLayout)) return false;
+        if (!super.equals(o)) return false;
+
+        OrientedLayout that = (OrientedLayout) o;
+
+        return mOrientation == that.mOrientation &&
+                mOuterPaddingEnabled == that.mOuterPaddingEnabled;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (mOuterPaddingEnabled ? 1 : 0);
+        result = 31 * result + mOrientation.hashCode();
+        return result;
+    }
+
+    protected OrientedLayout(final OrientedLayout rhs) {
+        super(rhs);
+        mOrientation = rhs.mOrientation;
+        mOuterPaddingEnabled = rhs.mOuterPaddingEnabled;
+    }
+
+    protected float getDataOffset(final int dataIndex) {
+        return 0;
+    }
+
     protected Orientation mOrientation = Orientation.HORIZONTAL;
     protected boolean mOuterPaddingEnabled = false;
+
+    private float getSize(int[] children, Axis axis) {
+        boolean calculateMaxSize = getOrientationAxis() != axis;
+        float size = 0;
+        for (int i = 0; i < children.length ; ++i) {
+            int child = children[i];
+            float sizeWithPadding = getMeasuredChildSizeWithPadding(child, axis);
+            if (Float.isNaN(sizeWithPadding)) {
+                // child is not measured yet
+                sizeWithPadding = getChildSize(child, axis);
+                if (i > 0 || mOuterPaddingEnabled) {
+                    sizeWithPadding += getDividerPadding(axis) / 2;
+                }
+                if (i < children.length - 1 || mOuterPaddingEnabled) {
+                    sizeWithPadding += getDividerPadding(axis) / 2;
+                }
+            }
+            if (Float.isNaN(sizeWithPadding)) {
+                return Float.NaN;
+            }
+
+            if (calculateMaxSize) {
+                size = Math.max(size, sizeWithPadding);
+            } else {
+                size += sizeWithPadding;
+            }
+        }
+        return size;
+    }
+
+    private static final String TAG = OrientedLayout.class.getSimpleName();
+    private static final String pattern = "\nOL attributes====== orientation = %s " +
+            "outerPaddingEnabled [%b]";
 }

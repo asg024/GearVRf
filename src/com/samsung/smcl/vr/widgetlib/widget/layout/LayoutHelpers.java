@@ -7,6 +7,9 @@ import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTransform;
 
+/**
+ * Layout utilities
+ */
 public final class LayoutHelpers {
 
     /**
@@ -91,13 +94,39 @@ public final class LayoutHelpers {
         };
     }
 
-    public static float[] calculateGeometricDimensions(final GVRMesh mesh) {
+    /**
+     * Calculates the angle of an arc.
+     *
+     * @param arcLength
+     *            Length of the arc.
+     * @param radius
+     *            Radius of the arc's circle.
+     * @return The angle of the arc.
+     */
+    public static float angleOfArc(float arcLength, float radius) {
+        return (float) ((arcLength * 180) / (radius * Math.PI));
+    }
+
+    /**
+     * Calculates the length of the arc
+     * @param angle
+     *            angle of an arc
+     * @param radius
+     *            Radius of the arc's circle.
+     * @return length of the arc
+     */
+    public static float lengthOfArc(float angle, float radius) {
+        return  ((float)(angle * Math.PI * radius) /180);
+    }
+
+
+    private static float[] calculateGeometricDimensions(final GVRMesh mesh) {
         GVRMesh boundingBox = mesh.getBoundingBox();
         final float[] vertices = boundingBox.getVertices();
         return calculateGeometricDimensions(vertices);
     }
 
-    public static float[] calculateGeometricDimensions(final float[] vertices) {
+    private static float[] calculateGeometricDimensions(final float[] vertices) {
         final int numVertices = vertices.length / 3;
 
         float minX = Float.POSITIVE_INFINITY, maxX = Float.NEGATIVE_INFINITY;
@@ -123,22 +152,4 @@ public final class LayoutHelpers {
                 maxX - minX, maxY - minY, maxZ - minZ
         };
     }
-
-    /**
-     * Calculates the angle of an arc.
-     *
-     * @param arcLength
-     *            Length of the arc.
-     * @param radius
-     *            Radius of the arc's circle.
-     * @return The angle of the arc.
-     */
-    public static float angleOfArc(float arcLength, float radius) {
-        return (float) ((arcLength * 180) / (radius * Math.PI));
-    }
-
-    public static float lengthOfArc(float angle, float radius) {
-        return  ((float)(angle * Math.PI * radius) /180);
-    }
-
 }

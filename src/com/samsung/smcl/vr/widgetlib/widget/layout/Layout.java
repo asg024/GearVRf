@@ -5,9 +5,12 @@ import com.samsung.smcl.vr.widgetlib.widget.Widget;
 import com.samsung.smcl.vr.widgetlib.widget.Widget.ViewPortVisibility;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
+import com.samsung.smcl.vr.widgetlib.widget.layout.basic.LinearLayout;
+
 import static com.samsung.smcl.vr.widgetlib.main.Utility.equal;
 
 
+import org.gearvrf.GVRSceneObject;
 import org.gearvrf.utility.RuntimeAssertion;
 
 import java.util.Collection;
@@ -18,17 +21,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// TODO: temporary changed the most function access to public to solve the access issue in Widget.java
-
+/**
+ * Base Layout strategy class for applying various organization/setup on layout
+ *
+ */
 abstract public class Layout {
     /**
-     * Base Layout strategy class for applying various organization/setup on layout
-     *
+     * Layout axis. Only selected axis might be applicable for the particular layout.
+     * For instance, {@link LinearLayout} works with one axis only.
      */
     public enum Axis {
         X, Y, Z
     }
 
+    /**
+     * Scrolling direction
+     * {@link #NONE} means the content has not been scrolled in any direction.
+     */
     public enum Direction {
         FORWARD,
         BACKWARD,
@@ -55,61 +64,18 @@ abstract public class Layout {
         return result;
     }
 
-    public interface WidgetContainer {
-        Widget get(final int dataIndex);
-        int getDataIndex(Widget widget);
-        int size();
-
-        float getBoundsWidth();
-        float getBoundsHeight();
-        float getBoundsDepth();
-        boolean isEmpty();
-
-        /**
-         * If the adapter manages the data set - true has to be returned.
-         * If the items are statically added to the group widget - false
-         * has to be returned. By default data set is dynamic one
-         * This method must be overridden for the dynamic data set like a List.
-         */
-        boolean isDynamic();
-        void onLayoutChanged(Layout layout);
-
-    }
-
-    protected ViewPort mViewPort = new ViewPort();
-    protected Vector3Axis mDividerPadding = new Vector3Axis();
-    protected Vector3Axis mOffset = new Vector3Axis();
-    protected WidgetContainer mContainer;
-    protected Set<Integer> mMeasuredChildren = new LinkedHashSet<>();
-
-    protected static final String TAG = Layout.class.getSimpleName();
-
-    private static final String pattern = "\nLayout attributes====== divider_padding = %s " +
-            "offset = %s viewport [%s]";
-
+    @Override
     public String toString() {
         return super.toString() + String.format(pattern,
                 mDividerPadding, mOffset, mViewPort);
     }
 
-    protected Layout() {
-    }
-
+    /**
+     * dump layout information for debugging
+     */
     public void dump() {
         Log.d(TAG, "==== DUMP LAYOUT ===== \n %s", toString());
     }
-
-    protected Layout(final Layout rhs) {
-        this();
-        mViewPort = rhs.mViewPort;
-        mDividerPadding = rhs.mDividerPadding;
-        mOffset = rhs.mOffset;
-    }
-
-    abstract public Layout clone();
-    abstract public float calculateWidth(int[] children);
-    abstract public float calculateHeight(int[] children);
-    abstract public float calculateDepth(int[] children);
 
     /**
      * The size of the ViewPort (virtual area used by the list rendering engine)
@@ -131,7 +97,6 @@ abstract public class Layout {
     /**
      * @return true if clipping is enabled, false - otherwise
      */
-
     public boolean isClippingEnabled() {
         return mViewPort.isClippingEnabled();
     }
@@ -148,13 +113,6 @@ abstract public class Layout {
             mContainer.onLayoutChanged(this);
         }
     }
-
-    /**
-     * Check if the item is at least partially visible in view port
-     * @param dataIndex data index
-     * @return true is the item is at least partially visible, false - otherwise
-     */
-    abstract public boolean inViewPort(final int dataIndex);
 
     /**
      * Invalidate layout setup.
@@ -177,6 +135,10 @@ abstract public class Layout {
         }
     }
 
+    /**
+     * Gets layout name
+     * @return layout name
+     */
     public String getName() {
         return getClass().getSimpleName();
     }
@@ -231,49 +193,6 @@ abstract public class Layout {
         }
         return size;
     }
-
-
-    protected float getSizeImpl(final Axis axis) {
-        float size = 0;
-        switch (axis) {
-            case X:
-                size = mContainer.getBoundsWidth();
-                break;
-            case Y:
-                size = mContainer.getBoundsHeight();
-                break;
-            case Z:
-                size = mContainer.getBoundsDepth();
-                break;
-        }
-        return size;
-    }
-
-    /**
-     * Get viewport size along the axis
-     * @param axis {@link Axis}
-     * @return size
-     */
-    protected float getViewPortSize(final Axis axis) {
-        float size =  mViewPort == null ? 0 : mViewPort.get(axis);
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getViewPortSize for %s %f mViewPort = %s", axis, size, mViewPort);
-        return size;
-    }
-
-    /**
-     * Get the child size with padding
-     * @param dataIndex
-     * @param axis {@link Axis}
-     * @return child size with padding
-     */
-    protected abstract float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis);
-
-    /**
-     * Get the total size with padding
-     * @param axis {@link Axis}
-     * @return total size with padding
-     * /
-    protected abstract float getTotalSizeWithPadding(final Axis axis);
 
     /**
      * @param axis {@link Axis}
@@ -355,7 +274,7 @@ abstract public class Layout {
      * @return size occupied by the measured children along the axis
      */
     public abstract float preMeasureNext(final List<Widget> measuredChildren,
-            final Axis axis, final Direction direction);
+                                         final Axis axis, final Direction direction);
 
     /**
      * @return The index of center child in layout. The item index is
@@ -497,6 +416,348 @@ abstract public class Layout {
         return true;
     }
 
+    /**
+     * Layout children inside the layout container
+     */
+    public void layoutChildren() {
+
+        Set<Integer> copySet;
+        synchronized (mMeasuredChildren) {
+            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layoutChildren [%d] layout = %s",
+                    mMeasuredChildren.size(), this);
+            copySet = new HashSet<>(mMeasuredChildren);
+        }
+        for (int nextMeasured: copySet) {
+            Widget child = mContainer.get(nextMeasured);
+            if (child != null) {
+                child.preventTransformChanged(true);
+                layoutChild(nextMeasured);
+                postLayoutChild(nextMeasured);
+                child.preventTransformChanged(false);
+            }
+
+        }
+    }
+
+    /**
+     * Clone layout instance.  It creates a new instance of Layout class of current object and
+     * initializes all its fields with exactly the contents of the corresponding fields of this object.
+     * @return new clone
+     */
+    abstract public Layout clone();
+
+    /**
+     * Calculates the total width the list of children occupies in the layout
+     * @param children list of items in layout needed to be counted
+     * @return total width
+     */
+    abstract public float calculateWidth(int[] children);
+
+    /**
+     * Calculates the total height the list of children occupies in the layout
+     * @param children list of items in layout needed to be counted
+     * @return total height
+     */
+    abstract public float calculateHeight(int[] children);
+
+    /**
+     * Calculates the total depth the list of children occupies in the layout
+     * @param children list of items in layout needed to be counted
+     * @return total depth
+     */
+    abstract public float calculateDepth(int[] children);
+
+    /**
+     * Check if the item is at least partially visible in view port
+     * @param dataIndex data index
+     * @return true is the item is at least partially visible, false - otherwise
+     */
+    abstract public boolean inViewPort(final int dataIndex);
+
+    /**
+     * Interface to access the widgets the layout is applied to.
+     * This is the communication chanel between the {@link Widget} and {@link Layout}
+     */
+    public interface WidgetContainer {
+        /**
+         * Get the Widget by data index
+         * @param dataIndex data index
+         * @return Widget by index
+         */
+        Widget get(final int dataIndex);
+
+        /**
+         * Get the data index for the Widget
+         * @param widget specific widget
+         * @return data index for the widget
+         */
+        int getDataIndex(Widget widget);
+
+        /**
+         * Gets the number of the widgets in the container
+         * @return number of the widgets
+         */
+        int size();
+
+        /**
+         * Calculates the total width of data in the Container based on
+         * {@link GVRSceneObject.BoundingVolume}
+         * @return total width
+         */
+        float getBoundsWidth();
+
+        /**
+         * Calculates the total height of data in the Container based on
+         * {@link GVRSceneObject.BoundingVolume}
+         * @return total height
+         */
+        float getBoundsHeight();
+
+        /**
+         * Calculates the total depth of data in the Container  based on
+         * {@link GVRSceneObject.BoundingVolume}
+         * @return total depth
+         */
+        float getBoundsDepth();
+
+        /**
+         * Check if the container is empty or not
+         * @return true if the container has no widgets, otherwise - false
+         */
+        boolean isEmpty();
+
+        /**
+         * If the adapter manages the data set - true has to be returned.
+         * If the items are statically added to the group widget - false
+         * has to be returned. By default data set is static one
+         * This method must be overridden for the dynamic data set like a List.
+         */
+        boolean isDynamic();
+
+        /**
+         * Called on layout changed and the items has to be rearranged in the container
+         * @param layout new layout
+         */
+        void onLayoutChanged(Layout layout);
+
+    }
+
+    /**
+     * Viewport class to define layout size. Viewport has an effect if the clipping is enabled for
+     * at least one dimension.
+     */
+    public static class ViewPort {
+        /**
+         * Checks if the clipping is enabled for specific axis
+         * @param axis
+         * @return true if the clipping is enabled, otherwise - false
+         */
+        public boolean isClippingEnabled(Axis axis) {
+            return m3Dimensions.get(axis).clipping;
+        }
+
+        /**
+         * Checks if the clipping is enabled for all axises
+         * @return true if the clipping is enabled for all axises, otherwise - false
+         */
+        public boolean isClippingEnabled() {
+            return m3Dimensions.get(Axis.X).clipping &&
+                    m3Dimensions.get(Axis.Y).clipping &&
+                    m3Dimensions.get(Axis.Z).clipping;
+        }
+
+        /**
+         * Gets specific viewport dimension
+         * @param axis
+         * @return
+         */
+        public float get(Axis axis) {
+            return m3Dimensions.get(axis).size;
+        }
+
+        @Override
+        public boolean equals(Object another) {
+            boolean ret = false;
+            if (another instanceof ViewPort) {
+                ViewPort vp = (ViewPort)another;
+                ret = vp.m3Dimensions.get(Axis.X).equals(m3Dimensions.get(Axis.X)) &&
+                        vp.m3Dimensions.get(Axis.Y).equals(m3Dimensions.get(Axis.Y)) &&
+                        vp.m3Dimensions.get(Axis.Z).equals(m3Dimensions.get(Axis.Z));
+            }
+            return ret;
+        }
+
+        @Override
+        public String toString() {
+            return String.format(pattern,
+                    m3Dimensions.get(Axis.X), m3Dimensions.get(Axis.Y), m3Dimensions.get(Axis.Z));
+        }
+
+        ViewPort(Vector3Axis size, Vector3Axis shift) {
+            ViewPortDimension dx = new ViewPortDimension(size.x, shift.x, false);
+            ViewPortDimension dy = new ViewPortDimension(size.y, shift.y, false);
+            ViewPortDimension dz = new ViewPortDimension(size.z, shift.z, false);
+            m3Dimensions.put(Axis.X, dx);
+            m3Dimensions.put(Axis.Y, dy);
+            m3Dimensions.put(Axis.Z, dz);
+        }
+
+        ViewPort(Vector3Axis size) {
+            this(size, new Vector3Axis());
+        }
+
+        ViewPort() {
+            this(new Vector3Axis(), new Vector3Axis());
+        }
+
+        void enableClipping(boolean enable) {
+            ViewPortDimension dx = m3Dimensions.get(Axis.X);
+            ViewPortDimension dy = m3Dimensions.get(Axis.Y);
+            ViewPortDimension dz = m3Dimensions.get(Axis.Z);
+            dx.clipping = enable;
+            dy.clipping = enable;
+            dz.clipping = enable;
+            m3Dimensions.put(Axis.X, dx);
+            m3Dimensions.put(Axis.Y, dy);
+            m3Dimensions.put(Axis.Z, dz);
+        }
+
+        void enableClipping(boolean enable, Axis axis) {
+            ViewPortDimension d = m3Dimensions.get(axis);
+            d.clipping = enable;
+            m3Dimensions.put(axis, d);
+        }
+
+        void shift(Vector3Axis shift) {
+            ViewPortDimension dx = m3Dimensions.get(Axis.X);
+            ViewPortDimension dy = m3Dimensions.get(Axis.Y);
+            ViewPortDimension dz = m3Dimensions.get(Axis.Z);
+            dx.shift += shift.x;
+            dy.shift += shift.y;
+            dz.shift += shift.z;
+            m3Dimensions.put(Axis.X, dx);
+            m3Dimensions.put(Axis.Y, dy);
+            m3Dimensions.put(Axis.Z, dz);
+        }
+
+        void shift(float shift, Axis axis) {
+            ViewPortDimension d = m3Dimensions.get(axis);
+            d.shift += shift;
+            m3Dimensions.put(axis, d);
+        }
+
+        float getShift(Axis axis) {
+            return m3Dimensions.get(axis).shift;
+        }
+
+        void setSize(Vector3Axis size) {
+            ViewPortDimension dx = m3Dimensions.get(Axis.X);
+            ViewPortDimension dy = m3Dimensions.get(Axis.Y);
+            ViewPortDimension dz = m3Dimensions.get(Axis.Z);
+            dx.size = size.x;
+            dy.size = size.y;
+            dz.size = size.z;
+            m3Dimensions.put(Axis.X, dx);
+            m3Dimensions.put(Axis.Y, dy);
+            m3Dimensions.put(Axis.Z, dz);
+        }
+
+        void setSize(float size, Axis axis) {
+            ViewPortDimension d = m3Dimensions.get(axis);
+            d.size = size;
+            m3Dimensions.put(axis, d);
+        }
+
+        private static final String pattern = "\nViewPort: x = %s, y = %s, z = %s";
+
+        private class ViewPortDimension {
+            float size;
+            float shift;
+            boolean clipping;
+            ViewPortDimension(float s, float sh, boolean c) {
+                size = s;
+                shift = sh;
+                clipping = c;
+            }
+
+            private static final String pattern = "\nViewPortDimension: size = %f, shift = %f, clip = %b";
+
+            public String toString() {
+                return String.format(pattern, size, shift, clipping);
+            }
+
+            @Override
+            public boolean equals(Object another) {
+                boolean ret = false;
+                if (another instanceof ViewPortDimension) {
+                    ViewPortDimension d = (ViewPortDimension)another;
+                    ret = d.size == size && d.shift == shift && d.clipping == clipping;
+                }
+                return ret;
+            }
+        }
+
+        private Map<Axis, ViewPortDimension> m3Dimensions = new HashMap<>(3);
+    }
+
+    protected ViewPort mViewPort = new ViewPort();
+    protected Vector3Axis mDividerPadding = new Vector3Axis();
+    protected Vector3Axis mOffset = new Vector3Axis();
+    protected WidgetContainer mContainer;
+    protected Set<Integer> mMeasuredChildren = new LinkedHashSet<>();
+
+    protected Layout() {
+    }
+
+    protected Layout(final Layout rhs) {
+        this();
+        mViewPort = rhs.mViewPort;
+        mDividerPadding = rhs.mDividerPadding;
+        mOffset = rhs.mOffset;
+    }
+
+    protected float getSizeImpl(final Axis axis) {
+        float size = 0;
+        switch (axis) {
+            case X:
+                size = mContainer.getBoundsWidth();
+                break;
+            case Y:
+                size = mContainer.getBoundsHeight();
+                break;
+            case Z:
+                size = mContainer.getBoundsDepth();
+                break;
+        }
+        return size;
+    }
+
+    /**
+     * Get viewport size along the axis
+     * @param axis {@link Axis}
+     * @return size
+     */
+    protected float getViewPortSize(final Axis axis) {
+        float size =  mViewPort == null ? 0 : mViewPort.get(axis);
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getViewPortSize for %s %f mViewPort = %s", axis, size, mViewPort);
+        return size;
+    }
+
+    /**
+     * Get the child size with padding
+     * @param dataIndex
+     * @param axis {@link Axis}
+     * @return child size with padding
+     */
+    protected abstract float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis);
+
+    /**
+     * Get the total size with padding
+     * @param axis {@link Axis}
+     * @return total size with padding
+     */
+    protected abstract float getTotalSizeWithPadding(final Axis axis);
+
     protected int getNextIndex(int currentIndex, int centerIndex, boolean changeDirection) {
         return ++currentIndex;
     }
@@ -505,11 +766,11 @@ abstract public class Layout {
         return false;
     }
 
-        /**
-         * Compute the offset and apply layout parameters to all measured items
-         * @return true if all items fit the container, false - otherwise
-         *
-         */
+    /**
+     * Compute the offset and apply layout parameters to all measured items
+     * @return true if all items fit the container, false - otherwise
+     *
+     */
     protected abstract boolean postMeasurement();
 
     /**
@@ -613,166 +874,8 @@ abstract public class Layout {
      * @param dataIndex data index
      */
     protected abstract void resetChildLayout(final int dataIndex);
+    private static final String pattern = "\nLayout attributes====== divider_padding = %s " +
+            "offset = %s viewport [%s]";
 
-    /**
-     * Layout children inside the layout container
-     */
-    public void layoutChildren() {
-
-        Set<Integer> copySet;
-        synchronized (mMeasuredChildren) {
-            Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "layoutChildren [%d] layout = %s",
-                    mMeasuredChildren.size(), this);
-            copySet = new HashSet<>(mMeasuredChildren);
-        }
-        for (int nextMeasured: copySet) {
-            Widget child = mContainer.get(nextMeasured);
-            if (child != null) {
-                child.preventTransformChanged(true);
-                layoutChild(nextMeasured);
-                postLayoutChild(nextMeasured);
-                child.preventTransformChanged(false);
-            }
-
-        }
-    }
-
-    public static class ViewPort {
-        private class ViewPortDimension {
-            float size;
-            float shift;
-            boolean clipping;
-            ViewPortDimension(float s, float sh, boolean c) {
-                size = s;
-                shift = sh;
-                clipping = c;
-            }
-
-            private static final String pattern = "\nViewPortDimension: size = %f, shift = %f, clip = %b";
-
-            public String toString() {
-                return String.format(pattern, size, shift, clipping);
-            }
-
-            @Override
-            public boolean equals(Object another) {
-                boolean ret = false;
-                if (another instanceof ViewPortDimension) {
-                    ViewPortDimension d = (ViewPortDimension)another;
-                    ret = d.size == size && d.shift == shift && d.clipping == clipping;
-                }
-                return ret;
-            }
-        }
-
-        private Map<Axis, ViewPortDimension> m3Dimensions = new HashMap<>(3);
-
-        ViewPort(Vector3Axis size, Vector3Axis shift) {
-            ViewPortDimension dx = new ViewPortDimension(size.x, shift.x, false);
-            ViewPortDimension dy = new ViewPortDimension(size.y, shift.y, false);
-            ViewPortDimension dz = new ViewPortDimension(size.z, shift.z, false);
-            m3Dimensions.put(Axis.X, dx);
-            m3Dimensions.put(Axis.Y, dy);
-            m3Dimensions.put(Axis.Z, dz);
-        }
-
-        ViewPort(Vector3Axis size) {
-            this(size, new Vector3Axis());
-        }
-
-        ViewPort() {
-            this(new Vector3Axis(), new Vector3Axis());
-        }
-
-        @Override
-        public boolean equals(Object another) {
-            boolean ret = false;
-            if (another instanceof ViewPort) {
-                ViewPort vp = (ViewPort)another;
-                ret = vp.m3Dimensions.get(Axis.X).equals(m3Dimensions.get(Axis.X)) &&
-                      vp.m3Dimensions.get(Axis.Y).equals(m3Dimensions.get(Axis.Y)) &&
-                      vp.m3Dimensions.get(Axis.Z).equals(m3Dimensions.get(Axis.Z));
-            }
-            return ret;
-        }
-
-        public boolean isClippingEnabled(Axis axis) {
-            return m3Dimensions.get(axis).clipping;
-        }
-
-        public boolean isClippingEnabled() {
-            return m3Dimensions.get(Axis.X).clipping &&
-                   m3Dimensions.get(Axis.Y).clipping &&
-                   m3Dimensions.get(Axis.Z).clipping;
-        }
-
-        void enableClipping(boolean enable) {
-            ViewPortDimension dx = m3Dimensions.get(Axis.X);
-            ViewPortDimension dy = m3Dimensions.get(Axis.Y);
-            ViewPortDimension dz = m3Dimensions.get(Axis.Z);
-            dx.clipping = enable;
-            dy.clipping = enable;
-            dz.clipping = enable;
-            m3Dimensions.put(Axis.X, dx);
-            m3Dimensions.put(Axis.Y, dy);
-            m3Dimensions.put(Axis.Z, dz);
-        }
-
-        void enableClipping(boolean enable, Axis axis) {
-            ViewPortDimension d = m3Dimensions.get(axis);
-            d.clipping = enable;
-            m3Dimensions.put(axis, d);
-        }
-
-        void shift(Vector3Axis shift) {
-            ViewPortDimension dx = m3Dimensions.get(Axis.X);
-            ViewPortDimension dy = m3Dimensions.get(Axis.Y);
-            ViewPortDimension dz = m3Dimensions.get(Axis.Z);
-            dx.shift += shift.x;
-            dy.shift += shift.y;
-            dz.shift += shift.z;
-            m3Dimensions.put(Axis.X, dx);
-            m3Dimensions.put(Axis.Y, dy);
-            m3Dimensions.put(Axis.Z, dz);
-        }
-
-        void shift(float shift, Axis axis) {
-            ViewPortDimension d = m3Dimensions.get(axis);
-            d.shift += shift;
-            m3Dimensions.put(axis, d);
-        }
-
-        float getShift(Axis axis) {
-            return m3Dimensions.get(axis).shift;
-        }
-
-        void setSize(Vector3Axis size) {
-            ViewPortDimension dx = m3Dimensions.get(Axis.X);
-            ViewPortDimension dy = m3Dimensions.get(Axis.Y);
-            ViewPortDimension dz = m3Dimensions.get(Axis.Z);
-            dx.size = size.x;
-            dy.size = size.y;
-            dz.size = size.z;
-            m3Dimensions.put(Axis.X, dx);
-            m3Dimensions.put(Axis.Y, dy);
-            m3Dimensions.put(Axis.Z, dz);
-        }
-
-        void setSize(float size, Axis axis) {
-            ViewPortDimension d = m3Dimensions.get(axis);
-            d.size = size;
-            m3Dimensions.put(axis, d);
-        }
-
-        public float get(Axis axis) {
-            return m3Dimensions.get(axis).size;
-        }
-
-        private static final String pattern = "\nViewPort: x = %s, y = %s, z = %s";
-
-        public String toString() {
-            return String.format(pattern,
-                    m3Dimensions.get(Axis.X), m3Dimensions.get(Axis.Y), m3Dimensions.get(Axis.Z));
-        }
-    }
+    private static final String TAG = Layout.class.getSimpleName();
 }

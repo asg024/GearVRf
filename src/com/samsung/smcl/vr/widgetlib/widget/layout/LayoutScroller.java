@@ -12,81 +12,136 @@ import android.widget.Scroller;
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import static com.samsung.smcl.vr.widgetlib.main.Utility.equal;
 
+/**
+ * Content scrolling manager class. It provides different ways to scroll {@link ScrollableList}
+ * content.
+ *
+ */
 public class LayoutScroller {
+    /**
+     * Interface to keep tracking of scrolling process
+     */
+    public interface OnScrollListener {
 
-	private static final String TAG = LayoutScroller.class.getSimpleName();;
-
-    private int mCurrentItemIndex;
-
-	private final ScrollableList mScrollable;
-	private final int mPageSize;
-    private final boolean mScrollOver;
-    private final boolean mSupportScrollByPage;
-
-    private int mPageCount;
-    private int mDeltaScrollAmount;
-	private Scroller mScroller;
-	private static final int SCROLL_DURATION = 5000; // 5 sec
-	private Set<OnScrollListener> mOnScrollListeners = new HashSet<>();
-    private Set<OnPageChangedListener> mOnPageChangedListeners = new HashSet<>();
-
-	public interface OnScrollListener {
+        /**
+         * Called when the scrolling is started
+         * @param startPosition
+         */
         void onScrollStarted(int startPosition);
+
+        /**
+         * Called when the scrolling is finished
+         * @param finalPosition
+         */
         void onScrollFinished(int finalPosition);
 	}
 
+    /**
+     * Interface to keep tracking of scrolling by pages
+     */
     public interface OnPageChangedListener {
+        /**
+         * Called when current scrolling page is changed
+         * @param page new current page
+         */
         void pageChanged(int page);
     }
 
+    /**
+     * Scrollable interface. Widget has to implement this interface in order to use LayoutScroller
+     */
 	public interface ScrollableList {
+        /**
+         * Gets number of scrollable items
+         * @return
+         */
 	    int getScrollingItemsCount();
+
+        /**
+         * Gets the width of scrollable area
+         * @return
+         */
 	    float getViewPortWidth();
+
+        /**
+         * Gets the height of scrollable area
+         * @return
+         */
         float getViewPortHeight();
+
+        /**
+         * Gets the depth of scrollable area
+         * @return
+         */
         float getViewPortDepth();
+
+        /**
+         * Scroll to specific position in the list
+         * @param pos
+         * @param listener
+         * @return
+         */
 	    boolean scrollToPosition(final int pos, final OnScrollListener listener);
+
+        /**
+         * Scroll list by offset
+         * @param xOffset
+         * @param yOffset
+         * @param zOffset
+         * @param listener
+         * @return
+         */
 	    boolean scrollByOffset(final float xOffset, final float yOffset, final float zOffset,
                                final OnScrollListener listener);
+
+        /**
+         * Registers datasetobserver to the list
+         * @param observer
+         */
 	    void registerDataSetObserver(final DataSetObserver observer);
+
+        /**
+         * Unregisters datasetobserver from the list
+         * @param observer
+         */
         void unregisterDataSetObserver(final DataSetObserver observer);
+
+        /**
+         * Gets current list position
+         * @return
+         */
         int getCurrentPosition();
     }
 
-	protected DataSetObserver mObserver = new DataSetObserver() {
-	    @Override
-	    public void onChanged() {
-	        int count = mScrollable.getScrollingItemsCount();
-	        mPageCount = mSupportScrollByPage ?
-	                (int) Math.ceil((float)count/(float)mPageSize) : 1;
-
-	        if (mCurrentItemIndex >= count) {
-	            mCurrentItemIndex = count - 1;
-	            scrollToPosition(mCurrentItemIndex);
-	        }
-	    }
-
-	    @Override
-	    public void onInvalidated() {
-	        int count = mScrollable.getScrollingItemsCount();
-	        mPageCount = mSupportScrollByPage ?
-	                (int) Math.ceil((float)count/(float)mPageSize) : 1;
-
-	        if (mCurrentItemIndex > 0) {
-	            mCurrentItemIndex = 0;
-	            scrollToPosition(mCurrentItemIndex);
-	        }
-	    }
-	};
-
+    /**
+     * Constructs LayoutScroller instance with all pre-defined parameters
+     * @param context
+     * @param scrollable scrollablelist  instance
+     */
 	public LayoutScroller(final Context context, final ScrollableList scrollable) {
         this(context, scrollable, false, 0, 1, scrollable.getCurrentPosition());
     }
 
+    /**
+     * Constructs LayoutScroller instance with some pre-defined parameters
+     * @param context
+     * @param scrollable scrollablelist  instance
+     * @param scrollOver set to true if the content might be scrolled over
+     */
 	public LayoutScroller(final Context context, final ScrollableList scrollable,
 	        final boolean scrollOver) {
 		this(context, scrollable, scrollOver, 0, 1, scrollable.getCurrentPosition());
 	}
 
+    /**
+     * Customizable constructor for Layout Scroller
+     * @param context
+     * @param scrollable scrollablelist  instance
+     * @param scrollOver set to true if the content might be scrolled over
+     * @param pageSize number of items per page
+     * @param deltaScrollAmount minimum scroll amount
+     * @param currentIndex the item the content currently scrolled to
+     */
 	public LayoutScroller(final Context context, final ScrollableList scrollable,
 	        final boolean scrollOver,
 	        final int pageSize, int deltaScrollAmount, final int currentIndex) {
@@ -105,27 +160,50 @@ public class LayoutScroller {
 		mScrollable.registerDataSetObserver(mObserver);
 	}
 
+    /**
+     * Adds {@link OnScrollListener}
+     * @param listener
+     */
     public void addOnScrollListener(final OnScrollListener listener) {
         mOnScrollListeners.add(listener);
     }
 
+    /**
+     * Removes {@link OnScrollListener}
+     * @param listener
+     */
     public void removeOnScrollListener(final OnScrollListener listener) {
         mOnScrollListeners.remove(listener);
     }
 
-
+    /**
+     * Adds {@link OnPageChangedListener}
+     * @param listener
+     */
     public void addOnPageChangedListener(final OnPageChangedListener listener) {
         mOnPageChangedListeners.add(listener);
     }
 
+    /**
+     * Removes {@link OnPageChangedListener}
+     * @param listener
+     */
     public void removeOnPageChangedListener(final OnPageChangedListener listener) {
         mOnPageChangedListeners.remove(listener);
     }
 
-    static final float VELOCITY_MAX = 30000;
-    static final float MAX_VIEWPORT_LENGTHS = 4;
-    static final float MAX_SCROLLING_DISTANCE = 500;
-
+    /**
+     * Fling the content
+     *
+     * @param velocityX The initial velocity in the X direction. Positive numbers mean that the
+     *                  finger/cursor is moving left the screen, which means we want to scroll
+     *                  towards the beginning.
+     * @param velocityY The initial velocity in the Y direction. Positive numbers mean that the
+     *                  finger/cursor is moving down the screen, which means we want to scroll
+     *                  towards the top.
+     * @param velocityZ TODO: Z-scrolling is currently not supported
+     * @return
+     */
     public boolean fling(float velocityX, float velocityY, float velocityZ) {
         boolean scrolled = true;
         float viewportX  = mScrollable.getViewPortWidth();
@@ -163,24 +241,11 @@ public class LayoutScroller {
         return scrolled;
     }
 
-    public boolean flingToPosition(int vilocity) {
-        boolean scrolled = true;
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "flingToPosition() startIndex =%d vilocity = %d",
-                mCurrentItemIndex, vilocity);
-
-        vilocity /= -mScrollable.getScrollingItemsCount();
-
-        if (!mScroller.isFinished()) {
-            mScroller.forceFinished(true);
-        }
-
-        mScroller.fling(mCurrentItemIndex, 0, vilocity, 0,
-            -mScrollable.getScrollingItemsCount(), 2 * mScrollable.getScrollingItemsCount(), 0, 0);
-        mScroller.computeScrollOffset();
-        scrollToPosition(mScroller.getFinalX());
-        return scrolled;
-    }
-
+    /**
+     * Scroll to the next page. To process the scrolling by pages {@link #mSupportScrollByPage}
+     * should be set to true.
+     * @return the new current item after the scrolling processed.
+     */
     public int scrollToNextPage() {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToNextPage getCurrentPage() = %d currentIndex = %d",
                 getCurrentPage(), mCurrentItemIndex);
@@ -194,6 +259,11 @@ public class LayoutScroller {
         return mCurrentItemIndex;
 	}
 
+    /**
+     * Scroll to the previous page. To process the scrolling by pages {@link #mSupportScrollByPage}
+     * should be set to true.
+     * @return the new current item after the scrolling processed.
+     */
 	public int scrollToPrevPage() {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPrevPage getCurrentPage() = %d currentIndex = %d",
                 getCurrentPage(), mCurrentItemIndex);
@@ -206,6 +276,13 @@ public class LayoutScroller {
         return mCurrentItemIndex;
 	}
 
+    /**
+     * Scroll to specific page. The final page might be different from the requested one if the
+     * requested page is larger than the last page. To process the scrolling by pages
+     * {@link #mSupportScrollByPage} should be set to true.
+     * @param pageNumber page to scroll to
+     * @return the new current item after the scrolling processed.
+     */
 	public int scrollToPage(int pageNumber) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToPage pageNumber = %d mPageCount = %d",
                 pageNumber, mPageCount);
@@ -219,28 +296,53 @@ public class LayoutScroller {
         return mCurrentItemIndex;
 	}
 
+    /**
+     * Scroll to the first item
+     * @return the new current item after the scrolling processed.
+     */
     public int scrollToBegining() {
         return scrollToItem(0);
     }
 
+    /**
+     * Scroll to the last item
+     * @return the new current item after the scrolling processed.
+     */
 	public int scrollToEnd() {
 	    return scrollToItem(mScrollable.getScrollingItemsCount() - 1);
     }
 
+    /**
+     * Scroll to the next item.
+     * @return the new current item after the scrolling processed.
+     */
 	public int scrollToNextItem() {
 	    return scrollToItem(mCurrentItemIndex + 1);
 	}
 
+    /**
+     * Scroll to the previous item.
+     * @return the new current item after the scrolling processed.
+     */
 	public int scrollToPrevItem() {
 	    return scrollToItem(mCurrentItemIndex - 1);
     }
 
+    /**
+     * Scroll to the specific position
+     * @param position
+     * @return the new current item after the scrolling processed.
+     */
     public int scrollToItem(int position) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "scrollToItem position = %d", position);
         scrollToPosition(position);
         return mCurrentItemIndex;
     }
 
+    /**
+     * Gets the current page
+     * @return
+     */
     public int getCurrentPage() {
         int currentPage = 1;
         int count = mScrollable.getScrollingItemsCount();
@@ -250,6 +352,32 @@ public class LayoutScroller {
         }
         return currentPage;
     }
+
+    private DataSetObserver mObserver = new DataSetObserver() {
+        @Override
+        public void onChanged() {
+            int count = mScrollable.getScrollingItemsCount();
+            mPageCount = mSupportScrollByPage ?
+                    (int) Math.ceil((float)count/(float)mPageSize) : 1;
+
+            if (mCurrentItemIndex >= count) {
+                mCurrentItemIndex = count - 1;
+                scrollToPosition(mCurrentItemIndex);
+            }
+        }
+
+        @Override
+        public void onInvalidated() {
+            int count = mScrollable.getScrollingItemsCount();
+            mPageCount = mSupportScrollByPage ?
+                    (int) Math.ceil((float)count/(float)mPageSize) : 1;
+
+            if (mCurrentItemIndex > 0) {
+                mCurrentItemIndex = 0;
+                scrollToPosition(mCurrentItemIndex);
+            }
+        }
+    };
 
     private int getFirstItemIndexOnPage(final int pageNumber) {
         int index = 0;
@@ -317,4 +445,25 @@ public class LayoutScroller {
 
         return scrolled;
     }
+
+
+    private int mCurrentItemIndex;
+
+    private final ScrollableList mScrollable;
+    private final int mPageSize;
+    private final boolean mScrollOver;
+    private final boolean mSupportScrollByPage;
+
+    private int mPageCount;
+    private int mDeltaScrollAmount;
+    private Scroller mScroller;
+    private Set<OnScrollListener> mOnScrollListeners = new HashSet<>();
+    private Set<OnPageChangedListener> mOnPageChangedListeners = new HashSet<>();
+
+    private static final String TAG = LayoutScroller.class.getSimpleName();;
+
+    private static final int SCROLL_DURATION = 5000; // 5 sec
+    private static final float VELOCITY_MAX = 30000;
+    private static final float MAX_VIEWPORT_LENGTHS = 4;
+    private static final float MAX_SCROLLING_DISTANCE = 500;
 }

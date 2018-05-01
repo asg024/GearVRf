@@ -180,4 +180,5 @@ public class ArchLayout extends OrientedLayout {
     }
 
     private float mRadius = 0;
+    private static final String TAG = ArchLayout.class.getSimpleName();
 }
