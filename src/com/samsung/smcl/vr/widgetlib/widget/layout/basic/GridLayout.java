@@ -36,22 +36,19 @@ import static org.gearvrf.utility.Log.tag;
  */
 
 public class GridLayout extends OrientedLayout {
-    protected int mRowCount, mColumnCount;
-    protected static final String TAG = GridLayout.class.getSimpleName();
-
-    class ChunkedLinearLayout extends LinearLayout {
-        protected ChunkBreaker mChunkBreaker;
-        protected SparseArray<CacheDataSet> mCaches = new SparseArray<CacheDataSet>();
-        protected float mSize;
-        protected boolean mForcePostMeasurement;
+    private class ChunkedLinearLayout extends LinearLayout {
+        private ChunkBreaker mChunkBreaker;
+        private SparseArray<CacheDataSet> mCaches = new SparseArray<CacheDataSet>();
+        private float mSize;
+        private boolean mForcePostMeasurement;
         private final String TAG = tag(ChunkedLinearLayout.class);
 
 
-        ChunkedLinearLayout() {
+        private ChunkedLinearLayout() {
             super();
         }
 
-        ChunkedLinearLayout(ChunkedLinearLayout rhs) {
+        private ChunkedLinearLayout(ChunkedLinearLayout rhs) {
             super(rhs);
             mSize = rhs.mSize;
             mForcePostMeasurement = rhs.mForcePostMeasurement;
@@ -106,7 +103,7 @@ public class GridLayout extends OrientedLayout {
             return ret;
         }
 
-        protected Set<Integer> getCenterChildren() {
+        private Set<Integer> getCenterChildren() {
             Set<Integer> ret = new HashSet<Integer>(mCaches.size());
             for (int i = mCaches.size(); --i >= 0;) {
                 CacheDataSet cache = mCaches.valueAt(i);
@@ -121,11 +118,11 @@ public class GridLayout extends OrientedLayout {
             return ret;
         }
 
-        protected void forcePostMeasurement(boolean force) {
+        private void forcePostMeasurement(boolean force) {
             mForcePostMeasurement = force;
         }
 
-        protected void setChunkBreaker(final ChunkBreaker chunkBreaker) {
+        private void setChunkBreaker(final ChunkBreaker chunkBreaker) {
             mChunkBreaker = chunkBreaker;
             if (mContainer != null) {
                 mContainer.onLayoutChanged(this);
@@ -240,11 +237,11 @@ public class GridLayout extends OrientedLayout {
             return -1;
         }
 
-        protected float getSize() {
+        private float getSize() {
             return mSize;
         }
 
-        protected void setSize(final float size) {
+        private void setSize(final float size) {
             if (mSize != size) {
                 mSize = size;
                 if (mContainer != null) {
@@ -361,6 +358,10 @@ public class GridLayout extends OrientedLayout {
         layoutSetup();
     }
 
+    /**
+     * Copy constructor for GridLayout
+     * @param rhs GridLayout source
+     */
     public GridLayout(GridLayout rhs) {
         super(rhs);
         mRowCount = rhs.mRowCount;
@@ -369,26 +370,12 @@ public class GridLayout extends OrientedLayout {
         mColumnLayout = new ChunkedLinearLayout(rhs.mColumnLayout);
     }
 
-    private static final String pattern = "\nGL attributes====== rowCount = %d " +
-            "columnCount = %d";
-
     /**
      * Return the string representation of the LinearLayout
      */
     @Override
     public String toString() {
         return super.toString() + String.format(pattern, mRowCount, mColumnCount);
-    }
-
-
-    private ChunkedLinearLayout mRowLayout;
-    private ChunkedLinearLayout mColumnLayout;
-
-    private void layoutSetup() {
-        enableUniformSize(true);
-        setHorizontalGravity(Gravity.LEFT);
-        setVerticalGravity(Gravity.TOP);
-        init(mOrientation);
     }
 
     @Override
@@ -399,18 +386,8 @@ public class GridLayout extends OrientedLayout {
     }
 
     @Override
-
     public boolean inViewPort(final int dataIndex) {
         return mColumnLayout.inViewPort(dataIndex) && mRowLayout.inViewPort(dataIndex);
-    }
-
-    /**
-     * Check if the orientation is valid
-     * @param orientation
-     * @return true if orientation can be applied
-     */
-    protected boolean isValidLayout(Orientation orientation) {
-        return orientation !=  Orientation.STACK;
     }
 
     /**
@@ -612,30 +589,6 @@ public class GridLayout extends OrientedLayout {
         return getOrientationLayout().getChildSize(dataIndex, axis);
     }
 
-    @Override
-    protected void resetChildLayout(int dataIndex) {
-        mColumnLayout.resetChildLayout(dataIndex);
-        mRowLayout.resetChildLayout(dataIndex);
-    }
-
-    @Override
-    protected boolean postMeasurement() {
-        boolean retCol =  mColumnLayout.postMeasurement();
-        boolean retRow =  mRowLayout.postMeasurement();
-        return retCol && retRow;
-    }
-
-    @Override
-    protected float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis) {
-        return getOrientationLayout().getMeasuredChildSizeWithPadding(dataIndex, axis);
-
-    }
-
-    @Override
-    protected float getTotalSizeWithPadding(final Axis axis) {
-        return getOrientationLayout().getTotalSizeWithPadding(axis);
-    }
-
 
     @Override
     public void shiftBy(final float offset, final Axis axis) {
@@ -666,6 +619,39 @@ public class GridLayout extends OrientedLayout {
     @Override
     public Layout clone() {
         return new GridLayout(this);
+    }
+
+    /**
+     * Check if the orientation is valid
+     * @param orientation
+     * @return true if orientation can be applied
+     */
+    protected boolean isValidLayout(Orientation orientation) {
+        return orientation !=  Orientation.STACK;
+    }
+
+    @Override
+    protected void resetChildLayout(int dataIndex) {
+        mColumnLayout.resetChildLayout(dataIndex);
+        mRowLayout.resetChildLayout(dataIndex);
+    }
+
+    @Override
+    protected boolean postMeasurement() {
+        boolean retCol =  mColumnLayout.postMeasurement();
+        boolean retRow =  mRowLayout.postMeasurement();
+        return retCol && retRow;
+    }
+
+    @Override
+    protected float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis) {
+        return getOrientationLayout().getMeasuredChildSizeWithPadding(dataIndex, axis);
+
+    }
+
+    @Override
+    protected float getTotalSizeWithPadding(final Axis axis) {
+        return getOrientationLayout().getTotalSizeWithPadding(axis);
     }
 
     private ChunkedLinearLayout getOrientationLayout() {
@@ -723,14 +709,14 @@ public class GridLayout extends OrientedLayout {
         return ret;
     }
 
-    interface ChunkBreaker {
+    private interface ChunkBreaker {
         int getChunkSize();
         int getNumOfChunks();
         int getChunkIndex(int pos);
         int getPositionInChunk(int pos);
     }
 
-    class ChunkBreakerBy implements ChunkBreaker {
+    private class ChunkBreakerBy implements ChunkBreaker {
         private int mChunkSize;
 
         ChunkBreakerBy(final int chunkSize) {
@@ -754,7 +740,7 @@ public class GridLayout extends OrientedLayout {
         }
     }
 
-    class ChunkBreakerTo implements ChunkBreaker {
+    private class ChunkBreakerTo implements ChunkBreaker {
         private int mNumOfChunks;
         ChunkBreakerTo(final int numOfChunks) {
             mNumOfChunks = numOfChunks;
@@ -776,4 +762,19 @@ public class GridLayout extends OrientedLayout {
             return pos / mNumOfChunks;
         }
     }
+
+    private void layoutSetup() {
+        enableUniformSize(true);
+        setHorizontalGravity(Gravity.LEFT);
+        setVerticalGravity(Gravity.TOP);
+        init(mOrientation);
+    }
+
+    private ChunkedLinearLayout mRowLayout;
+    private ChunkedLinearLayout mColumnLayout;
+
+    private static final String pattern = "\nGL attributes====== rowCount = %d " +
+            "columnCount = %d";
+    private int mRowCount, mColumnCount;
+    private static final String TAG = GridLayout.class.getSimpleName();
 }

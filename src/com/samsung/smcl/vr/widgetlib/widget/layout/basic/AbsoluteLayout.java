@@ -6,29 +6,15 @@ import com.samsung.smcl.vr.widgetlib.widget.layout.Layout;
 import java.util.List;
 
 /**
- * A layout class that leaves com.samsung.smcl.vr.com.samsung.smcl.vr.widgetlib exactly where they are placed.
+ * A layout that leaves Widgets exactly where they are placed. AbsoluteLayout lets you specify
+ * exact locations (x/y/z coordinates) of its children.
  */
 public class AbsoluteLayout extends Layout {
+    /**
+     * Core constructor for AbsoluteLayout
+     */
     public AbsoluteLayout() {
         super();
-    }
-
-    @Override
-    protected float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis) {
-        return getChildSize(dataIndex, axis) + getDividerPadding(axis);
-    }
-
-    protected float getTotalSizeWithPadding(final Axis axis) {
-        return 0;
-    }
-
-    @Override
-    protected boolean postMeasurement() {
-        return true;
-    }
-
-    @Override
-    protected void resetChildLayout(final int dataIndex) {
     }
 
     @Override
@@ -57,10 +43,6 @@ public class AbsoluteLayout extends Layout {
         return 0;
     }
 
-    protected AbsoluteLayout(final AbsoluteLayout rhs) {
-        super(rhs);
-    }
-
     @Override
     public Layout clone() {
         return new AbsoluteLayout(this);
@@ -75,4 +57,25 @@ public class AbsoluteLayout extends Layout {
     @Override
     public float calculateDepth(int[] children) { return 0; }
 
+    protected AbsoluteLayout(final AbsoluteLayout rhs) {
+        super(rhs);
+    }
+
+    @Override
+    protected float getMeasuredChildSizeWithPadding(final int dataIndex, final Axis axis) {
+        return getChildSize(dataIndex, axis) + getDividerPadding(axis);
+    }
+
+    protected float getTotalSizeWithPadding(final Axis axis) {
+        return 0;
+    }
+
+    @Override
+    protected boolean postMeasurement() {
+        return true;
+    }
+
+    @Override
+    protected void resetChildLayout(final int dataIndex) {
+    }
 }

@@ -7,7 +7,7 @@ package com.samsung.smcl.vr.widgetlib.widget.layout;
 
 public class CacheData {
     /**
-     * Creates Caches data with id
+     * Creates CacheData with id
      * @param id cache data id. It is permanently assigned id and it cannot be changed
      */
     public CacheData(final int id) {
@@ -15,7 +15,7 @@ public class CacheData {
     }
 
     /**
-     * Copy-constructor for DataCache
+     * Copy-constructor for CacheData
      * @param data
      */
     public CacheData(final CacheData data) {

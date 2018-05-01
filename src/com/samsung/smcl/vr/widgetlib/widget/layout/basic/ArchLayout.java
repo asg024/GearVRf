@@ -39,8 +39,6 @@ public class ArchLayout extends OrientedLayout {
         return mRadius;
     }
 
-    private static final String pattern = "\nAL attributes====== orientation = %s  size [%s]";
-
     /**
      * Return the string representation of the ArchLayout
      */
@@ -77,6 +75,25 @@ public class ArchLayout extends OrientedLayout {
         return new ArchLayout(this);
     }
 
+    @Override
+    public void onLayoutApplied(final WidgetContainer container, final Vector3Axis viewPort) {
+        super.onLayoutApplied(container, new Vector3Axis(
+                                 getSizeAngle(viewPort.x),
+                                 getSizeAngle(viewPort.y),
+                                 getSizeAngle(viewPort.z)));
+    }
+
+    @Override
+    public void setOffset(float offset, final Axis axis) {
+        Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Offset is not supported for ArchLayout!");
+    }
+
+    @Override
+    public void layoutChild(final int dataIndex) {
+        resetChildLayout(dataIndex);
+        super.layoutChild(dataIndex);
+    }
+
     /**
      * Calculate the angle by arc length
      * @param arcLength
@@ -99,15 +116,7 @@ public class ArchLayout extends OrientedLayout {
             throw new IllegalArgumentException("mRadius is not specified!");
         }
         return angle == Float.MAX_VALUE ? Float.MAX_VALUE :
-            LayoutHelpers.lengthOfArc(angle, mRadius);
-    }
-
-    @Override
-    public void onLayoutApplied(final WidgetContainer container, final Vector3Axis viewPort) {
-        super.onLayoutApplied(container, new Vector3Axis(
-                                 getSizeAngle(viewPort.x),
-                                 getSizeAngle(viewPort.y),
-                                 getSizeAngle(viewPort.z)));
+                LayoutHelpers.lengthOfArc(angle, mRadius);
     }
 
     @Override
@@ -129,17 +138,6 @@ public class ArchLayout extends OrientedLayout {
             }
         }
         return offset;
-    }
-
-    @Override
-    public void setOffset(float offset, final Axis axis) {
-        Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Offset is not supported for ArchLayout!");
-    }
-
-    @Override
-    public void layoutChild(final int dataIndex) {
-        resetChildLayout(dataIndex);
-        super.layoutChild(dataIndex);
     }
 
     protected void updateTransform(Widget child, final Axis axis, float offset) {
@@ -181,4 +179,6 @@ public class ArchLayout extends OrientedLayout {
 
     private float mRadius = 0;
     private static final String TAG = ArchLayout.class.getSimpleName();
+    private static final String pattern = "\nAL attributes====== orientation = %s  size [%s]";
+
 }

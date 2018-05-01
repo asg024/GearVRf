@@ -480,7 +480,7 @@ abstract public class Layout {
      */
     public interface WidgetContainer {
         /**
-         * Get the Widget by data index
+         * Get the Widget by index
          * @param dataIndex data index
          * @return Widget by index
          */
@@ -529,13 +529,13 @@ abstract public class Layout {
         /**
          * If the adapter manages the data set - true has to be returned.
          * If the items are statically added to the group widget - false
-         * has to be returned. By default data set is static one
+         * has to be returned. By default data set is static one.
          * This method must be overridden for the dynamic data set like a List.
          */
         boolean isDynamic();
 
         /**
-         * Called on layout changed and the items has to be rearranged in the container
+         * Called when the layout changes and the items have to be rearranged in the container
          * @param layout new layout
          */
         void onLayoutChanged(Layout layout);

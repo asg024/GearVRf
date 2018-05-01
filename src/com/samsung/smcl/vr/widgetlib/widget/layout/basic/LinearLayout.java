@@ -9,46 +9,50 @@ import com.samsung.smcl.vr.widgetlib.widget.layout.OrientedLayout;
 import java.util.List;
 
 /**
- * A Layout that arranges its children in a single column or a single row. The direction of the row can be
- * set by calling setOrientation(). The default orientation is horizontal. The alignment of all items can
- * be specified by calling {@link LinearLayout#setGravity} or specify that the children fill up any remaining
- * space in the layout by setting gravity to FILL. The default gravity is {@link Gravity#CENTER}.
+ * A Layout that arranges its children in a single column, a single row or single stack. The
+ * direction of the row can be set by calling setOrientation(). The default orientation is
+ * {@link Orientation#HORIZONTAL} The alignment of all items can be specified by calling
+ * {@link LinearLayout#setGravity} or specify that the children fill up any remaining
+ * space in the layout by setting gravity to {@link Gravity#FILL}.
+ * The default gravity is {@link Gravity#CENTER}.
  *
- * The size of the layout determines the viewport size (virtual area used by the list rendering engine) if
- * {@link Layout#isClippingEnabled()}  is true. Otherwise all items are rendered in the list even if they
- * occupy larger space  than the container size is. The unlimited size can be specified for the layout. For
- * layout with unlimited size only {@link Gravity#CENTER} can be applied.
+ * The size of the layout determines the viewport size (virtual area used by the list rendering
+ * engine) if {@link Layout#isClippingEnabled()} is true. Otherwise all items are rendered in the
+ * list even if they occupy larger space than the container size is. The unlimited size can be
+ * specified for the layout. For layout with unlimited size only gravity {@link Gravity#CENTER}
+ * can be applied.
  */
 public class LinearLayout extends OrientedLayout {
 
     /**
-     * Gravity specifies how an layout should position its content along orientation axe, within its own bounds.
-     * {@link Gravity#CENTER} is applied by default.
-     * The gravity makes sense only if the layout content is not scrollable and all items can be fitted
-     * into the container. If the container is defined with unlimited size along the orientation axis, only
-     * {@link Gravity#CENTER} is supported.
+     * Gravity specifies how an layout should position its content along orientation axe, within its
+     * own bounds. {@link Gravity#CENTER} is applied by default.
+     * The gravity makes sense only if the layout content is not scrollable and all items can be
+     * fitted into the container. If the container is defined with unlimited size along the
+     * orientation axis, only {@link Gravity#CENTER} is supported.
      *
      * {@link Gravity#CENTER} Place the items in the center of the container in the vertical axis for
      * {@link Orientation#VERTICAL} and horizontal axis for {@link Orientation#HORIZONTAL}
 
-     * {@link Gravity#LEFT} Push the items to the left of the container for {@link Orientation#HORIZONTAL}
-     * It is not supported for {@link Orientation#VERTICAL}
+     * {@link Gravity#LEFT} Push the items to the left of the container for
+     * {@link Orientation#HORIZONTAL}. It is not supported for {@link Orientation#VERTICAL}
      *
-     * {@link Gravity#RIGHT} Push the items to the right of the container for {@link Orientation#HORIZONTAL}
-     * It is not supported for {@link Orientation#VERTICAL}
+     * {@link Gravity#RIGHT} Push the items to the right of the container for
+     * {@link Orientation#HORIZONTAL}. It is not supported for {@link Orientation#VERTICAL}
      *
-     * {@link Gravity#TOP} Push the items to the top of the container for {@link Orientation#VERTICAL}
-     * It is not supported for {@link Orientation#HORIZONTAL}
+     * {@link Gravity#TOP} Push the items to the top of the container for
+     * {@link Orientation#VERTICAL}. It is not supported for {@link Orientation#HORIZONTAL}
      *
-     * {@link Gravity#BOTTOM} Push the items to the bottom of the container for {@link Orientation#VERTICAL}
-     * It is not supported for {@link Orientation#HORIZONTAL}
+     * {@link Gravity#BOTTOM} Push the items to the bottom of the container for
+     * {@link Orientation#VERTICAL}. It is not supported for {@link Orientation#HORIZONTAL}
      *
-     * {@link Gravity#FRONT} Push the items to the front of the container for {@link Orientation#STACK}
+     * {@link Gravity#FRONT} Push the items to the front of the container for
+     * {@link Orientation#STACK}
      *
      * {@link Gravity#BACK} Push the items to the back of the container for {@link Orientation#STACK}
      *
-     * {@link Gravity#FILL} Calculate the divider amount, so the items completely fill the container. The
-     * items size will not be changed.
+     * {@link Gravity#FILL} Calculate the divider amount, so the items completely fill the container.
+     * The items size will not be changed.
      */
     public enum Gravity {
         LEFT,
@@ -61,9 +65,6 @@ public class LinearLayout extends OrientedLayout {
         FILL
     }
 
-    private static final String pattern = "\nLL attributes====== gravity = %s " +
-            "uniformSize = %b";
-
     /**
      * Return the string representation of the LinearLayout
      */
@@ -72,6 +73,9 @@ public class LinearLayout extends OrientedLayout {
         return super.toString() + String.format(pattern, mGravity, mUniformSize);
     }
 
+    /**
+     * Core constructor for the LinearLayout
+     */
     public LinearLayout() {
         super();
         initCache();
@@ -121,6 +125,11 @@ public class LinearLayout extends OrientedLayout {
         }
     }
 
+    /**
+     * Sets divider padding for axis. If axis does not match the orientation, it has no effect.
+     * @param padding
+     * @param axis {@link Axis}
+     */
     public void setDividerPadding(float padding, final Axis axis) {
         if (axis == getOrientationAxis()) {
             super.setDividerPadding(padding, axis);
@@ -128,6 +137,119 @@ public class LinearLayout extends OrientedLayout {
             Log.w(TAG, "Cannot apply divider padding for wrong axis [%s], orientation = %s",
                   axis, mOrientation);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof LinearLayout)) return false;
+        if (!super.equals(o)) return false;
+
+        LinearLayout that = (LinearLayout) o;
+
+        if (mUniformSize != that.mUniformSize) return false;
+        return mGravity == that.mGravity;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (mUniformSize ? 1 : 0);
+        result = 31 * result + mGravity.hashCode();
+        return result;
+    }
+
+    @Override
+    public Layout clone() {
+        return new LinearLayout(this);
+    }
+
+
+    @Override
+    public void dump() {
+        super.dump();
+        dumpCaches();
+    }
+
+    @Override
+    public void layoutChildren() {
+        if (Log.isEnabled(Log.SUBSYSTEM.LAYOUT)) {
+            dumpCaches();
+        }
+        super.layoutChildren();
+    }
+
+    @Override
+    public Widget measureChild(final int dataIndex, boolean calculateOffset) {
+        return measureChild(dataIndex, calculateOffset, mCache);
+    }
+
+    @Override
+    public int getCenterChild() {
+        return getCenterChild(mCache);
+    }
+
+    @Override
+    public float getDistanceToChild(int dataIndex, Axis axis) {
+        return getDistanceToChild(dataIndex, axis, mCache);
+    }
+
+    @Override
+    public float preMeasureNext(final List<Widget> measuredChildren,
+                                final Axis axis, final Direction direction) {
+        float totalSize = Float.NaN;
+        int dataIndex = getNextDataId(axis, direction);
+
+        if (dataIndex >= 0) {
+            totalSize = getTotalSizeWithPadding(axis);
+
+            Widget widget = measureChild(dataIndex);
+            totalSize = (direction == Direction.BACKWARD ? 1 : -1) *
+                    (getTotalSizeWithPadding(axis) - totalSize);
+            if (widget != null && measuredChildren != null) {
+                measuredChildren.add(widget);
+            }
+        }
+        return totalSize;
+    }
+
+    @Override
+    public Direction getDirectionToChild(final int dataIndex, final Axis axis) {
+        Direction direction = Direction.NONE;
+        int centerId = getCenterChild();
+        if (axis == getOrientationAxis() && centerId != dataIndex &&
+                dataIndex >= 0 && dataIndex < mContainer.size()) {
+            direction = dataIndex > centerId ? Direction.FORWARD :
+                    Direction.BACKWARD;
+        }
+        return direction;
+    }
+
+    @Override
+    public void shiftBy(final float offset, final Axis axis) {
+        super.shiftBy(offset, axis);
+        if (mCache != null && !Float.isNaN(offset) && axis == getOrientationAxis()) {
+            mCache.shiftBy(offset);
+        }
+    }
+
+    @Override
+    public boolean inViewPort(final int dataIndex) {
+        return inViewPort(dataIndex, mCache);
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        invalidateCache();
+    }
+
+    @Override
+    public void invalidate(final int dataIndex) {
+        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "invalidate item [%d]", dataIndex);
+        invalidateCache(dataIndex);
+        super.invalidate(dataIndex);
     }
 
     protected LinearLayout(final LinearLayout rhs) {
@@ -243,24 +365,10 @@ public class LinearLayout extends OrientedLayout {
         return mCache.getDataOffset(dataIndex);
     }
 
-    @Override
-    public void dump() {
-        super.dump();
-        dumpCaches();
-    }
-
     protected void dumpCaches() {
         if (mCache != null) {
             mCache.dump();
         }
-    }
-
-    @Override
-    public void layoutChildren() {
-        if (Log.isEnabled(Log.SUBSYSTEM.LAYOUT)) {
-            dumpCaches();
-        }
-        super.layoutChildren();
     }
 
     @Override
@@ -281,21 +389,6 @@ public class LinearLayout extends OrientedLayout {
 
     protected float getMeasuredChildSizeWithPadding(final int dataIndex, CacheDataSet cache) {
         return cache.getSizeWithPadding(dataIndex);
-    }
-
-    @Override
-    public Widget measureChild(final int dataIndex, boolean calculateOffset) {
-        return measureChild(dataIndex, calculateOffset, mCache);
-    }
-
-    @Override
-    public int getCenterChild() {
-        return getCenterChild(mCache);
-    }
-
-    @Override
-    public float getDistanceToChild(int dataIndex, Axis axis) {
-        return getDistanceToChild(dataIndex, axis, mCache);
     }
 
     protected int getNextDataId(final Axis axis, final Direction direction) {
@@ -336,25 +429,6 @@ public class LinearLayout extends OrientedLayout {
     }
 
     @Override
-    public float preMeasureNext(final List<Widget> measuredChildren,
-            final Axis axis, final Direction direction) {
-        float totalSize = Float.NaN;
-        int dataIndex = getNextDataId(axis, direction);
-
-        if (dataIndex >= 0) {
-            totalSize = getTotalSizeWithPadding(axis);
-
-            Widget widget = measureChild(dataIndex);
-            totalSize = (direction == Direction.BACKWARD ? 1 : -1) *
-                    (getTotalSizeWithPadding(axis) - totalSize);
-            if (widget != null && measuredChildren != null) {
-                measuredChildren.add(widget);
-            }
-        }
-        return totalSize;
-    }
-
-    @Override
     protected boolean postMeasurement() {
         return postMeasurement(mCache);
     }
@@ -391,18 +465,6 @@ public class LinearLayout extends OrientedLayout {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "getDistanceToChild dataIndex = %d distance = %f ",
                 dataIndex, distance);
         return distance;
-    }
-
-    @Override
-    public Direction getDirectionToChild(final int dataIndex, final Axis axis) {
-        Direction direction = Direction.NONE;
-        int centerId = getCenterChild();
-        if (axis == getOrientationAxis() && centerId != dataIndex &&
-                dataIndex >= 0 && dataIndex < mContainer.size()) {
-            direction = dataIndex > centerId ? Direction.FORWARD :
-                    Direction.BACKWARD;
-        }
-        return direction;
     }
 
     // <<<<<< measureUntilFull helper methods
@@ -538,14 +600,6 @@ public class LinearLayout extends OrientedLayout {
         return computeOffset(cache);
     }
 
-    @Override
-    public void shiftBy(final float offset, final Axis axis) {
-        super.shiftBy(offset, axis);
-        if (mCache != null && !Float.isNaN(offset) && axis == getOrientationAxis()) {
-            mCache.shiftBy(offset);
-        }
-    }
-
     /**
      * Compute the offset for the item in the layout cache
      * @return true if the item fits the container, false otherwise
@@ -560,7 +614,7 @@ public class LinearLayout extends OrientedLayout {
             if (id != -1) {
                 startDataOffset = cache.getEndDataOffset(id);
                 if (!Float.isNaN(startDataOffset)) {
-                    endDataOffset = cache.setDataOffsetAfter(dataIndex, startDataOffset);
+                    endDataOffset = cache.setDataAfter(dataIndex, startDataOffset);
                 }
             }
         } else if (pos == 0) {
@@ -568,11 +622,11 @@ public class LinearLayout extends OrientedLayout {
             if (id != -1) {
                 endDataOffset = cache.getStartDataOffset(id);
                 if (!Float.isNaN(endDataOffset)) {
-                    startDataOffset = cache.setDataOffsetBefore(dataIndex, endDataOffset);
+                    startDataOffset = cache.setDataBefore(dataIndex, endDataOffset);
                 }
             } else {
                 startDataOffset = getStartingOffset((cache.getTotalSizeWithPadding()));
-                endDataOffset = cache.setDataOffsetAfter(dataIndex, startDataOffset);
+                endDataOffset = cache.setDataAfter(dataIndex, startDataOffset);
             }
         }
 
@@ -602,7 +656,7 @@ public class LinearLayout extends OrientedLayout {
         for (int pos = 0; pos < cache.count(); ++pos) {
             int id = cache.getId(pos);
             if (id != -1) {
-                float endDataOffset = cache.setDataOffsetAfter(id, startDataOffset);
+                float endDataOffset = cache.setDataAfter(id, startDataOffset);
                 inBounds = inBounds &&
                         endDataOffset > layoutOffset &&
                         startDataOffset < -layoutOffset;
@@ -612,11 +666,6 @@ public class LinearLayout extends OrientedLayout {
         }
 
         return inBounds;
-    }
-
-    @Override
-    public boolean inViewPort(final int dataIndex) {
-        return inViewPort(dataIndex, mCache);
     }
 
     protected boolean inViewPort(final int dataIndex, CacheDataSet cache) {
@@ -663,12 +712,6 @@ public class LinearLayout extends OrientedLayout {
         return 1;
     }
 
-    @Override
-    public void invalidate() {
-        super.invalidate();
-        invalidateCache();
-    }
-
     protected void invalidateCache() {
         mCache.invalidate();
         mCache.enableOuterPadding(mOuterPaddingEnabled);
@@ -679,44 +722,11 @@ public class LinearLayout extends OrientedLayout {
     }
 
     @Override
-    public void invalidate(final int dataIndex) {
-        Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "invalidate item [%d]", dataIndex);
-        invalidateCache(dataIndex);
-        super.invalidate(dataIndex);
-    }
-
-    @Override
     protected void resetChildLayout(final int dataIndex) {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
             child.setPosition(0, 0, 0);
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof LinearLayout)) return false;
-        if (!super.equals(o)) return false;
-
-        LinearLayout that = (LinearLayout) o;
-
-        if (mUniformSize != that.mUniformSize) return false;
-        return mGravity == that.mGravity;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (mUniformSize ? 1 : 0);
-        result = 31 * result + mGravity.hashCode();
-        return result;
-    }
-
-    @Override
-    public Layout clone() {
-        return new LinearLayout(this);
     }
 
     /**
@@ -730,4 +740,8 @@ public class LinearLayout extends OrientedLayout {
     protected boolean mUniformSize;
     protected Gravity mGravity = Gravity.CENTER;
     protected static final String TAG = LinearLayout.class.getSimpleName();
+
+    private static final String pattern = "\nLL attributes====== gravity = %s " +
+            "uniformSize = %b";
+
 }

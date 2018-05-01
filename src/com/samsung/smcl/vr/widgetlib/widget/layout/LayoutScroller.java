@@ -19,7 +19,7 @@ import static com.samsung.smcl.vr.widgetlib.main.Utility.equal;
  */
 public class LayoutScroller {
     /**
-     * Interface to keep tracking of scrolling process
+     * Interface to keep track of scrolling process
      */
     public interface OnScrollListener {
 
@@ -37,7 +37,7 @@ public class LayoutScroller {
 	}
 
     /**
-     * Interface to keep tracking of scrolling by pages
+     * Interface to keep track of scrolling by pages
      */
     public interface OnPageChangedListener {
         /**
@@ -95,13 +95,13 @@ public class LayoutScroller {
                                final OnScrollListener listener);
 
         /**
-         * Registers datasetobserver to the list
+         * Registers {@link DataSetObserver} to the list
          * @param observer
          */
 	    void registerDataSetObserver(final DataSetObserver observer);
 
         /**
-         * Unregisters datasetobserver from the list
+         * Unregisters {@link DataSetObserver} from the list
          * @param observer
          */
         void unregisterDataSetObserver(final DataSetObserver observer);
@@ -196,8 +196,8 @@ public class LayoutScroller {
      * Fling the content
      *
      * @param velocityX The initial velocity in the X direction. Positive numbers mean that the
-     *                  finger/cursor is moving left the screen, which means we want to scroll
-     *                  towards the beginning.
+     *                  finger/cursor is moving to the left on the screen, which means we want to
+     *                  scroll towards the beginning.
      * @param velocityY The initial velocity in the Y direction. Positive numbers mean that the
      *                  finger/cursor is moving down the screen, which means we want to scroll
      *                  towards the top.
@@ -242,8 +242,8 @@ public class LayoutScroller {
     }
 
     /**
-     * Scroll to the next page. To process the scrolling by pages {@link #mSupportScrollByPage}
-     * should be set to true.
+     * Scroll to the next page. To process the scrolling by pages LayoutScroller must be constructed
+     * with a pageSize greater than zero.
      * @return the new current item after the scrolling processed.
      */
     public int scrollToNextPage() {
@@ -260,8 +260,8 @@ public class LayoutScroller {
 	}
 
     /**
-     * Scroll to the previous page. To process the scrolling by pages {@link #mSupportScrollByPage}
-     * should be set to true.
+     * Scroll to the previous page. To process the scrolling by pages LayoutScroller must be
+     * constructed with a pageSize greater than zero.
      * @return the new current item after the scrolling processed.
      */
 	public int scrollToPrevPage() {
@@ -279,7 +279,7 @@ public class LayoutScroller {
     /**
      * Scroll to specific page. The final page might be different from the requested one if the
      * requested page is larger than the last page. To process the scrolling by pages
-     * {@link #mSupportScrollByPage} should be set to true.
+     * LayoutScroller must be constructed with a pageSize greater than zero.
      * @param pageNumber page to scroll to
      * @return the new current item after the scrolling processed.
      */

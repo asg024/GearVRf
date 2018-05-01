@@ -62,8 +62,6 @@ public class RingLayout extends LinearLayout {
                 getSizeAngle(padding) : padding, axis);
     }
 
-    private static final String pattern = "\nRL attributes======  radius = %f";
-
     @Override
     public String toString() {
         return super.toString() + String.format(pattern, mRadius);
@@ -166,6 +164,11 @@ public class RingLayout extends LinearLayout {
         super.layoutChild(dataIndex);
     }
 
+    @Override
+    public void setOffset(float offset, final Axis axis) {
+        Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Offset is not supported for RingLayout!");
+    }
+
     protected void updateTransform(Widget child, final Axis axis, float offset) {
         Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "updateTransform [%s], offset = [%f], axis = [%s]",
                 child.getName(), offset, axis);
@@ -192,11 +195,6 @@ public class RingLayout extends LinearLayout {
     }
 
     @Override
-    public void setOffset(float offset, final Axis axis) {
-        Log.w(Log.SUBSYSTEM.LAYOUT, TAG, "Offset is not supported for RingLayout!");
-    }
-
-    @Override
     protected void resetChildLayout(final int dataIndex) {
         Widget child = mContainer.get(dataIndex);
         if (child != null) {
@@ -209,4 +207,5 @@ public class RingLayout extends LinearLayout {
     }
 
     private float mRadius = 0;
+    private static final String pattern = "\nRL attributes======  radius = %f";
 }

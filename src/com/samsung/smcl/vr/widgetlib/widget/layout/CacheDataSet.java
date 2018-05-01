@@ -1,7 +1,10 @@
 package com.samsung.smcl.vr.widgetlib.widget.layout;
 
 /**
- * Basic Cache data set interface to manage set of data
+ * Basic Cache data set interface to manage set of data.
+ * Each record is identified by id. It is permanently assigned id and it cannot be changed.
+ * Each record has a specific position in the set. Position might be changed if some data
+ * rearrangement happened: adding/removing records to/from set.
  */
 public interface CacheDataSet {
     /**
@@ -31,7 +34,7 @@ public interface CacheDataSet {
     };
 
     /**
-     * Gets number od data records in Cache set
+     * Gets number of data records in Cache set
      * @return number of records
      */
     int count();
@@ -115,7 +118,7 @@ public interface CacheDataSet {
     void removeData(final int id);
 
     /**
-     * Gets data offset for data record by index
+     * Gets data offset for data record by id
      * @param id
      * @return
      */
@@ -157,20 +160,22 @@ public interface CacheDataSet {
     float getEndPadding(final int id);
 
     /**
-     * Sets data start offset for the record by id
-     * @param id
-     * @param endDataOffset
-     * @return
+     * Calculates and sets the offset for the CacheData with specified id, positioning it right
+     * before the alignment
+     * @param id CacheData id
+     * @param alignment CacheData has to be positioned right before that
+     * @return CacheData start offset
      */
-    float setDataOffsetBefore(final int id, float endDataOffset);
+    float setDataBefore(final int id, float alignment);
 
     /**
-     * Sets data end offset for the record by id
-     * @param id
-     * @param startDataOffset
-     * @return
+     * Calculates and sets the offset for the CacheData with specified id, positioning it right
+     * after the alignment
+     * @param id CacheData id
+     * @param alignment CacheData has to be positioned right before that
+     * @return CacheData end offset
      */
-    float setDataOffsetAfter(final int id, float startDataOffset);
+    float setDataAfter(final int id, float alignment);
 
     /**
      * Gets data record id by position
