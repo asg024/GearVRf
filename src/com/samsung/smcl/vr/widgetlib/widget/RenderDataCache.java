@@ -1,5 +1,8 @@
 package com.samsung.smcl.vr.widgetlib.widget;
 
+import com.samsung.smcl.vr.widgetlib.main.CommandBuffer;
+import com.samsung.smcl.vr.widgetlib.main.CommandBuffer.Command;
+
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData;
@@ -7,6 +10,7 @@ import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 
 import java.util.concurrent.Future;
+
 // TODO: Replace mExternalData references with posting opcodes to command buffer
 // TODO: Extend GVRRenderData for a static "identity" instance for "no render data" scenarios
 // IDEA: With above, once we're buffering operations, have a "postOp()" method that does a
@@ -44,14 +48,14 @@ class RenderDataCache {
 
     void setMesh(GVRMesh mesh) {
         if (mRenderData != null) {
-            mExternalRenderData.setMesh(mesh);
+            SET_MESH.buffer(mExternalRenderData, mesh);
             mRenderData.setMesh(mesh);
         }
     }
 
     void setOffset(boolean offset) {
         if (mRenderData != null) {
-            mExternalRenderData.setOffset(offset);
+            SET_OFFSET.buffer(mExternalRenderData, offset);
             mRenderData.setOffset(offset);
         }
     }
@@ -90,21 +94,21 @@ class RenderDataCache {
 
     void setOffsetFactor(float offsetFactor) {
         if (mRenderData != null) {
-            mExternalRenderData.setOffsetFactor(offsetFactor);
+            SET_OFFSET_FACTOR.buffer(mExternalRenderData, offsetFactor);
             mRenderData.setOffsetFactor(offsetFactor);
         }
     }
 
     void setRenderingOrder(int renderingOrder) {
         if (mRenderData != null) {
-            mExternalRenderData.setRenderingOrder(renderingOrder);
+            SET_RENDERING_ORDER.buffer(mExternalRenderData, renderingOrder);
             mRenderData.setRenderingOrder(renderingOrder);
         }
     }
 
     void setOffsetUnits(float offsetUnits) {
         if (mRenderData != null) {
-            mExternalRenderData.setOffsetUnits(offsetUnits);
+            SET_OFFSET_UNITS.buffer(mExternalRenderData, offsetUnits);
             mRenderData.setOffsetUnits(offsetUnits);
         }
     }
@@ -115,28 +119,28 @@ class RenderDataCache {
 
     void setDepthTest(boolean depthTest) {
         if (mRenderData != null) {
-            mExternalRenderData.setDepthTest(depthTest);
+            SET_DEPTH_TEST.buffer(mExternalRenderData, depthTest);
             mRenderData.setDepthTest(depthTest);
         }
     }
 
     void setStencilTest(boolean flag) {
         if (mRenderData != null) {
-            mExternalRenderData.setStencilTest(flag);
+            SET_STENCIL_TEST.buffer(mExternalRenderData, flag);
             mRenderData.setStencilTest(flag);
         }
     }
 
     void setStencilFunc(int func, int ref, int mask) {
         if (mRenderData != null) {
-            mExternalRenderData.setStencilFunc(func, ref, mask);
+            SET_STENCIL_FUNC.buffer(mExternalRenderData, func, ref, mask);
             mRenderData.setStencilFunc(func, ref, mask);
         }
     }
 
     void setStencilMask(int mask) {
         if (mRenderData != null) {
-            mExternalRenderData.setStencilMask(mask);
+            SET_STENCIL_MASK.buffer(mExternalRenderData, mask);
             mRenderData.setStencilMask(mask);
         }
     }
@@ -147,10 +151,162 @@ class RenderDataCache {
 
     void setMaterial(GVRMaterial material) {
         if (mRenderData != null) {
-            mExternalRenderData.setMaterial(material);
+            SET_MATERIAL.buffer(mExternalRenderData, material);
             mRenderData.setMaterial(material);
         }
         mMaterialCache.set(material);
+    }
+
+    private static final class SET_MESH {
+        static void buffer(GVRRenderData renderData, GVRMesh mesh) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, mesh);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final GVRMesh mesh = (GVRMesh) params[1];
+                renderData.setMesh(mesh);
+            }
+        };
+    }
+
+    private static final class SET_OFFSET {
+        static void buffer(GVRRenderData renderData, boolean offset) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, offset);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final boolean offset = (boolean) params[1];
+                renderData.setOffset(offset);
+            }
+        };
+    }
+
+    private static final class SET_OFFSET_FACTOR {
+        static void buffer(GVRRenderData renderData, float offsetFactor) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, offsetFactor);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final float offsetFactor = (float) params[1];
+                renderData.setOffsetFactor(offsetFactor);
+            }
+        };
+    }
+
+    private static final class SET_RENDERING_ORDER {
+        static void buffer(GVRRenderData renderData, int renderingOrder) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, renderingOrder);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final int renderingOrder = (int) params[1];
+                renderData.setRenderingOrder(renderingOrder);
+            }
+        };
+    }
+
+    private static final class SET_OFFSET_UNITS {
+        static void buffer(GVRRenderData renderData, float offsetUnits) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, offsetUnits);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final float offsetUnits = (float) params[1];
+                renderData.setOffsetUnits(offsetUnits);
+            }
+        };
+    }
+
+    private static final class SET_DEPTH_TEST {
+        static void buffer(GVRRenderData renderData, boolean depthTest) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, depthTest);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final boolean depthTest = (boolean) params[1];
+                renderData.setDepthTest(depthTest);
+            }
+        };
+    }
+
+    private static final class SET_STENCIL_TEST {
+        static void buffer(GVRRenderData renderData, boolean flag) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, flag);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final boolean flag = (boolean) params[1];
+                renderData.setStencilTest(flag);
+            }
+        };
+    }
+
+    private static final class SET_STENCIL_FUNC {
+        static void buffer(GVRRenderData renderData, int func, int ref, int mask) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, func, ref, mask);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final int func = (int) params[1];
+                final int ref = (int) params[2];
+                final int mask = (int) params[3];
+                renderData.setStencilFunc(func, ref, mask);
+            }
+        };
+    }
+
+    private static final class SET_STENCIL_MASK {
+        static void buffer(GVRRenderData renderData, int mask) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, mask);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final int mask = (int) params[1];
+                renderData.setStencilMask(mask);
+            }
+        };
+    }
+
+    private static final class SET_MATERIAL {
+        public static void buffer(GVRRenderData renderData, GVRMaterial material) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, material);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                GVRRenderData renderData = (GVRRenderData) params[0];
+                GVRMaterial material = (GVRMaterial) params[1];
+                renderData.setMaterial(material);
+            }
+        };
     }
 
     static class MaterialCache {
@@ -159,48 +315,46 @@ class RenderDataCache {
 
         public void setColor(int color) {
             if (mMaterial != null) {
-                mExternalMaterial.setColor(color);
+                SET_COLOR.buffer(mExternalMaterial, color);
                 mMaterial.setColor(color);
             }
         }
 
-        public void setColor(float r, float g, float b) {
+        void setColor(float r, float g, float b) {
             if (mMaterial != null) {
-                mExternalMaterial.setColor(r, g, b);
+                SET_COLOR_RGB.buffer(mExternalMaterial, r, g, b);
                 mMaterial.setColor(r, g, b);
             }
         }
 
         public void setTexture(GVRTexture texture) {
             if (mMaterial != null) {
-                mExternalMaterial.setMainTexture(texture);
-                mExternalMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+                SET_TEXTURE.buffer(mExternalMaterial, texture);
                 mMaterial.setMainTexture(texture);
-                //models use the new shader framework which has no single main texture
+                // Models use the new shader framework which has no single main texture
                 mMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
             }
         }
 
         public void setTexture(Future<GVRTexture> texture) {
             if (mMaterial != null) {
-                mExternalMaterial.setMainTexture(texture);
-                mExternalMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+                SET_FUTURE_TEXTURE.buffer(mExternalMaterial, texture);
                 mMaterial.setMainTexture(texture);
-                //models use the new shader framework which has no single main texture
+                // Models use the new shader framework which has no single main texture
                 mMaterial.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
             }
         }
 
         public void setTexture(String name, GVRTexture texture) {
             if (mMaterial != null) {
-                mExternalMaterial.setTexture(name, texture);
+                SET_NAMED_TEXTURE.buffer(mExternalMaterial, name, texture);
                 mMaterial.setTexture(name, texture);
             }
         }
 
         public void setTexture(String name, Future<GVRTexture> texture) {
             if (mMaterial != null) {
-                mExternalMaterial.setTexture(name, texture);
+                SET_NAMED_FUTURE_TEXTURE.buffer(mExternalMaterial, name, texture);
                 mMaterial.setTexture(name, texture);
             }
         }
@@ -214,12 +368,12 @@ class RenderDataCache {
 
         public void setOpacity(float opacity) {
             if (mMaterial != null) {
-                mExternalMaterial.setOpacity(opacity);
+                SET_OPACITY.buffer(mExternalMaterial, opacity);
                 mMaterial.setOpacity(opacity);
             }
         }
 
-        public int getRgbColor() {
+        int getRgbColor() {
             if (mMaterial != null) {
                 return mMaterial.getRgbColor();
             }
@@ -257,8 +411,122 @@ class RenderDataCache {
             mExternalMaterial = material;
         }
 
+        private static final class SET_COLOR {
+            public static void buffer(GVRMaterial material, int color) {
+                CommandBuffer.Command.buffer(sExecutor, material, color);
+            }
+
+            private static final Command.Executor sExecutor = new Command.Executor() {
+                @Override
+                public void exec(Object... params) {
+                    final GVRMaterial material = (GVRMaterial) params[0];
+                    final int color = (int) params[1];
+                    material.setColor(color);
+                }
+            };
+        }
+
+        private static final class SET_COLOR_RGB {
+            public static void buffer(GVRMaterial material, float r, float g, float b) {
+                CommandBuffer.Command.buffer(sExecutor, material, r, g, b);
+            }
+
+            private static final Command.Executor sExecutor = new Command.Executor() {
+                @Override
+                public void exec(Object... params) {
+                    final GVRMaterial material = (GVRMaterial) params[0];
+                    final float r = (float) params[1];
+                    final float g = (float) params[2];
+                    final float b = (float) params[3];
+                    material.setColor(r, g, b);
+                }
+            };
+        }
+
+        private static final class SET_OPACITY {
+            public static void buffer(GVRMaterial material, float opacity) {
+                CommandBuffer.Command.buffer(sExecutor, material, opacity);
+            }
+
+            private static final Command.Executor sExecutor = new Command.Executor() {
+                @Override
+                public void exec(Object... params) {
+                    final GVRMaterial material = (GVRMaterial) params[0];
+                    final float opacity = (float) params[1];
+                    material.setOpacity(opacity);
+                }
+            };
+        }
+
+        private static final class SET_TEXTURE {
+            public static void buffer(GVRMaterial material, GVRTexture texture) {
+                CommandBuffer.Command.buffer(sExecutor, material, texture);
+            }
+
+            private static Command.Executor sExecutor = new Command.Executor() {
+                @Override
+                public void exec(Object... params) {
+                    final GVRMaterial material = (GVRMaterial) params[0];
+                    final GVRTexture texture = (GVRTexture) params[1];
+                    material.setMainTexture(texture);
+                    material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+                }
+            };
+        }
+
+        private static final class SET_FUTURE_TEXTURE {
+            public static void buffer(GVRMaterial material, Future<GVRTexture> texture) {
+                CommandBuffer.Command.buffer(sExecutor, material, texture);
+            }
+
+            private static final Command.Executor sExecutor = new Command.Executor() {
+                @SuppressWarnings("unchecked")
+                @Override
+                public void exec(Object... params) {
+                    final GVRMaterial material = (GVRMaterial) params[0];
+                    final Future<GVRTexture> texture = (Future<GVRTexture>) params[1];
+                    material.setMainTexture(texture);
+                    material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
+                }
+            };
+        }
+
+        private static final class SET_NAMED_TEXTURE {
+            public static void buffer(GVRMaterial material, String key, GVRTexture texture) {
+                CommandBuffer.Command.buffer(sExecutor, material, key, texture);
+            }
+
+            private static final Command.Executor sExecutor = new Command.Executor() {
+                @Override
+                public void exec(Object... params) {
+                    final GVRMaterial material = (GVRMaterial) params[0];
+                    final String name = (String) params[1];
+                    final GVRTexture texture = (GVRTexture) params[2];
+                    material.setTexture(name, texture);
+                }
+            };
+        }
+
+        private static final class SET_NAMED_FUTURE_TEXTURE {
+            public static void buffer(GVRMaterial material, String key, Future<GVRTexture> texture) {
+                CommandBuffer.Command.buffer(sExecutor, material, key, texture);
+            }
+
+            private static final Command.Executor sExecutor = new Command.Executor() {
+                @SuppressWarnings("unchecked")
+                @Override
+                public void exec(Object... params) {
+                    final GVRMaterial material = (GVRMaterial) params[0];
+                    final String name = (String) params[1];
+                    final Future<GVRTexture> texture = (Future<GVRTexture>) params[2];
+                    material.setTexture(name, texture);
+                }
+            };
+        }
+
         private GVRMaterial mExternalMaterial;
         private GVRMaterial mMaterial;
+
     }
 
     private final GVRRenderData mExternalRenderData;

@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
+import com.samsung.smcl.vr.widgetlib.main.CommandBuffer.Command;
 import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
 
 import com.samsung.smcl.vr.widgetlib.thread.FPSCounter;
@@ -1817,9 +1818,7 @@ public class Widget  implements Layout.WidgetContainer {
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "change visibility for widget<%s> to visibility = %s",
                 getName(), visibility);
         if (mParent != null) {
-            UpdateVisibilityCommand command = UpdateVisibilityCommand.acquire();
-            command.setup(this, mVisibility, visibility, mIsVisibleInViewPort);
-            WidgetLib.getCommandBuffer().add(command);
+            UPDATE_VISIBILITY.buffer(this, mVisibility, visibility, mIsVisibleInViewPort);
             if (mVisibility == Visibility.GONE
                     || visibility == Visibility.GONE) {
                 mParent.onTransformChanged();
@@ -2385,7 +2384,7 @@ public class Widget  implements Layout.WidgetContainer {
             final JSONObject metadata = getObjectMetadata();
             mSceneObject = getSceneObjectProperty(context, metadata);
 
-            mTransformCache = new TransformCache(getTransform());
+            mTransformCache = new TransformCache(this);
             mRenderDataCache = new RenderDataCache(mSceneObject);
 
             Log.v(Log.SUBSYSTEM.WIDGET, TAG,
@@ -3869,4 +3868,54 @@ public class Widget  implements Layout.WidgetContainer {
     private static GVRTexture sDefaultTexture;
 
     private static final String TAG = org.gearvrf.utility.Log.tag(Widget.class);
+
+    /**
+     * Class encapsulating setting a {@link Widget Widget's} {@linkplain
+     * Widget#setVisibility(Visibility) visibility}.
+     */
+    private static class UPDATE_VISIBILITY {
+        static void buffer(Widget widget, Visibility currentVisibility, Visibility newVisibility,
+                           ViewPortVisibility viewPortVisibility) {
+            Command.buffer(sExecutor, widget.getSceneObject(),
+                    widget.getParent().getSceneObject(),
+                    currentVisibility,
+                    newVisibility,
+                    viewPortVisibility);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRSceneObject mSceneObject = (GVRSceneObject) params[0];
+                final GVRSceneObject parentSceneObject = (GVRSceneObject) params[1];
+                final Visibility currentVisibility = (Visibility) params[2];
+                final Visibility newVisibility = (Visibility) params[3];
+                final ViewPortVisibility viewPortVisibility = (ViewPortVisibility) params[4];
+
+                GVRContext gvrContext = mSceneObject.getGVRContext();
+                GVRSceneObject sceneObjectParent = mSceneObject.getParent();
+                switch (newVisibility) {
+                    case VISIBLE:
+                        if (sceneObjectParent != parentSceneObject &&
+                                viewPortVisibility != ViewPortVisibility.INVISIBLE) {
+                            if (null != sceneObjectParent) {
+                                sceneObjectParent.removeChildObject(mSceneObject);
+                            }
+                            parentSceneObject.addChildObject(mSceneObject);
+                            gvrContext.getMainScene().bindShaders(parentSceneObject);
+                        }
+                        break;
+                    case HIDDEN:
+                    case GONE:
+                        if (currentVisibility == Visibility.VISIBLE) {
+                            parentSceneObject.removeChildObject(mSceneObject);
+                        }
+                        break;
+                    case PLACEHOLDER:
+                        mSceneObject.detachRenderData();
+                        break;
+                }
+            }
+        };
+    }
 }

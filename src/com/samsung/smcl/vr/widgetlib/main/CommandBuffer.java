@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import com.samsung.smcl.vr.widgetlib.thread.ConcurrentListPool;
 import com.samsung.smcl.vr.widgetlib.thread.ConcurrentObjectPool;
 import com.samsung.smcl.vr.widgetlib.thread.MainThread;
+import com.samsung.smcl.vr.widgetlib.widget.Widget;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.utility.Log;
@@ -15,134 +16,109 @@ import java.util.List;
  * A utility class for buffering {@link Runnable} "commands" for batch execution on the {@linkplain
  * GVRContext#runOnGlThread(Runnable) GL thread}.
  * <p>
- * Includes utilities -- {@link Command}, {@link CommandPool}, and {@link CommandPool.CommandFactory}
- * -- to make management of command instances a bit easier and to reduce memory fragmentation and
- * usage.  The typical implementation pattern looks like this:
+ * Although instances of {@link Runnable} can be directly {@linkplain CommandBuffer#add(Runnable)
+ * added to the buffer}, the {@link Command} class makes management of command instances a bit
+ * easier and reduces memory fragmentation and usage by {@linkplain ConcurrentObjectPool pooling}
+ * instances.
+ * <p>
+ * The typical implementation pattern for a command using {@link Command} looks like this:
  * <pre>
- *     class MyCommand extends Command {
- *         static MyCommand acquire() {
- *             return sPool.acquire();
+ *     static final class MyCommand {
+ *         // MyCommand provides its own buffer() method to
+ *         // ensure type correctness and proper ordering
+ *         // of its parameters
+ *         static void buffer(Foo foo, Bar bar) {
+ *             Command.buffer(foo, bar);
  *         }
  *
- *         MyCommand(CommandPool&lt;MyCommand> pool) {
- *             super(pool);
+ *         private static final Executor sExecutor = new Executor() {
+ *             public void exec(Object... params) {
+ *                 // Unpack the command's parameters
+ *                 final Foo foo = (Foo) args[0];
+ *                 final Bar bar = (Bar) args[1];
+ *
+ *                 foo.qux(bar);
+ *             }
  *         }
- *
- *         public void run() {
- *             // Command-specific implementation goes here
- *             super.run();  // Call last! See {@link Command#run()}
- *         }
- *
- *         public MyCommand setup(...) { // Parameters relevant to executing the command
- *             // Setup code here
- *             return this;
- *         }
- *
- *         private static final CommandPool&lt;MyCommand> sPool =
- *             new CommandPool&lt;>(new CommandPool.CommandFactory&lt;MyCommand>() {
- *                 public MyCommand create(CommandPool&lt;MyCommand> pool) {
- *                     return new MyCommand(pool);
- *                 }
- *
- *                 String name() {
- *                     return MyCommand.class.getSimpleName();
- *                 }
- *             });
  *     }
  * </pre>
  * The typical usage pattern looks like this:
  * <pre>
- *     MyCommand command = MyCommand.acquire();
- *     command.setup(...);  // Relevant parameters go here
- *     WidgetLib.getCommandBuffer().add(command);
+ *     MyCommand.buffer(aFoo, aBar);
  * </pre>
- *
- * @see Command#run()
  */
 public class CommandBuffer {
 
     /**
      * An extension of {@link Runnable} that manages the boiler-plate of releasing back to a
-     * {@linkplain CommandPool pool} after running.
+     * {@linkplain ConcurrentObjectPool pool} after running.
      */
-    static public abstract class Command implements Runnable {
+    static public final class Command implements Runnable {
         /**
-         * Construct an instance with an attached {@link CommandPool pool}.
-         *
-         * @param pool Reference to the {@link CommandPool} to release the instance back to. Must
-         *             not be null.
+         * Interface for the execution of the command, encapsulating the command's logic.
          */
-        public Command(@NonNull CommandPool<? extends Command> pool) {
-            if (pool == null) {
-                throw new IllegalArgumentException("Parameter 'pool' must be non-null!");
-            }
-            mPool = pool;
+        public interface Executor {
+            /**
+             * Everything that is needed for the operation should be passed as part of {@code params}.
+             * Code in exec() must be reentrant and should not rely on any non-final data members
+             * as it will be allocated and initialized on the {@link MainThread}, but executed on
+             * the {@linkplain Widget#runOnGlThread(Runnable) GL thread}.
+             *
+             * @param params All data and objects necessary for the command to execute.
+             */
+            void exec(Object... params);
         }
 
         /**
-         * Releases this instance back to the attached {@link CommandPool pool}.
-         * <p>
-         * <span style="color:red"><b>NOTE:</b></span> Call <code>super.run()</code> from your
-         * override of {@link Runnable#run()} immediately before returning, after all other logic
-         * has executed; doing so sooner may result in this object being reacquired in the {@link
-         * MainThread main thread} and data members being overwritten by that thread.
+         * Packages the {@link Executor} and its parameters into an instance of {@link Command}, and
+         * {@linkplain CommandBuffer#add(Runnable) adds} it to the current {@link CommandBuffer}.
+         *
+         * @param executor An implementation of {@link Executor}
+         * @param params   The parameters used by {@code executor}.  Since these are raw {@link Object}
+         *                 references, an additional interface should be implemented to ensure type
+         *                 safety and correct ordering.  See class documentation for {@link
+         *                 CommandBuffer}.
+         */
+        public static void buffer(Executor executor, Object... params) {
+            Command command = sPool.acquire();
+            command.setup(executor, params);
+            WidgetLib.getCommandBuffer().add(command);
+        }
+
+        /**
+         * Construct an instance.
+         */
+        private Command() {
+        }
+
+        /**
+         * {@link Executor#exec(Object...) Executes} the command's logic and releases this instance
+         * back to the {@link ConcurrentObjectPool pool}.
          */
         @Override
         public void run() {
-            mPool.release(this);
+            mExecutor.exec(mArgs);
+            sPool.release(this);
         }
 
-        private final CommandPool mPool;
+        private void setup(Executor executor, Object... args) {
+            mExecutor = executor;
+            mArgs = args;
+        }
+
+        private Executor mExecutor;
+        private Object[] mArgs;
+
+        private static final ConcurrentObjectPool<Command> sPool = new ConcurrentObjectPool<Command>(Command.class.getSimpleName()) {
+            @Override
+            protected Command create() {
+                return new Command();
+            }
+        };
     }
 
     /**
-     * A pool for managing instances of {@link Command}.  Works with {@link Command} and {@link
-     * CommandFactory} to reduce boiler-plate and semi-automate clean up of the commands added to
-     * {@link CommandBuffer}.
-     */
-    static public class CommandPool<T extends Command> extends ConcurrentObjectPool<T> {
-        /**
-         * Factory pattern interface for creating instances of {@link Command}.
-         */
-        public interface CommandFactory<T extends Command> {
-            /**
-             * Implement to create new {@link Command} instances.
-             *
-             * @param pool The {@link CommandPool} the instances are being created for.
-             *             {@link Command} caches the reference to semi-automate releasing back to
-             *             the pool.
-             * @return A new instance of an implementation of {@link Command}.
-             */
-            T create(CommandPool<T> pool);
-
-            /**
-             * @return A tag for the {@link Command} implementation created by this factory; usually
-             *          the {@link Class#getSimpleName() class name}.
-             */
-            String name();
-        }
-
-        /**
-         * Construct an instance of {@link CommandPool} that uses {@link CommandFactory factory} to
-         * create new {@link Command} instances.
-         *
-         * @param factory An implementation of {@link CommandFactory}.  Must be non-null.
-         */
-        public CommandPool(@NonNull CommandFactory<T> factory) {
-            super(factory.name());
-            mFactory = factory;
-        }
-
-        @Override
-        protected T create() {
-            return mFactory.create(this);
-        }
-
-        private final CommandFactory<T> mFactory;
-    }
-
-    /**
-     * Start a new buffer.  Calls to {@link #start()} can be nested, so if there is already an
+     * Start a new buffer.  Calls to {@code start()} can be nested, so if there is already an
      * active buffer, that buffer will continue to be used.  Calls to {@code start()} must have a
      * matching number of calls to {@link #flush()} in order for the commands in the buffer to get
      * executed.
