@@ -65,6 +65,8 @@ public class TextureFactory {
         if (mainTextureSpec != null) {
             loadOneTextureFromJSON(material.getGVRContext(), mainTextureSpec,
                     new MaterialLoader(material, mainTextureSpec, GVRShaders.MAIN_TEXTURE));
+            loadOneTextureFromJSON(material.getGVRContext(), mainTextureSpec,
+                    new MaterialLoader(material, mainTextureSpec, "diffuseTexture"));
         }
 
         final JSONObject texturesSpec = JSONHelpers
