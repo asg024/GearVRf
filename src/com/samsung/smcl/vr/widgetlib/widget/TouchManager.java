@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+@Deprecated
 public class TouchManager {
 
     /**
@@ -94,9 +95,8 @@ public class TouchManager {
      */
     public void makePickable(GVRSceneObject sceneObject) {
         try {
-            GVRMeshCollider eyePointee = new GVRMeshCollider(sceneObject.getGVRContext(),
-                    sceneObject.getRenderData().getMesh().getBoundingBox());
-            sceneObject.attachComponent(eyePointee);
+            GVRMeshCollider collider = new GVRMeshCollider(sceneObject.getGVRContext(), false);
+            sceneObject.attachComponent(collider);
         } catch (Exception e) {
             // Possible that some objects (X3D panel nodes) are without mesh
             Log.e(TAG, "makePickable(): possible that some objects (X3D panel nodes) are without mesh!");

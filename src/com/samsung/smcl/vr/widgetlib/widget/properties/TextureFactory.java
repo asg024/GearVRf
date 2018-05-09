@@ -67,8 +67,6 @@ public class TextureFactory {
                 .optJSONObject(materialSpec, MaterialTextureProperties.main_texture);
         if (mainTextureSpec != null) {
             loadOneTextureFromJSON(material.getGVRContext(), mainTextureSpec,
-                    new MaterialLoader(material, mainTextureSpec, MAIN_TEXTURE));
-            loadOneTextureFromJSON(material.getGVRContext(), mainTextureSpec,
                     new MaterialLoader(material, mainTextureSpec, "diffuseTexture"));
         }
 

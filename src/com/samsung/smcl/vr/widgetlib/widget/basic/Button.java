@@ -154,6 +154,10 @@ public class Button extends Widget implements TextContainer {
         return mTextContainer.getText();
     }
 
+    public void setGraphicColor(float r, float g, float b) {
+        getGraphic().setColor(r, g, b);
+    }
+
     @Override
     public void setText(CharSequence text) {
         if (text != null && text.length() > 0) {

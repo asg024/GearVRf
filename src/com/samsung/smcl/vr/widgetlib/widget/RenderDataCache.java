@@ -313,6 +313,34 @@ class RenderDataCache {
 
         static final String MATERIAL_DIFFUSE_TEXTURE = "diffuseTexture";
 
+        int getRgbColor() {
+            if (mMaterial != null) {
+                return mMaterial.getRgbColor();
+            }
+            return 0;
+        }
+
+        public float[] getColor() {
+            if (mMaterial != null) {
+                return mMaterial.getColor();
+            }
+            return null;
+        }
+
+        public void setColor(int color) {
+            if (mMaterial != null) {
+                SET_COLOR.buffer(mExternalMaterial, color);
+                mMaterial.setColor(color);
+            }
+        }
+
+        void setColor(float r, float g, float b) {
+            if (mMaterial != null) {
+                SET_COLOR_RGB.buffer(mExternalMaterial, r, g, b);
+                mMaterial.setColor(r, g, b);
+            }
+        }
+
         public void setTexture(GVRTexture texture) {
             if (mMaterial != null) {
                 SET_TEXTURE.buffer(mExternalMaterial, texture);

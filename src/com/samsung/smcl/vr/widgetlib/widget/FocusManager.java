@@ -3,6 +3,7 @@ package com.samsung.smcl.vr.widgetlib.widget;
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
 import com.samsung.smcl.vr.widgetlib.thread.FPSCounter;
+import com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers;
 
 import org.gearvrf.GVRContext;
 import org.gearvrf.GVRDrawFrameListener;
@@ -10,6 +11,7 @@ import org.gearvrf.GVRPicker;
 import org.gearvrf.GVRPicker.GVRPickedObject;
 import org.gearvrf.GVRScene;
 import org.gearvrf.GVRSceneObject;
+import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
 import java.util.LinkedHashSet;
@@ -25,6 +27,7 @@ import java.util.WeakHashMap;
  * The long focus timeout is reset each time an object gains focus and is
  * stopped entirely when no object has line-of-sight focus.
  */
+@Deprecated
 public class FocusManager {
     /**
      * Widgets indicate their willingness to take focus through the implementing {@link Focusable}
@@ -102,10 +105,18 @@ public class FocusManager {
         void onCurrentFocus(boolean focused);
     }
 
+    private enum Properties {
+        enabled
+    }
+
     /**
      * Creates FocusManager
      */
     public FocusManager(GVRContext gvrContext) {
+        final JSONObject properties = WidgetLib.getPropertyManager().getInstanceProperties(getClass(), TAG);
+        Log.d(TAG, "FocusManager(): properties: %s", properties);
+        mEnabled = JSONHelpers.optBoolean(properties, Properties.enabled, false);
+        Log.d(TAG, "FocusManager(): mEnabled: %b", mEnabled);
         init(gvrContext);
     }
 
@@ -156,7 +167,7 @@ public class FocusManager {
      * Stops managing focus every frame
      */
     public void clear() {
-        if (mContext != null) {
+        if (mContext != null && mEnabled) {
             mContext.unregisterDrawFrameListener(mDrawFrameListener);
         }
     }
@@ -191,7 +202,9 @@ public class FocusManager {
     private void init(GVRContext context) {
         if (mContext == null) {
             mContext = context;
-            mContext.registerDrawFrameListener(mDrawFrameListener);
+            if (mEnabled) {
+                mContext.registerDrawFrameListener(mDrawFrameListener);
+            }
         }
     }
 
@@ -356,6 +369,7 @@ public class FocusManager {
     }
 
     private GVRContext mContext;
+    private final boolean mEnabled;
     private Focusable mCurrentFocus = null;
     private String mCurrentFocusName = "";
     private Map<GVRSceneObject, WeakReference<Focusable>> mFocusableMap = new WeakHashMap<>();

@@ -59,7 +59,9 @@ import java.util.Set;
 
 import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
 
-public class Widget  implements Layout.WidgetContainer {
+@SuppressWarnings({"WeakerAccess", "unused"})
+public class Widget implements Layout.WidgetContainer {
+
     /**
      * Call to initialize the Widget infrastructure. Parses {@code objects.json}
      * to load metadata for {@code Widgets}, as well as animation and material
@@ -77,17 +79,19 @@ public class Widget  implements Layout.WidgetContainer {
             NoSuchMethodException {
         loadAnimations(gvrContext.getContext());
 
-            gvrContext.runOnGlThread(new Runnable() {
-                @Override
-                public void run() {
-                    sGLThread = new WeakReference<>(Thread.currentThread());
-                }
-            });
-            GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
-            sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
-                    gvrContext, R.raw.default_bkgd));
-            Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
-        }
+        gvrContext.runOnGlThread(new Runnable() {
+            @Override
+            public void run() {
+                sGLThread = new WeakReference<>(Thread.currentThread());
+            }
+        });
+        GVRAssetLoader assetLoader = new GVRAssetLoader(gvrContext);
+        sDefaultTexture = assetLoader.loadTexture(new GVRAndroidResource(
+                gvrContext, R.raw.default_bkgd));
+        Log.d(TAG, "onInit(): default texture: %s", sDefaultTexture);
+
+        gvrContext.getInputManager().selectController(sPickHandler);
+    }
 
     /**
      * Implement and {@link Widget#addFocusListener(OnFocusListener) register}
@@ -844,9 +848,10 @@ public class Widget  implements Layout.WidgetContainer {
      * @param name
      */
     public void setName(String name) {
+        GVRSceneObject owner = getSceneObject();
         mName = name;
-        if (mSceneObject != null) {
-            mSceneObject.setName(name);
+        if (owner != null) {
+            owner.setName(name);
         }
     }
 
@@ -902,7 +907,7 @@ public class Widget  implements Layout.WidgetContainer {
                 .setStencilOp(GLES30.GL_KEEP, GLES30.GL_KEEP, GLES30.GL_REPLACE)
                 .setStencilMask(0xFF);
 
-        mSceneObject.addChildObject(clippingObj);
+        getSceneObject().addChildObject(clippingObj);
 
         for (Widget child : getChildren()) {
             setObjectClipped(child);
@@ -1037,11 +1042,9 @@ public class Widget  implements Layout.WidgetContainer {
      * @return width
      */
     public float getBoundsWidth() {
-        if (mSceneObject != null) {
-            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
-            if (v != null) {
-                return v.maxCorner.x - v.minCorner.x;
-            }
+        GVRSceneObject.BoundingVolume v = getSceneObject().getBoundingVolume();
+        if (v != null) {
+            return v.maxCorner.x - v.minCorner.x;
         }
         return 0f;
     }
@@ -1051,11 +1054,9 @@ public class Widget  implements Layout.WidgetContainer {
      * @return height
      */
     public float getBoundsHeight(){
-        if (mSceneObject != null) {
-            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
-            if (v != null) {
-                return v.maxCorner.y - v.minCorner.y;
-            }
+        GVRSceneObject.BoundingVolume v = getSceneObject().getBoundingVolume();
+        if (v != null) {
+            return v.maxCorner.y - v.minCorner.y;
         }
         return 0f;
     }
@@ -1065,11 +1066,9 @@ public class Widget  implements Layout.WidgetContainer {
      * @return depth
      */
     public float getBoundsDepth() {
-        if (mSceneObject != null) {
-            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
-            if (v != null) {
-                return v.maxCorner.z - v.minCorner.z;
-            }
+        GVRSceneObject.BoundingVolume v = getSceneObject().getBoundingVolume();
+        if (v != null) {
+            return v.maxCorner.z - v.minCorner.z;
         }
         return 0f;
     }
@@ -1696,6 +1695,50 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     /**
+     * Modify the Widget's material current color
+     * @param color
+     */
+    public void setColor(final int color) {
+        getMaterial().setColor(color);
+    }
+
+    /**
+     * Modify the Widget's material current color
+     * @param rgb
+     */
+    public void setColor(final float[] rgb) {
+        getMaterial().setColor(rgb[0], rgb[1], rgb[2]);
+    }
+
+    /**
+     * Modify the Widget's material current color
+     * @param r
+     * @param g
+     * @param b
+     */
+    public void setColor(final float r, final float g, final float b) {
+        getMaterial().setColor(r, g, b);
+    }
+
+    /**
+     * Gets the Widget's material current color
+     * @return color
+     */
+    public float[] getColor() {
+        return getMaterial().getColor();
+    }
+
+    /**
+     * A convenience method that wraps {@link #getColor()} and returns an
+     * Android {@link Color}
+     *
+     * @return An Android {@link Color}
+     */
+    public int getRgbColor() {
+        return getMaterial().getRgbColor();
+    }
+
+    /**
      * Set the Widget's opacity. This is dependent on the shader; see
      * {@link GVRMaterial#setOpacity(float)}.
      *
@@ -1916,7 +1959,7 @@ public class Widget  implements Layout.WidgetContainer {
      *         {@code false} otherwise.
      */
     public final boolean isSceneObject(GVRSceneObject sceneObject) {
-        return mSceneObject == sceneObject;
+        return getSceneObject() == sceneObject;
     }
 
     /**
@@ -2190,8 +2233,7 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    private void setupLevels(JSONObject metaData) throws JSONException,
-            NoSuchMethodException {
+    private void setupLevels(JSONObject metaData) throws JSONException {
         JSONArray levelsArray = optJSONArray(metaData, Properties.levels);
 
         if (levelsArray != null) {
@@ -2205,8 +2247,7 @@ public class Widget  implements Layout.WidgetContainer {
         }
     }
 
-    private void setupStates(JSONObject metadata) throws JSONException,
-            NoSuchMethodException {
+    private void setupStates(JSONObject metadata) {
         JSONObject states = optJSONObject(metadata, Properties.states);
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setupStates(): for '%s': %s", getName(), states);
         mLevelInfo.add(new WidgetState(this, states));
@@ -2275,8 +2316,8 @@ public class Widget  implements Layout.WidgetContainer {
     private final class OnTouchImpl implements TouchManager.OnTouch {
         @Override
         public boolean touch(GVRSceneObject sceneObject, final float[] coords) {
-            Log.d(TAG, "OnTouchImpl.touch(%s): for %s", target().getName(),
-                    Helpers.getFullName(sceneObject));
+            Log.d(Log.SUBSYSTEM.INPUT, TAG, "OnTouchImpl.touch(%s): for %s",
+                    target().getName(), Helpers.getFullName(sceneObject));
             return doOnTouch(coords);
         }
 
@@ -2316,6 +2357,7 @@ public class Widget  implements Layout.WidgetContainer {
             final JSONObject metadata = getObjectMetadata();
             mSceneObject = getSceneObjectProperty(context, metadata);
 
+            mSceneObject.attachComponent(new WidgetBehavior(context, this));
             mTransformCache = new TransformCache(this);
             mRenderDataCache = new RenderDataCache(mSceneObject);
 
@@ -2329,6 +2371,8 @@ public class Widget  implements Layout.WidgetContainer {
             setupProperties(metadata);
             createChildren(context, mSceneObject, metadata);
             setupStatesAndLevels(metadata);
+
+            mSceneObject.setName(mName != null ? mName : "");
         } catch (Exception e) {
             Log.e(TAG, e, "Widget(): DANGER WILL ROBINSON DANGER");
             throw new RuntimeException(e.getLocalizedMessage(), e);
@@ -2423,11 +2467,20 @@ public class Widget  implements Layout.WidgetContainer {
         onDetached();
     }
 
+    /* package */
+    boolean dispatchOnFocus(boolean focused) {
+        return mFocusableImpl.onFocus(focused);
+    }
+
     /**
      * Called when this {@link Widget} gains line-of-sight focus. Notifies all
      * {@linkplain OnFocusListener#onFocus(boolean) listeners}; if none of the
      * listeners has completely handled the event, {@link #onFocus(boolean)} is
      * called.
+     *
+     * @param focused {@code True} if the {@link Widget} can gain focus, {@code false} if it has
+     *                            lost focus.
+     * @return {@code True} if the {@link Widget} accepted focus, {@code false} otherwise.
      */
     private boolean doOnFocus(boolean focused) {
         if (!mFocusEnabled) {
@@ -2442,7 +2495,7 @@ public class Widget  implements Layout.WidgetContainer {
 
         final List<OnFocusListener> focusListeners;
         synchronized (mFocusListeners) {
-            focusListeners = new ArrayList<OnFocusListener>(mFocusListeners);
+            focusListeners = new ArrayList<>(mFocusListeners);
         }
 
         for (OnFocusListener listener : focusListeners) {
@@ -2483,7 +2536,7 @@ public class Widget  implements Layout.WidgetContainer {
     private void doOnLongFocus() {
         final List<OnFocusListener> focusListeners;
         synchronized (mFocusListeners) {
-            focusListeners = new ArrayList<OnFocusListener>(mFocusListeners);
+            focusListeners = new ArrayList<>(mFocusListeners);
         }
 
         for (OnFocusListener listener : focusListeners) {
@@ -2499,6 +2552,11 @@ public class Widget  implements Layout.WidgetContainer {
                 child.doOnLongFocus();
             }
         }
+    }
+
+    /* package */
+    boolean dispatchOnTouch(GVRSceneObject sceneObject, final float[] coords) {
+        return mTouchHandler.touch(sceneObject, coords);
     }
 
     private boolean doOnTouch(final float[] coords) {
@@ -3062,7 +3120,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private GVRRenderData getRenderData() {
-        return mSceneObject.getRenderData();
+        return (GVRRenderData) getSceneObject().getComponent(GVRRenderData.getComponentType());
     }
 
     /* package */
@@ -3200,7 +3258,6 @@ public class Widget  implements Layout.WidgetContainer {
                 }
             } else {
                 Log.d(TAG, "createChildren(%s): adding mesh children", getName());
-                printGvrfHierarchy();
                 addMeshChild(sceneObjectChild, "");
             }
         }
@@ -3245,10 +3302,6 @@ public class Widget  implements Layout.WidgetContainer {
      *            The new material.
      */
     protected void setMaterial(final GVRMaterial material) {
-        final GVRRenderData renderData = getRenderData();
-        if (renderData != null) {
-            renderData.setMaterial(material);
-        }
         mRenderDataCache.setMaterial(material);
     }
 
@@ -3757,7 +3810,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     private void printGvrfHierarchy() {
         Log.d("GVRFHierarchy", "========= GVRF Hierarchy for %s =========", getName());
-        getGvrfHierarchy(mSceneObject, "");
+        getGvrfHierarchy(getSceneObject(), "");
     }
 
     private static JSONObject packageSceneObject(GVRSceneObject sceneObject) {
@@ -3873,6 +3926,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     private static WeakReference<Thread> sGLThread = new WeakReference<>(null);
     private static GVRTexture sDefaultTexture;
+    static final WidgetPickHandler sPickHandler = new WidgetPickHandler();
 
     private static final String TAG = org.gearvrf.utility.Log.tag(Widget.class);
 
