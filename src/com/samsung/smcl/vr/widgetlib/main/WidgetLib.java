@@ -128,16 +128,16 @@ public class WidgetLib {
 
     private WidgetLib(GVRContext gvrContext, String customPropertiesAsset)
             throws InterruptedException, JSONException, NoSuchMethodException {
-        mFocusManager = new FocusManager(gvrContext);
-        mTouchManager = new TouchManager(gvrContext);
-        mContentSceneController = new ContentSceneController(gvrContext);
+        mMainThread = new MainThread(gvrContext);
         mTypefaceManager = new TypefaceManager(gvrContext);
         mSimpleAnimationTracker = new SimpleAnimationTracker(gvrContext);
-        mMainThread = new MainThread(gvrContext);
         mPropertyManager = new PropertyManager(gvrContext.getContext(), "default_metadata.json",
                 customPropertiesAsset);
         mCommandBuffer = new CommandBuffer(gvrContext);
 
+        mFocusManager = new FocusManager(gvrContext);
+        mTouchManager = new TouchManager(gvrContext);
+        mContentSceneController = new ContentSceneController(gvrContext);
         Widget.init(gvrContext);
     }
 
