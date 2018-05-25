@@ -46,9 +46,18 @@ public class WidgetLib {
     public static WidgetLib init(GVRContext gvrContext, String customPropertiesAsset)
             throws InterruptedException, JSONException, NoSuchMethodException {
         if (mInstance == null) {
-            mInstance = new WeakReference<>(new WidgetLib(gvrContext, customPropertiesAsset));
+            // Constructor sets mInstance to ensure the initialization order
+            new WidgetLib(gvrContext, customPropertiesAsset);
         }
         return mInstance.get();
+    }
+
+    public static void destroy() {
+        if (mInstance != null) {
+            getFocusManager().clear();
+            getMainThread().quit();
+        }
+        mInstance = null;
     }
 
     /**
@@ -128,6 +137,8 @@ public class WidgetLib {
 
     private WidgetLib(GVRContext gvrContext, String customPropertiesAsset)
             throws InterruptedException, JSONException, NoSuchMethodException {
+        mInstance = new WeakReference<>(this);
+
         mMainThread = new MainThread(gvrContext);
         mTypefaceManager = new TypefaceManager(gvrContext);
         mSimpleAnimationTracker = new SimpleAnimationTracker(gvrContext);
