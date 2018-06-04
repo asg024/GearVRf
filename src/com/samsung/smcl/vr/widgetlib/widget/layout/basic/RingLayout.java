@@ -142,7 +142,7 @@ public class RingLayout extends LinearLayout {
     @Override
     protected int getOffsetSign() {
         int sign = 1;
-        switch (mOrientation) {
+        switch (getOrientation()) {
             case VERTICAL:
                 sign = -1;
                 break;
@@ -151,7 +151,7 @@ public class RingLayout extends LinearLayout {
                 sign = 1;
                 break;
             default:
-                Log.w(TAG, "Unsupported orientation %s", mOrientation);
+                Log.w(TAG, "Unsupported orientation %s", getOrientation());
                 break;
         }
 

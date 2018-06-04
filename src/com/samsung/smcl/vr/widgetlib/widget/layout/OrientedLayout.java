@@ -65,7 +65,7 @@ public abstract class OrientedLayout extends AbsoluteLayout {
      */
     public Axis getOrientationAxis() {
         final Axis axis;
-        switch(mOrientation) {
+        switch(getOrientation()) {
             case HORIZONTAL:
                 axis = Axis.X;
                 break;
@@ -143,7 +143,7 @@ public abstract class OrientedLayout extends AbsoluteLayout {
 
         OrientedLayout that = (OrientedLayout) o;
 
-        return mOrientation == that.mOrientation &&
+        return getOrientation() == that.getOrientation() &&
                 mOuterPaddingEnabled == that.mOuterPaddingEnabled;
 
     }
@@ -166,7 +166,7 @@ public abstract class OrientedLayout extends AbsoluteLayout {
         return 0;
     }
 
-    protected Orientation mOrientation = Orientation.HORIZONTAL;
+    private Orientation mOrientation = Orientation.HORIZONTAL;
     protected boolean mOuterPaddingEnabled = false;
 
     private float getSize(int[] children, Axis axis) {

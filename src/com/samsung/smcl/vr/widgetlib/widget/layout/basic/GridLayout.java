@@ -153,7 +153,7 @@ public class GridLayout extends OrientedLayout {
                 mCaches.put(cacheId, cache);
             }
             Log.d(Log.SUBSYSTEM.LAYOUT, TAG, "measureChild [%d] orientation = %s cacheId = %d cache.count = %d",
-                    dataIndex, mOrientation, cacheId, cache.count());
+                    dataIndex, getOrientation(), cacheId, cache.count());
 
             Widget w = measureChild(dataIndex, calculateOffset, cache);
             if (mForcePostMeasurement) {
@@ -509,7 +509,7 @@ public class GridLayout extends OrientedLayout {
     public void invalidate() {
         mRowLayout.invalidate();
         mColumnLayout.invalidate();
-        init(mOrientation);
+        init(getOrientation());
         super.invalidate();
     }
 
@@ -655,12 +655,12 @@ public class GridLayout extends OrientedLayout {
     }
 
     private ChunkedLinearLayout getOrientationLayout() {
-        return mOrientation == Orientation.VERTICAL ?
+        return getOrientation() == Orientation.VERTICAL ?
                 mColumnLayout : mRowLayout;
     }
 
     private ChunkedLinearLayout getNonOrientationLayout() {
-        return mOrientation == Orientation.VERTICAL ?
+        return getOrientation() == Orientation.VERTICAL ?
                 mRowLayout : mColumnLayout;
     }
 
@@ -703,7 +703,7 @@ public class GridLayout extends OrientedLayout {
                 break;
             case STACK:
             default:
-                Log.w(TAG, "Unsupported orientation %s", mOrientation);
+                Log.w(TAG, "Unsupported orientation %s", getOrientation());
                 break;
         }
         return ret;
@@ -767,7 +767,7 @@ public class GridLayout extends OrientedLayout {
         enableUniformSize(true);
         setHorizontalGravity(Gravity.LEFT);
         setVerticalGravity(Gravity.TOP);
-        init(mOrientation);
+        init(getOrientation());
     }
 
     private ChunkedLinearLayout mRowLayout;

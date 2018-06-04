@@ -43,7 +43,7 @@ public class ArchLayout extends OrientedLayout {
      * Return the string representation of the ArchLayout
      */
     public String toString() {
-        return super.toString() + String.format(pattern, mOrientation, mViewPort);
+        return super.toString() + String.format(pattern, getOrientation(), mViewPort);
     }
 
     protected ArchLayout(final ArchLayout rhs) {
