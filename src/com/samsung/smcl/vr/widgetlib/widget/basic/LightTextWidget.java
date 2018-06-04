@@ -1,6 +1,7 @@
 package com.samsung.smcl.vr.widgetlib.widget.basic;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTextureParameters;
@@ -12,6 +13,7 @@ import java.util.concurrent.Future;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -283,6 +285,9 @@ public class LightTextWidget extends Widget implements TextContainer {
 
         // draw bg color
         int bgColor = params.getBackgroundColor();
+        if (bgColor == Color.TRANSPARENT) {
+            setRenderingOrder(GVRRenderData.GVRRenderingOrder.TRANSPARENT);
+        }
         Log.d(TAG, "apply(%s): bgColor = %d", getName(), bgColor);
 
         canvas.drawColor(bgColor);

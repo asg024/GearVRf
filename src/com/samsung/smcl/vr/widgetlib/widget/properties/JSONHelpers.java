@@ -1709,7 +1709,7 @@ abstract public class JSONHelpers {
                 }
                 String cstr = m.group(1);
                 final int length = cstr.length();
-                int color = Integer.parseInt(cstr, 16);
+                long color = Long.parseLong(cstr, 16);
                 // Convert the short CSS form to the long form
                 if (length == 3 || length == 4) {
                     color = ((color & ALPHA_MASK) << 16) | ((color & ALPHA_R_MASK) << 12) |
@@ -1717,7 +1717,7 @@ abstract public class JSONHelpers {
                             ((color & B_MASK));
                 }
                 Log.d(Log.SUBSYSTEM.JSON, TAG, "getJSONColor(): string matching '%s' (%s): %s", s, cstr, raw);
-                return color;
+                return (int)color;
             }
 
             try {
