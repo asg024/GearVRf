@@ -9,8 +9,6 @@ import org.gearvrf.scene_objects.GVRTextViewSceneObject;
 import org.gearvrf.scene_objects.GVRTextViewSceneObject.IntervalFrequency;
 import org.json.JSONObject;
 
-import java.util.concurrent.Future;
-
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -27,8 +25,6 @@ import com.samsung.smcl.vr.widgetlib.main.GVRBitmapTexture;
 import com.samsung.smcl.vr.widgetlib.widget.Widget;
 import com.samsung.smcl.vr.widgetlib.widget.NodeEntry;
 
-import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getFutureBitmapTexture;
-
 /**
  * Lightweight version of TextWidget.
  * Standard {@link TextWidget} uses {@link GVRTextViewSceneObject} to display the text, making
@@ -38,6 +34,7 @@ import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getFutureBi
 
 @SuppressWarnings("deprecation")
 public class LightTextWidget extends Widget implements TextContainer {
+    private static final String ELLIPSIS = "\u2026";
     /**
      * Construct LightTextWidget wrapper for an existing {@link GVRSceneObject}.
      *
@@ -268,6 +265,40 @@ public class LightTextWidget extends Widget implements TextContainer {
 
     private static final String TAG = LightTextWidget.class.getSimpleName();
 
+    private int charactersOnLine(Paint paint, float maximumTextWidth,
+                                        String str, int offset) {
+
+        int start = offset;
+        int end = str.length() - 1;
+        int mid = 0;
+        while (start <= end) {
+            mid = (start + end) / 2;
+
+            //measureText(String text, int start, int end), end is 1 beyond the index of the last character to measure
+            float textWidth = paint.measureText(str, offset, mid + 1);
+            if (textWidth < maximumTextWidth) {
+                start = mid + 1;
+            } else if (textWidth > maximumTextWidth) {
+                end = mid - 1;
+            } else {
+                return mid;
+            }
+        }
+        return end;
+    }
+
+    private String applyEllipsis(String str, int maximumTextWidth) {
+
+        float textWidth = mTextPaint.measureText(str);
+        if (textWidth > maximumTextWidth) {
+            int index = charactersOnLine(mTextPaint, maximumTextWidth - mTextPaint.measureText(ELLIPSIS), str, 0);
+            return str.substring(0, index).concat(ELLIPSIS);
+        }
+        else {
+            return str;
+        }
+    }
+
     private void apply() {
         Log.d(TAG, "apply(%s): apply...", getName());
         if (mNoApply) {
@@ -338,13 +369,16 @@ public class LightTextWidget extends Widget implements TextContainer {
             Log.d(TAG, "apply(%s): setting text paint typeface to %s", getName(), typeface);
             mTextPaint.setTypeface(typeface);
         } else {
-            Log.w(TAG, "apply(%s): typeface is null!", getName());
+            Log.w(TAG, "apply(%s): type face is null!", getName());
         }
 
         // draw text
         String text = getTextString();
         if (text != null) {
             Log.d(TAG, "apply(%s): text = %s", getName(), text);
+
+            text = applyEllipsis(text, bWidth);
+            Log.d(TAG, "after applying ellipsis: text: %s" + text);
 
             Rect textBounds = new Rect();
             mTextPaint.getTextBounds(text, 0, text.length(), textBounds);
