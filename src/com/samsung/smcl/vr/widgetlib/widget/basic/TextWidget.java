@@ -232,7 +232,7 @@ public class TextWidget extends Widget implements TextContainer {
 
         TextParams params = new TextParams();
         params.setText(getText());
-        params.setFromJSON(getGVRContext().getActivity(), properties);
+        params.setFromJSON(getGVRContext().getContext(), properties);
         setTextParams(params);
     }
 

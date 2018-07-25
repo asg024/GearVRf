@@ -250,7 +250,7 @@ public class LightTextWidget extends Widget implements TextContainer {
         params.setText(text);
         try {
             JSONObject properties = getObjectMetadata();
-            params.setFromJSON(getGVRContext().getActivity(), properties);
+            params.setFromJSON(getGVRContext().getContext(), properties);
         } finally {
             mNoApply = false;
         }

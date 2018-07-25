@@ -340,7 +340,7 @@ public class Button extends Widget implements TextContainer {
         JSONObject textProperties = copy(metaData);
         put(textProperties, Widget.Properties.size, textWidgetSize);
         TextParams params = new TextParams();
-                params.setFromJSON(getGVRContext().getActivity(), textProperties);
+                params.setFromJSON(getGVRContext().getContext(), textProperties);
         return params;
     }
 

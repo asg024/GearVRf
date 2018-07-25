@@ -1,6 +1,6 @@
 package com.samsung.smcl.vr.widgetlib.widget.basic;
 
-import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -14,6 +14,8 @@ import static com.samsung.smcl.vr.widgetlib.main.Utility.getId;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
+
+import java.util.Locale;
 
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.getJSONColor;
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.optEnum;
@@ -51,14 +53,14 @@ public class TextParams implements TextContainer {
 
     /**
      * Set text parameters from properties
-     * @param activity
+     * @param context Valid Android {@link Context}
      * @param properties JSON text properties
      */
-    public void setFromJSON(Activity activity, JSONObject properties) {
+    public void setFromJSON(Context context, JSONObject properties) {
         String backgroundResStr = optString(properties, Properties.background);
         if (backgroundResStr != null && !backgroundResStr.isEmpty()) {
-            final int backgroundResId = getId(activity, backgroundResStr, "drawable");
-            setBackGround(activity.getResources().getDrawable(backgroundResId));
+            final int backgroundResId = getId(context, backgroundResStr, "drawable");
+            setBackGround(context.getResources().getDrawable(backgroundResId, null));
         }
 
         setBackgroundColor(getJSONColor(properties, Properties.background_color, getBackgroundColor()));
@@ -167,8 +169,8 @@ public class TextParams implements TextContainer {
 
     @Override
     public String toString() {
-        return String.format(STRING_FORMAT, mBackground, mBackgroundColor, mGravity, mTextColor,
-                mTextSize, mText);
+        return String.format(Locale.getDefault(), STRING_FORMAT, mBackground, mBackgroundColor,
+                mGravity, mTextColor, mTextSize, mText);
     }
 
     private Drawable mBackground;
