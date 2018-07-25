@@ -25,6 +25,7 @@ public class WidgetLib {
     private final FocusManager mFocusManager;
     private final TouchManager mTouchManager;
     private final ContentSceneController mContentSceneController;
+    private final MainScene mMainScene;
     private final TypefaceManager mTypefaceManager;
     private final SimpleAnimationTracker mSimpleAnimationTracker;
     private final MainThread mMainThread;
@@ -96,6 +97,15 @@ public class WidgetLib {
     }
 
     /**
+     * Get instance of {@link ContentSceneController}. If the library is not initialized
+     * {@link IllegalStateException} will be thrown
+     * @return The instance of {@link ContentSceneController}
+     */
+    public static MainScene getMainScene() {
+        return get().mMainScene;
+    }
+
+    /**
      * Get instance of {@link TypefaceManager}. If the library is not initialized
      * {@link IllegalStateException} will be thrown
      * @return The instance of {@link TypefaceManager}
@@ -149,6 +159,8 @@ public class WidgetLib {
         mFocusManager = new FocusManager(gvrContext);
         mTouchManager = new TouchManager(gvrContext);
         mContentSceneController = new ContentSceneController(gvrContext);
+        mMainScene = new MainScene(gvrContext);
+
         Widget.init(gvrContext);
     }
 
