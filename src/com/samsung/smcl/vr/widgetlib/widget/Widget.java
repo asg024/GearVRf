@@ -1955,8 +1955,8 @@ public class Widget  implements Layout.WidgetContainer {
      * Specify the list of the widget core  JSON properties
      */
     public enum Properties {
-        name, touchable, focusenabled, id, visibility, states, levels, level, model, selected,
-        scene_object, preapply_attribs, size, transform, viewport
+        name, touchable, focusenabled, id, visibility, states, create_children, levels, level, model,
+        selected, scene_object, preapply_attribs, size, transform, viewport
     }
 
     /**
@@ -2274,7 +2274,9 @@ public class Widget  implements Layout.WidgetContainer {
 
     private final class OnTouchImpl implements TouchManager.OnTouch {
         @Override
-        public boolean touch(GVRSceneObject sceneObject, final float[] coords) {// , float[] hit) {
+        public boolean touch(GVRSceneObject sceneObject, final float[] coords) {
+            Log.d(TAG, "OnTouchImpl.touch(%s): for %s", target().getName(),
+                    Helpers.getFullName(sceneObject));
             return doOnTouch(coords);
         }
 
@@ -2325,7 +2327,7 @@ public class Widget  implements Layout.WidgetContainer {
                     "Widget(context, properties): setting up metadata for %s: %s",
                     getName(), metadata);
             setupProperties(metadata);
-            createChildren(context, mSceneObject);
+            createChildren(context, mSceneObject, metadata);
             setupStatesAndLevels(metadata);
         } catch (Exception e) {
             Log.e(TAG, e, "Widget(): DANGER WILL ROBINSON DANGER");
@@ -2682,9 +2684,11 @@ public class Widget  implements Layout.WidgetContainer {
         final TouchManager touchManager = WidgetLib.getTouchManager();
         if (touchManager == null) {
             Log.e(TAG,
-                    "Attempted to register widget as touchable with NULL TouchManager!");
+                    "Attempted to register widget '%s' as touchable with NULL TouchManager!",
+                    getName());
             return;
         }
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s)", getName());
 
         final boolean hasRenderData = mRenderDataCache.hasRenderData();
         final FocusManager focusManager = WidgetLib.getFocusManager();
@@ -2704,26 +2708,74 @@ public class Widget  implements Layout.WidgetContainer {
             mTouchHandler = new OnTouchImpl();
         }
 
+        Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                "registerPickable(%s): mParent: %s, hasRenderData: %b, mIsTouchable: %b, mFocusEnabled: %b",
+                getName(), mParent, hasRenderData, mIsTouchable, mFocusEnabled);
         if (mParent != null && hasRenderData && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): making touchable", getName());
                 touchManager.makeTouchable(getSceneObject(), mTouchHandler);
             } else {
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): making pickable", getName());
                 touchManager.makePickable(getSceneObject());
             }
 
             if (mFocusEnabled) {
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): registering focusable", getName());
                 focusManager.register(getSceneObject(), mFocusableImpl);
             } else {
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(): '%s' is not focus-enabled",
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): is not focus-enabled",
                         getName());
                 focusManager.unregister(getSceneObject(), needsOwnFocusable);
             }
         } else {
             touchManager.removeHandlerFor(getSceneObject());
             Log.d(Log.SUBSYSTEM.WIDGET, TAG,
-                    "registerPickable(): unregistering '%s'; focus-enabled: %b",
+                    "registerPickable(%s): unregistering; focus-enabled: %b",
                     getName(), mFocusEnabled);
             focusManager.unregister(getSceneObject(), needsOwnFocusable);
+        }
+
+        if (mParent != null && (mIsTouchable || mFocusEnabled)) {
+            if (mIsTouchable) {
+                for (GVRSceneObject child : mMeshChildren) {
+                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                            "registerPickable(%s): making mesh child touchable: %s",
+                            getName(), child.getName());
+                    touchManager.makeTouchable(child, mTouchHandler);
+                }
+            } else {
+                for (GVRSceneObject child : mMeshChildren) {
+                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                            "registerPickable(%s): making mesh child pickable: %s",
+                            getName(), child.getName());
+                    touchManager.makePickable(child);
+                }
+            }
+
+            if (mFocusEnabled) {
+                for (GVRSceneObject child : mMeshChildren) {
+                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                            "registerPickable(%s): making mesh child focusable: %s",
+                            getName(), child.getName());
+                    focusManager.register(child, mFocusableImpl);
+                }
+            } else {
+                for (GVRSceneObject child : mMeshChildren) {
+                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                            "registerPickable(%s): making mesh child NOT focusable: %s",
+                            getName(), child.getName());
+                    focusManager.unregister(child, needsOwnFocusable);
+                }
+            }
+        } else {
+            for (GVRSceneObject child : mMeshChildren) {
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                        "registerPickable(%s): unregistering mesh child: %s",
+                        getName(), child.getName());
+                touchManager.removeHandlerFor(child);
+                focusManager.unregister(child, needsOwnFocusable);
+            }
         }
 
         // If our focusable or touch handler have changed, we need to let any
@@ -3132,17 +3184,38 @@ public class Widget  implements Layout.WidgetContainer {
 
     /* package */
     protected void createChildren(final GVRContext context,
-                                  final GVRSceneObject sceneObject) throws InstantiationException {
+                                  final GVRSceneObject sceneObject,
+                                  JSONObject properties) throws InstantiationException {
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating children", getName());
         List<GVRSceneObject> children = sceneObject.getChildren();
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): child count: %d", getName(), children.size());
+        final boolean createChildren = optBoolean(properties, Properties.create_children, true);
         for (GVRSceneObject sceneObjectChild : children) {
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG, "createChildren(%s): creating child '%s'", getName(),
-                    sceneObjectChild.getName());
-            final Widget child = createChild(context, sceneObjectChild);
-            if (child != null) {
-                addChildInner(child);
+            if (createChildren) {
+                Log.d(TAG, "createChildren(%s): creating child '%s'",
+                        getName(), sceneObjectChild.getName());
+                final Widget child = createChild(context, sceneObjectChild);
+                if (child != null) {
+                    addChildInner(child);
+                }
+            } else {
+                Log.d(TAG, "createChildren(%s): adding mesh children", getName());
+                printGvrfHierarchy();
+                addMeshChild(sceneObjectChild, "");
             }
+        }
+    }
+
+    private void addMeshChild(GVRSceneObject sceneObject, String space) {
+        if (sceneObject.getRenderData() != null) {
+            Log.d(TAG, "addMeshChild(%s): %s%s", getName(), space, sceneObject.getName());
+            mMeshChildren.add(sceneObject);
+        } else {
+            Log.w(TAG, "addMeshChild(%s): %s%s -- skipped, no render data", getName(),
+                    space, sceneObject.getName());
+        }
+        for (GVRSceneObject child : sceneObject.getChildren()) {
+            addMeshChild(child, space + " ");
         }
     }
 
@@ -3636,6 +3709,7 @@ public class Widget  implements Layout.WidgetContainer {
             json = new JSONObject();
         }
 
+        put(json, Properties.create_children, true);
         put(json, Properties.scene_object, sceneObject);
 
         return json;
@@ -3668,7 +3742,9 @@ public class Widget  implements Layout.WidgetContainer {
 
         GVRRenderData rd = sceneObject.getRenderData();
         if (rd != null) {
-            Log.d(TAG, space + "%s [%s]", sceneObject.getName(), rd.getRenderingOrder());
+            Log.d("GVRFHierarchy", "%s'%s' [%s]", space, sceneObject.getName(), rd.getRenderingOrder());
+        } else {
+            Log.d("GVRFHierarchy", "%s'%s' <non-rendering>", space, sceneObject.getName());
         }
         Iterable<GVRSceneObject> i = sceneObject.children();
         if (i != null) {
@@ -3680,7 +3756,7 @@ public class Widget  implements Layout.WidgetContainer {
     }
 
     private void printGvrfHierarchy() {
-        Log.d(TAG, "========= GVRF Hierarchy for %s =========", getName());
+        Log.d("GVRFHierarchy", "========= GVRF Hierarchy for %s =========", getName());
         getGvrfHierarchy(mSceneObject, "");
     }
 
@@ -3700,6 +3776,7 @@ public class Widget  implements Layout.WidgetContainer {
 
     private JSONObject mMetadata;
     private final List<Widget> mChildren = new ArrayList<>();
+    private final List<GVRSceneObject> mMeshChildren = new ArrayList<>();
     private Widget mParent;
     private String mName;
 

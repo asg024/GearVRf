@@ -90,7 +90,8 @@ public class Log {
         LAYOUT,
         FOCUS,
         TRACING,
-        JSON;
+        JSON,
+        INPUT;
     }
 
     /**

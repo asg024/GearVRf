@@ -280,8 +280,8 @@ public class GroupWidget extends Widget {
 
     @Override
     protected void createChildren(final GVRContext context,
-            final GVRSceneObject sceneObject) throws InstantiationException {
-        super.createChildren(context, sceneObject);
+                                  final GVRSceneObject sceneObject, JSONObject properties) throws InstantiationException {
+        super.createChildren(context, sceneObject, properties);
     }
 
     protected boolean mEnableTransitionAnimation;

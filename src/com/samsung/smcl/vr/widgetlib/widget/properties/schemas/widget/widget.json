@@ -148,6 +148,11 @@
       }, {
         "type": "null"
       }]
+    },
+    "create_children": {
+      "description": "Specifies whether to create child Widgets for all sub-objects of the Widget's GVRSceneObject (true) or to handle sub-objects as being part of the same Widget (false).",
+      "type": "boolean",
+      "default": true
     }
   },
 

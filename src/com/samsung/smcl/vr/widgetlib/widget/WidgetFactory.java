@@ -149,6 +149,7 @@ public class WidgetFactory {
      * @throws IOException
      *             If the model file can't be read.
      */
+    @SuppressWarnings("unused")
     public static Widget createWidgetFromModel(final GVRContext gvrContext,
             final String modelFile) throws InstantiationException, IOException {
         GroupWidget widget = (GroupWidget) createWidgetFromModel(gvrContext, modelFile,
@@ -174,6 +175,7 @@ public class WidgetFactory {
      * @throws IOException
      *             If the model file can't be read.
      */
+    @SuppressWarnings("WeakerAccess")
     public static Widget createWidgetFromModel(final GVRContext gvrContext,
             final String modelFile, Class<? extends Widget> widgetClass)
             throws InstantiationException, IOException {
@@ -199,6 +201,7 @@ public class WidgetFactory {
      * @throws IOException
      *             If the model file can't be read.
      */
+    @SuppressWarnings("unused")
     public static Widget createWidgetFromModel(final GVRContext gvrContext,
             final String modelFile, final String nodeName)
             throws InstantiationException, IOException {
@@ -238,14 +241,15 @@ public class WidgetFactory {
         return createWidget(rootNode, widgetClass);
     }
 
-    /** Model loading */
+    /* Model loading */
 
     /**
      * Load model from file
-     * @param gvrContext
-     * @param modelFile
-     * @return root object
-     * @throws IOException
+     *
+     * @param gvrContext Valid {@link GVRContext} instance
+     * @param modelFile Path to the model's file, relative to the {@code assets} directory
+     * @return root object The root {@link GVRSceneObject} of the model
+     * @throws IOException If reading the model file fails
      */
     public static GVRSceneObject loadModel(final GVRContext gvrContext,
                                            final String modelFile) throws IOException {
@@ -254,19 +258,21 @@ public class WidgetFactory {
 
     /**
      * Load model from file starting from the specific node name
-     * @param gvrContext
-     * @param modelFile
+     * @param gvrContext Valid {@link GVRContext} instance
+     * @param modelFile Path to the model's file, relative to the {@code assets} directory
      * @param nodeName name of the starting node
      * @return root object
-     * @throws IOException
+     * @throws IOException If reading the model file fails
      */
     public static GVRSceneObject loadModel(final GVRContext gvrContext,
-                                           final String modelFile, final String nodeName) throws IOException {
+                                           final String modelFile, final String nodeName)
+            throws IOException {
         return loadModel(gvrContext, modelFile, nodeName, new HashMap<String, Integer>());
     }
 
     private static GVRSceneObject loadModel(final GVRContext gvrContext,
-                                           final String modelFile, final HashMap<String, Integer> duplicates)
+                                           final String modelFile,
+                                            final HashMap<String, Integer> duplicates)
             throws IOException {
         return loadModel(gvrContext, modelFile, null, duplicates);
     }
@@ -274,7 +280,8 @@ public class WidgetFactory {
     private static GVRSceneObject loadModel(
             final GVRContext gvrContext, final String modelFile,
             String nodeName, final HashMap<String, Integer> duplicates) throws IOException {
-        GVRSceneObject assimpScene = gvrContext.getAssetLoader().loadModel(modelFile, org.gearvrf.GVRImportSettings.getRecommendedSettings(), true, null);
+        GVRSceneObject assimpScene = gvrContext.getAssetLoader().loadModel(modelFile,
+                org.gearvrf.GVRImportSettings.getRecommendedSettings(), true, null);
 //        printOutScene(assimpScene, 0);
         GVRSceneObject root = getRootNode(assimpScene);
 
@@ -290,6 +297,7 @@ public class WidgetFactory {
         return root;
     }
 
+    @SuppressWarnings("unused")
     private static void printOutScene(final GVRSceneObject scene, int level) {
         Log.d(TAG, "model:: %d) name = %s [%s], renderData = %s transfrom = %s",
                 level, scene.getName(), scene, scene.getRenderData(), scene.getTransform());
@@ -372,7 +380,7 @@ public class WidgetFactory {
         try {
             Log.d(TAG, "findByName():    %s (%d)", root.getName(), level);
             NodeEntry entry = new NodeEntry(root);
-            if (name != null && entry != null && name.equals(entry.getName())) {
+            if (name != null && name.equals(entry.getName())) {
                 obj = root;
             } else if (root.getChildrenCount() > 0) {
                 for (GVRSceneObject child: root.getChildren()) {

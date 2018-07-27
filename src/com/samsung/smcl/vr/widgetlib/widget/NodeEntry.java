@@ -28,7 +28,7 @@ public class NodeEntry {
     private static final String KEY_NAME = "name";
     private static final String KEY_CLASS_NAME = "class";
     private static final String ROOT_NODE_NAME = "RootNode";
-    private static final String ROOT_NODE_CLASS_NAME = Widget.class.getName();
+    private static final String ROOT_NODE_CLASS_NAME = GroupWidget.class.getName();
 
 
     static {
@@ -41,8 +41,10 @@ public class NodeEntry {
     /**
      * Create the node based on the scene object. The mandatory keys should always be valid and
      * assigned based on the model parsing.
-     * @param sceneObject
-     * @throws IllegalFormatException
+     *
+     * @param sceneObject {@link GVRSceneObject} to create the node from
+     * @throws IllegalFormatException if the properties encoded in the scene object's {@linkplain
+     * GVRSceneObject#getName() name} don't include the mandatory 'name' property.
      */
     public NodeEntry(GVRSceneObject sceneObject) throws IllegalFormatException {
         String name = sceneObject.getName();
@@ -118,6 +120,7 @@ public class NodeEntry {
      *                  false
      * @return node property
      */
+    @SuppressWarnings("WeakerAccess")
     public String getProperty(Enum<?> key, boolean lowerCase) {
         final String keyName;
         if (lowerCase) {
@@ -159,7 +162,7 @@ public class NodeEntry {
     static class NameDemangler {
         private static final String ENTRY_SEPERATOR_REGEX = "__";
         private static final String KEY_VALUE_SEPERATOR = "_";
-        private static final String KEY_VALUE_SEPERATOR_REGEX = "\\_";
+        private static final String KEY_VALUE_SEPERATOR_REGEX = "_";
 
         /**
          * Returns a {@code Map<String, String>} containing key value pairs
@@ -173,7 +176,7 @@ public class NodeEntry {
          * @return The {@code Map<String, String>} containing key-value pairs. It
          * returns null if {@code mangledString} is not a mangled string.
          */
-        public static Map<String,String> demangleString(String mangledString) {
+        static Map<String,String> demangleString(String mangledString) {
             Map<String,String> res = new HashMap<>();
 
             String[] entries = mangledString.split(ENTRY_SEPERATOR_REGEX);
@@ -201,6 +204,7 @@ public class NodeEntry {
 
     protected String name;
     private String className;
-    private Map<String, String> properties = new HashMap<>();
+    private Map<String, String> properties;
+    @SuppressWarnings("deprecation")
     private static final String TAG = NodeEntry.class.getSimpleName();
 }

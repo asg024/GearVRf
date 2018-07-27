@@ -168,10 +168,11 @@ public class TouchManager {
      * @return true if the input has been accepted and processed by some object, otherwise - false
      */
     public boolean handleClick(List<GVRPickedObject> pickedObjectList, int event) {
+        Log.d(TAG, "handleClick(): new click event");
         boolean isClickableItem = false;
-        if(pickedObjectList == null){
+        if (pickedObjectList == null) {
             Log.w(TAG, "handleClick(): NULL pickedObjectList!");
-        }else if(pickedObjectList.isEmpty()){
+        } else if (pickedObjectList.isEmpty()) {
             Log.w(TAG, "handleClick(): EMPTY pickedObjectList!");
         }
 
@@ -186,6 +187,7 @@ public class TouchManager {
                 Log.w(TAG, "handleClick(): got a null reference in the pickedObject.getHitObject()");
                 continue;
             }
+            Log.w(TAG, "handleClick(): trying '%s' ...", Helpers.getFullName(sceneObject));
 
             final float[] hit = pickedObject.getHitLocation();
 
@@ -225,15 +227,17 @@ public class TouchManager {
                             sceneObject.getName(), hit, isClickableItem);
 
                 } else {
+                    Log.e(TAG, "handleClick(): No handler or displayID for %s", Helpers.getFullName(sceneObject));
                     touchHandlers.remove(sceneObject);
                 }
             }
 
             if (isClickableItem) {
+                Log.w(TAG, "handleClick(): '%s' was clicked!", Helpers.getFullName(sceneObject));
                 break;
             }
 
-            Log.e(TAG, "No handler or displayID for %s", sceneObject.getName());
+            Log.w(TAG, "handleClick(): '%s' not clickable", Helpers.getFullName(sceneObject));
         }
 
         if (!isClickableItem) {
