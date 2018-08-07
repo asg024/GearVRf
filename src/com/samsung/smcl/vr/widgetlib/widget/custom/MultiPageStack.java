@@ -3,12 +3,12 @@ package com.samsung.smcl.vr.widgetlib.widget.custom;
 import android.graphics.Color;
 
 import static com.samsung.smcl.vr.widgetlib.main.Utility.equal;
-import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getSolidColorTexture;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.adapter.Adapter;
 import com.samsung.smcl.vr.widgetlib.adapter.BaseAdapter;
 
+import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
 import com.samsung.smcl.vr.widgetlib.widget.GroupWidget;
 import com.samsung.smcl.vr.widgetlib.widget.ListWidget;
 import com.samsung.smcl.vr.widgetlib.widget.Widget;
@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 /**
  *  MultiPageWidget extension applying {@link OrientedLayout.Orientation#STACK stack layout} to the
@@ -167,7 +166,7 @@ public class MultiPageStack extends MultiPageWidget {
 
             mPageBgTextures = new ArrayList<>(mPageGrayColors.length);
             for (int color: mPageGrayColors){
-                mPageBgTextures.add(getSolidColorTexture(mGvrContext, color));
+                mPageBgTextures.add(WidgetLib.getTextureHelper().getSolidColorTexture(color));
             }
         }
 

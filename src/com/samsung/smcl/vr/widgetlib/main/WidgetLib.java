@@ -22,6 +22,7 @@ import java.lang.ref.WeakReference;
 public class WidgetLib {
 
     private static WeakReference<WidgetLib> mInstance;
+    private final TextureFutureHelper mTextureHelper;
     private final FocusManager mFocusManager;
     private final TouchManager mTouchManager;
     private final ContentSceneController mContentSceneController;
@@ -67,6 +68,15 @@ public class WidgetLib {
      */
     public static boolean isInitialized() {
         return mInstance != null;
+    }
+
+    /**
+     * Get instance of {@link TextureFutureHelper}. If the library is not initialized
+     * {@link IllegalStateException} will be thrown.
+     * @return The instance of {@link TextureFutureHelper}
+     */
+    public static TextureFutureHelper getTextureHelper() {
+        return get().mTextureHelper;
     }
 
     /**
@@ -149,6 +159,7 @@ public class WidgetLib {
             throws InterruptedException, JSONException, NoSuchMethodException {
         mInstance = new WeakReference<>(this);
 
+        mTextureHelper = new TextureFutureHelper(gvrContext);
         mMainThread = new MainThread(gvrContext);
         mTypefaceManager = new TypefaceManager(gvrContext);
         mSimpleAnimationTracker = new SimpleAnimationTracker(gvrContext);

@@ -10,6 +10,7 @@ import android.view.MotionEvent;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.main.CommandBuffer.Command;
+import com.samsung.smcl.vr.widgetlib.main.GVRBitmapTexture;
 import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
 
 import com.samsung.smcl.vr.widgetlib.thread.FPSCounter;
@@ -23,7 +24,6 @@ import com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers;
 import com.samsung.smcl.vr.widgetlib.widget.properties.UnmodifiableJSONObject;
 import com.samsung.smcl.vr.widgetlib.R;
 
-import static com.samsung.smcl.vr.widgetlib.main.TextureFutureHelper.getSolidColorTexture;
 import static com.samsung.smcl.vr.widgetlib.main.Utility.equal;
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.*;
 
@@ -56,7 +56,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Future;
 
 import static org.gearvrf.utility.Exceptions.RuntimeAssertion;
 
@@ -892,7 +891,7 @@ public class Widget  implements Layout.WidgetContainer {
 
         mClippingEnabled = true;
 
-        GVRTexture texture = getSolidColorTexture(mContext, Color.YELLOW);
+        GVRTexture texture = WidgetLib.getTextureHelper().getSolidColorTexture(Color.YELLOW);
 
         GVRSceneObject clippingObj = new GVRSceneObject(mContext, getViewPortWidth(), getViewPortHeight(), texture);
         clippingObj.setName("clippingObj");

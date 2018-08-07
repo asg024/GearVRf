@@ -3,27 +3,17 @@ package com.samsung.smcl.vr.widgetlib.main;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
+import android.util.SparseArray;
 
 import org.gearvrf.GVRAtlasInformation;
-import org.gearvrf.GVRBitmapImage;
 import org.gearvrf.GVRContext;
-import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTextureParameters;
 import org.gearvrf.utility.RuntimeAssertion;
 import static org.gearvrf.utility.Log.tag;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.WeakHashMap;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 
@@ -32,13 +22,15 @@ import com.samsung.smcl.vr.widgetlib.log.Log;
  */
 public final class TextureFutureHelper {
     private static final String TAG = tag(TextureFutureHelper.class);
-    private TextureFutureHelper() {
+    TextureFutureHelper(GVRContext gvrContext) {
+        mContext = gvrContext;
     }
 
-    private static HashMap<Integer, ImmutableBitmapTexture> sColorTextureCache = new HashMap<>();
+    private final SparseArray<GVRBitmapTexture> mColorTextureCache = new SparseArray<>();
+    private final GVRContext mContext;
 
     private static class ImmutableBitmapTexture extends GVRBitmapTexture {
-        public ImmutableBitmapTexture(GVRContext gvrContext, Bitmap bitmap) {
+        ImmutableBitmapTexture(GVRContext gvrContext, Bitmap bitmap) {
             super(gvrContext, bitmap);
         }
 
@@ -59,31 +51,30 @@ public final class TextureFutureHelper {
         }
     }
 
-    public static GVRTexture getFutureBitmapTexture(
-            final GVRContext gvrContext, int resId) {
-        final Resources resources = gvrContext.getActivity().getResources();
+    public GVRBitmapTexture getBitmapTexture(int resId) {
+        final Resources resources = mContext.getActivity().getResources();
         final Bitmap bitmap = BitmapFactory.decodeResource(resources, resId);
-        return new GVRBitmapTexture(gvrContext, bitmap);
+        return new GVRBitmapTexture(mContext, bitmap);
     }
 
     /**
-     * Gets an {@linkplain ImmutableBitmapTexture immutable texture} with the specified color,
+     * Gets an immutable {@linkplain GVRBitmapTexture texture} with the specified color,
      * returning a cached instance if possible.
      *
-     * @param gvrContext
-     * @param color
-     * @return
+     * @param color An Android {@link Color}.
+     * @return And immutable instance of {@link GVRBitmapTexture}.
      */
-    public static ImmutableBitmapTexture getSolidColorTexture(GVRContext gvrContext, int color) {
-        ImmutableBitmapTexture texture;
-        synchronized (sColorTextureCache) {
-            texture = sColorTextureCache.get(color);
+    public GVRBitmapTexture getSolidColorTexture(int color) {
+        GVRBitmapTexture texture;
+        synchronized (mColorTextureCache) {
+            texture = mColorTextureCache.get(color);
             Log.d(TAG, "getSolidColorTexture(): have cached texture for 0x%08X: %b", color, texture != null);
             if (texture == null) {
-                texture = new ImmutableBitmapTexture(gvrContext, makeSolidColorBitmap(color));
+                texture = new ImmutableBitmapTexture(mContext, makeSolidColorBitmap(color));
                 Log.d(TAG, "getSolidColorTexture(): caching texture for 0x%08X", color);
-                sColorTextureCache.put(color, texture);
-                Log.d(TAG, "getSolidColorTexture(): succeeded caching for 0x%08X: %b", color, sColorTextureCache.containsKey(color));
+                mColorTextureCache.put(color, texture);
+                Log.d(TAG, "getSolidColorTexture(): succeeded caching for 0x%08X: %b",
+                        color, mColorTextureCache.indexOfKey(color) >= 0);
             }
         }
 
