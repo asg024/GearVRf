@@ -99,7 +99,7 @@ public class TouchManager {
             sceneObject.attachComponent(collider);
         } catch (Exception e) {
             // Possible that some objects (X3D panel nodes) are without mesh
-            Log.e(TAG, "makePickable(): possible that some objects (X3D panel nodes) are without mesh!");
+            Log.e(Log.SUBSYSTEM.INPUT, TAG, "makePickable(): possible that some objects (X3D panel nodes) are without mesh!");
         }
     }
 
@@ -168,26 +168,26 @@ public class TouchManager {
      * @return true if the input has been accepted and processed by some object, otherwise - false
      */
     public boolean handleClick(List<GVRPickedObject> pickedObjectList, int event) {
-        Log.d(TAG, "handleClick(): new click event");
+        Log.d(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): new click event");
         boolean isClickableItem = false;
         if (pickedObjectList == null) {
-            Log.w(TAG, "handleClick(): NULL pickedObjectList!");
+            Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): NULL pickedObjectList!");
         } else if (pickedObjectList.isEmpty()) {
-            Log.w(TAG, "handleClick(): EMPTY pickedObjectList!");
+            Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): EMPTY pickedObjectList!");
         }
 
         // Process result(s)
         for (GVRPickedObject pickedObject : pickedObjectList) {
             if (pickedObject == null) {
-                Log.w(TAG, "handleClick(): got a null reference in the pickedObject");
+                Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): got a null reference in the pickedObject");
                 continue;
             }
             GVRSceneObject sceneObject = pickedObject.getHitObject();
             if (sceneObject == null) {
-                Log.w(TAG, "handleClick(): got a null reference in the pickedObject.getHitObject()");
+                Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): got a null reference in the pickedObject.getHitObject()");
                 continue;
             }
-            Log.w(TAG, "handleClick(): trying '%s' ...", Helpers.getFullName(sceneObject));
+            Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): trying '%s' ...", Helpers.getFullName(sceneObject));
 
             final float[] hit = pickedObject.getHitLocation();
 
@@ -222,26 +222,29 @@ public class TouchManager {
                             h.touch(sceneObject, hit) :
                             h.onBackKey(sceneObject, hit);
 
-                    Log.d(TAG,
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG,
                             "handleClick(): handler for '%s' hit = %s handled event: %b",
                             sceneObject.getName(), hit, isClickableItem);
 
                 } else {
-                    Log.e(TAG, "handleClick(): No handler or displayID for %s", Helpers.getFullName(sceneObject));
+                    Log.e(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): No handler or displayID for %s",
+                            Helpers.getFullName(sceneObject));
                     touchHandlers.remove(sceneObject);
                 }
             }
 
             if (isClickableItem) {
-                Log.w(TAG, "handleClick(): '%s' was clicked!", Helpers.getFullName(sceneObject));
+                Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): '%s' was clicked!",
+                        Helpers.getFullName(sceneObject));
                 break;
             }
 
-            Log.w(TAG, "handleClick(): '%s' not clickable", Helpers.getFullName(sceneObject));
+            Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): '%s' not clickable",
+                    Helpers.getFullName(sceneObject));
         }
 
         if (!isClickableItem) {
-            Log.d(TAG, "No clickable items");
+            Log.d(Log.SUBSYSTEM.INPUT, TAG, "No clickable items");
             isClickableItem = event == LEFT_CLICK_EVENT ?
                     takeDefaultLeftClickAction() : takeDefaultRightClickAction();
         }
