@@ -43,6 +43,7 @@ class WidgetStateInfo {
             Log.d(TAG, "WidgetStateInfo(%s): type: %s", parent.getName(), type);
 
             final JSONObject typeInfo = info.optJSONObject(type);
+            try {
             switch (Properties.valueOf(type)) {
                 case scene_object:
                     levelWidget = getWidget(parent, typeInfo);
@@ -54,7 +55,10 @@ class WidgetStateInfo {
                     factory = getAnimationFactory(typeInfo);
                     break;
                 default:
-                    throw new RuntimeException();
+                    Log.w(TAG, "unknown property: %s", Properties.valueOf(type));
+            }
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "unknown property!");
             }
         }
 

@@ -36,6 +36,7 @@ import org.gearvrf.GVRMaterial.GVRShaderType;
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData;
 import org.gearvrf.GVRRenderData.GVRRenderingOrder;
+import org.gearvrf.GVRRenderPass;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 import org.gearvrf.GVRTransform;
@@ -880,6 +881,11 @@ public class Widget implements Layout.WidgetContainer {
      */
     public final int getRenderingOrder() {
         return mRenderDataCache.getRenderingOrder();
+    }
+
+
+    public void setCullFace(final GVRRenderPass.GVRCullFaceEnum cullFace) {
+        mRenderDataCache.setCullFace(cullFace);
     }
 
     /**
@@ -1999,7 +2005,7 @@ public class Widget implements Layout.WidgetContainer {
      */
     public enum Properties {
         name, touchable, focusenabled, id, visibility, states, create_children, levels, level, model,
-        selected, scene_object, preapply_attribs, size, transform, viewport
+        selected, scene_object, preapply_attribs, size, transform, viewport, mesh
     }
 
     /**
@@ -2388,6 +2394,17 @@ public class Widget implements Layout.WidgetContainer {
                 Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): model specified: %s", getName(), modelSpec);
                 String id = getString(modelSpec, Properties.id);
                 sceneObject = loadSceneObjectFromModel(context, id);
+            } else  if (hasJSONObject(properties, Properties.mesh)) {
+                JSONObject meshSpec = optJSONObject(properties, Properties.mesh);
+                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): mesh specified: %s", getName(), meshSpec);
+                String meshRes = getString(meshSpec, Properties.id);
+                try {
+                    GVRMesh mesh = context.getAssetLoader().
+                            loadMesh(new GVRAndroidResource(context, meshRes));
+                    sceneObject = new GVRSceneObject(context, mesh);
+                } catch (IOException ioe) {
+                    throw new RuntimeException("Failed to load Widget mesh " + meshRes, ioe);
+                }
             } else if (hasFloat(properties, Properties.size)) {
                 float size = optFloat(properties, Properties.size);
                 Log.d(Log.SUBSYSTEM.WIDGET, TAG, "getSceneObjectProperty(%s): specified only size: %f", getName(), size);
