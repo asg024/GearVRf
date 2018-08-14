@@ -6,11 +6,15 @@ import org.json.JSONObject;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.adapter.Adapter;
+import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
 import com.samsung.smcl.vr.widgetlib.widget.animation.Animation;
 import com.samsung.smcl.vr.widgetlib.widget.animation.AnimationFactory;
 import com.samsung.smcl.vr.widgetlib.widget.ListWidget;
-import com.samsung.smcl.vr.widgetlib.widget.animation.ScaleAnimation;
 import com.samsung.smcl.vr.widgetlib.widget.Widget;
+import com.samsung.smcl.vr.widgetlib.widget.animation.ScaleAnimation;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.optJSONObject;
 import static com.samsung.smcl.vr.widgetlib.widget.properties.JSONHelpers.put;
@@ -63,7 +67,11 @@ public final class PickerWidget extends ListWidget {
      */
     public synchronized void hide() {
         if (focusedQuad != null) {
-            focusedQuad.setScale(1, 1, 1);
+
+            mDefocusAnimationFactory.create(focusedQuad)
+                    .setRequestLayoutOnTargetChange(false)
+                    .start().finish();
+
             focusedQuad = null;
         }
         Log.d(TAG, "hide Picker!");
@@ -73,31 +81,69 @@ public final class PickerWidget extends ListWidget {
 
     private OnItemFocusListener mItemFocusListener = new OnItemFocusListener() {
         @Override
-        public void onFocus(ListWidget list, boolean focused, int dataIndex) {
-            Log.i(Log.SUBSYSTEM.WIDGET, TAG, TAG + ".onFocus: " + dataIndex);
+        public void onFocus(ListWidget list, final boolean focused, final int dataIndex) {
+            Log.i(Log.SUBSYSTEM.FOCUS, TAG, "onFocus: %d [%b]", dataIndex, focused);
 
-            if (mFocusAnimationEnabled || focusedQuad != null) {
-                final AnimationFactory.Factory animFactory;
-                if (focused) {
-                    focusedQuad = list.getView(dataIndex);
-                    animFactory = mFocusAnimationFactory;
-                } else {
-                    focusedQuad = null;
-                    animFactory = mDefocusAnimationFactory;
+            WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    if (mFocusAnimationEnabled) {
+                        Widget target = getHostView(dataIndex, false);
+                        if (target != null) {
+                            boolean animate = focused ^ (target == focusedQuad);
+
+                            if (animate) {
+                                Log.i(Log.SUBSYSTEM.FOCUS, TAG, "onFocus animate: %d [%b]",
+                                        dataIndex, (target == focusedQuad));
+
+                                Animation a = curAnimations.get(target);
+                                if (a != null) {
+                                    a.stop();
+                                    curAnimations.remove(target);
+                                }
+
+                                AnimationFactory.Factory animFactory = focused ?
+                                        mFocusAnimationFactory :
+                                        mDefocusAnimationFactory;
+
+                                Log.i(Log.SUBSYSTEM.FOCUS, TAG, "onFocus[%d] animFactory: %s" +
+                                                "focusedQuad = %s, target = %s",
+                                        dataIndex, animFactory, focusedQuad, target);
+
+
+                                curAnimations.put(target,
+                                        animFactory.create(target)
+                                                .setRequestLayoutOnTargetChange(false)
+                                                .addOnFinish(new Animation.OnFinish() {
+                                                    @Override
+                                                    public void finished(final Animation animation) {
+                                                        WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                curAnimations.remove(animation.getTarget());
+                                                            }
+                                                        });
+
+                                                    }
+                                                })
+                                                .start());
+                            }
+                        }
+                        focusedQuad = focused ? target : null;
+                    }
                 }
-                animFactory.create(list.getView(dataIndex))
-                        .setRequestLayoutOnTargetChange(false)
-                        .start();
-            }
+            });
         }
 
         @Override
         public void onLongFocus(ListWidget list, int dataIndex) {
-            Log.i(Log.SUBSYSTEM.WIDGET, TAG, TAG + ".onLongFocus: " + dataIndex);
+            Log.i(Log.SUBSYSTEM.FOCUS, TAG, TAG + ".onLongFocus: " + dataIndex);
         }
     };
 
     private Widget focusedQuad;
+    private Map<Widget, Animation> curAnimations = new HashMap<>();
     private boolean mFocusAnimationEnabled = true;
     private final AnimationFactory.Factory mFocusAnimationFactory;
     private final AnimationFactory.Factory mDefocusAnimationFactory;
@@ -115,7 +161,7 @@ public final class PickerWidget extends ListWidget {
 
         put(sDefocusAnimationSpec, AnimationFactory.Properties.type, AnimationFactory.Type.SCALE);
         put(sDefocusAnimationSpec, Animation.Properties.duration, DURATION_ANIMATION_FOCUSED_SCALE_SECS);
-        put(sDefocusAnimationSpec, ScaleAnimation.Properties.scale, 1f);
+        put(sDefocusAnimationSpec, ScaleAnimation.Properties.scale, new Vector3f(1f, 1f, 1));
     }
 
     @SuppressWarnings("unused")

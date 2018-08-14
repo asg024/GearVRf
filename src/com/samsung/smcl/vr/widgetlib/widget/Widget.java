@@ -3731,8 +3731,14 @@ public class Widget implements Layout.WidgetContainer {
 
     private FocusableImpl mFocusableImpl = new FocusableImpl();
 
-    private static GVRSceneObject makeQuad(GVRContext context, final float width,
-                                           final float height) {
+    boolean isFocusHandlerMatchWith(Widget widget) {
+        return widget != this &&
+                widget != null &&
+                widget.mFocusableImpl == mFocusableImpl;
+    }
+
+    private static final GVRSceneObject makeQuad(GVRContext context, final float width,
+                                                 final float height) {
         GVRSceneObject sceneObject = new GVRSceneObject(context, width, height);
         setupDefaultMaterial(context, sceneObject);
         return sceneObject;

@@ -119,6 +119,8 @@ public class Log {
         rebuild(MODE.DEVELOPER);
 
         enableSubsystem(SUBSYSTEM.MAIN, true);
+//        enableSubsystem(SUBSYSTEM.FOCUS, true);
+
 //        enableSubsystem(SUBSYSTEM.TRACING, true);
 //        enableSubsystem(SUBSYSTEM.LAYOUT, true);
 //        enableSubsystem(SUBSYSTEM.WIDGET, true);

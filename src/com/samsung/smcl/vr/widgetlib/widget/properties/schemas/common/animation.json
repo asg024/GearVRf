@@ -81,6 +81,25 @@
       "required": ["type"]
     },
 
+    "relative_scale_animation": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "pattern": "relative_scale" }
+      },
+      "oneOf": [{
+        "properties": {
+          "scale": { "type": "number", "minimum": 0 }
+        },
+        "required": [ "scale" ]
+      }, {
+        "properties": {
+          "scale": { "$ref": "../common/vector3f.json" }
+        },
+        "required": [ "scale" ]
+      }],
+      "required": [ "type" ]
+    },
+
     "easing": {
       "type": "string",
       "enum": [

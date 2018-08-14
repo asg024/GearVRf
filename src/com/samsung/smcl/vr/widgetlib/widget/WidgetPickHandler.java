@@ -14,8 +14,10 @@ import org.gearvrf.io.GVRCursorController;
 import org.gearvrf.io.GVRInputManager;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListener {
 
@@ -48,97 +50,83 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
         }
     }
 
-    private static class Selection {
-        final GVRPicker.GVRPickedObject hit;
-        final Widget focusWidget;
-
-        Selection(GVRPicker.GVRPickedObject hit, Widget widget) {
-            this.hit = hit;
-            focusWidget = widget;
-        }
-    }
-
     static private class PickEventsListener implements IPickEvents {
 
-        public void onEnter(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject collision) {
-            Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onEnter(%s)", sceneObj.getName());
-            Widget widget = WidgetBehavior.getTarget(sceneObj);
+        public void onEnter(final GVRSceneObject sceneObj, final GVRPicker.GVRPickedObject collision) {
+            WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    Widget widget = WidgetBehavior.getTarget(sceneObj);
 
-            if (widget != null && widget.isFocusEnabled()) {
-                Selection sel = findSelected(sceneObj);
-                if (sel == null) {
-                    Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onEnter(%s): select widget %s",
-                            sceneObj.getName(), widget.getName());
-                    mSelected.add(new Selection(collision, widget));
+                    if (widget != null && widget.isFocusEnabled()) {
+                        mSelected.add(widget);
+                            Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onEnter(%s): select widget %s",
+                                    sceneObj.getName(), widget.getName());
+                    }
                 }
-            }
+            });
         }
 
-        public void onExit(GVRSceneObject sceneObj) {
-            if (sceneObj != null) {
-                Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onExit(%s)", sceneObj.getName());
-                Selection sel = removeSelected(sceneObj);
-                if (sel != null) {
-                    sel.focusWidget.dispatchOnFocus(false);
-                    Log.e(Log.SUBSYSTEM.FOCUS, TAG, "onExit(%s) deselect", sceneObj.getName());
+        public void onExit(final GVRSceneObject sceneObj) {
+            WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (sceneObj != null) {
+                        Widget widget = WidgetBehavior.getTarget(sceneObj);
+                        if (widget != null && mSelected.remove(widget) && !hasFocusGroupMatches(widget)) {
+                            widget.dispatchOnFocus(false);
+                            Log.e(Log.SUBSYSTEM.FOCUS, TAG, "onExit(%s) deselect widget = %s", sceneObj.getName(), widget.getName());
+                        }
+                    }
                 }
-            }
+            });
         }
 
-        public void onPick(GVRPicker picker) {
-            if (!picker.hasPickListChanged()) {
-                return;
-            }
-
-            GVRPicker.GVRPickedObject[] picked = picker.getPicked();
-
-            for (GVRPicker.GVRPickedObject hit : picked) {
-                GVRSceneObject hitObj = hit.hitObject;
-
-                Selection sel = findSelected(hitObj);
-                if (sel == null) {
-                    continue;
-                }
-                Widget widget = sel.focusWidget;
-
-                if (widget.isFocused() || widget.dispatchOnFocus(true)) {
-                    Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onPick(%s) widget focused",
-                            widget.getName());
-                    break;
+        private boolean hasFocusGroupMatches(Widget widget) {
+            for (Widget sel: mSelected) {
+                Log.d(TAG, "hasFocusGroupMatches : widget [%s] sel [%s] = %b", widget.getName(), sel.getName(),
+                        widget.isFocusHandlerMatchWith(sel));
+                if (widget.isFocusHandlerMatchWith(sel)) {
+                    return true;
                 }
             }
+            return false;
         }
 
-        public void onNoPick(GVRPicker picker) {
-            Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onNoPick()");
+        public void onPick(final GVRPicker picker) {
             if (picker.hasPickListChanged()) {
-                Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onNoPick(): selection cleared");
-                mSelected.clear();
+                final List<GVRPicker.GVRPickedObject> pickedList =  Arrays.asList(picker.getPicked());
+                WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (GVRPicker.GVRPickedObject hit : pickedList) {
+                            Widget widget = WidgetBehavior.getTarget(hit.hitObject);
+                            if (widget != null && mSelected.contains(widget) &&
+                                    (widget.isFocused() ||
+                                            widget.dispatchOnFocus(true))) {
+                                Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onPick(%s) widget focused %s",
+                                        hit.hitObject.getName(), widget.getName());
+                                break;
+                            }
+                        }
+                    }
+                });
             }
         }
 
-        private Selection findSelected(GVRSceneObject hitObject) {
-            for (Selection sel : mSelected) {
-                if (sel.hit.hitObject == hitObject) {
-                    return sel;
-                }
+        public void onNoPick(final GVRPicker picker) {
+            if (picker.hasPickListChanged()) {
+                WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onNoPick(): selection cleared");
+                        mSelected.clear();
+                    }
+                });
             }
-            return null;
         }
 
-        private Selection removeSelected(GVRSceneObject hitObject) {
-            Iterator<Selection> iter = mSelected.iterator();
-            while (iter.hasNext()) {
-                Selection sel = iter.next();
-                if (sel.hit.hitObject == hitObject) {
-                    iter.remove();
-                    return sel;
-                }
-            }
-            return null;
-        }
-
-        private final List<Selection> mSelected = new ArrayList<>();
+        private final Set<Widget> mSelected = new HashSet<>();
 
         public void onInside(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject collision) {
         }
@@ -146,30 +134,40 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
 
     static private class TouchEventsListener implements ITouchEvents {
 
-        public void onTouchStart(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject collision) {
-            Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchStart(%s)", sceneObj.getName());
-            Widget widget = WidgetBehavior.getTarget(sceneObj);
+        public void onTouchStart(final GVRSceneObject sceneObj, final GVRPicker.GVRPickedObject collision) {
+            WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchStart(%s)", sceneObj.getName());
+                    Widget widget = WidgetBehavior.getTarget(sceneObj);
 
-            if (widget != null && widget.isTouchable() && !mTouched.contains(widget)) {
-                Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchStart(%s) start touch widget %s",
-                        sceneObj.getName(), widget.getName());
-                mTouched.add(widget);
-            }
+                    if (widget != null && widget.isTouchable() && !mTouched.contains(widget)) {
+                        Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchStart(%s) start touch widget %s",
+                                sceneObj.getName(), widget.getName());
+                        mTouched.add(widget);
+                    }
+                }
+            });
         }
 
-        public void onTouchEnd(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject collision) {
-            Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchEnd(%s)", sceneObj.getName());
-            Widget widget = WidgetBehavior.getTarget(sceneObj);
+        public void onTouchEnd(final GVRSceneObject sceneObj, final GVRPicker.GVRPickedObject collision) {
+            WidgetLib.getMainThread().runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchEnd(%s)", sceneObj.getName());
+                    Widget widget = WidgetBehavior.getTarget(sceneObj);
 
-            if (widget != null && widget.isTouchable() && mTouched.contains(widget)) {
-                if (widget.dispatchOnTouch(sceneObj, collision.hitLocation)) {
-                    Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchEnd(%s) end touch widget %s",
-                            sceneObj.getName(), widget.getName());
-                    mTouched.clear();
-                } else {
-                    mTouched.remove(widget);
+                    if (widget != null && widget.isTouchable() && mTouched.contains(widget)) {
+                        if (widget.dispatchOnTouch(sceneObj, collision.hitLocation)) {
+                            Log.d(Log.SUBSYSTEM.INPUT, TAG, "onTouchEnd(%s) end touch widget %s",
+                                    sceneObj.getName(), widget.getName());
+                            mTouched.clear();
+                        } else {
+                            mTouched.remove(widget);
+                        }
+                    }
                 }
-            }
+            });
         }
 
         public void onExit(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject collision) {

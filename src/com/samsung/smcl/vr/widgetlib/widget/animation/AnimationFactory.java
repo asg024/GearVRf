@@ -22,7 +22,8 @@ public class AnimationFactory {
         RELATIVE_MOTION,
         ROTATION_BY_AXIS,
         ROTATION_BY_AXIS_WITH_PIVOT,
-        SCALE
+        SCALE,
+        RELATIVE_SCALE
     }
     // @formatter:on
 
@@ -112,6 +113,9 @@ public class AnimationFactory {
                     break;
                 case SCALE:
                     factory = new Factory(animSpec, ScaleAnimation.class);
+                    break;
+                case RELATIVE_SCALE:
+                    factory = new Factory(animSpec, RelativeScaleAnimation.class);
                     break;
                 default:
                     throw new RuntimeException("Invalid animation type specified: "

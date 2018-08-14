@@ -17,38 +17,40 @@ public class ScaleAnimation extends TransformAnimation {
 
     public ScaleAnimation(final Widget widget, float duration, float scale) {
         super(widget);
-        mScaleX = mScaleY = mScaleZ = scale;
-        mAdapter = new Adapter(widget, duration, scale);
+        init(duration, scale, scale, scale);
     }
 
     public ScaleAnimation(final Widget widget, float duration, float scaleX,
-            float scaleY, float scaleZ) {
+                          float scaleY, float scaleZ) {
         super(widget);
-        mScaleX = scaleX;
-        mScaleY = scaleY;
-        mScaleZ = scaleZ;
-        mAdapter = new Adapter(widget, duration, scaleX, scaleY, scaleZ);
+        init(duration, scaleX, scaleY, scaleZ);
     }
 
     public ScaleAnimation(final Widget target, final JSONObject params)
             throws JSONException {
         super(target);
+        float duration = (float) params.getDouble("duration");
+
         if (hasFloat(params, Properties.scale)) {
-            final float scale = (float) params.getDouble("scale");
-            mScaleX = mScaleY = mScaleZ = scale;
-            mAdapter = new Adapter(target,
-                    (float) params.getDouble("duration"),
-                    scale);
+            float scale = (float) params.getDouble("scale");
+            init(duration, scale, scale, scale);
         } else if (hasVector3f(params, Properties.scale)) {
             Vector3f scale = optVector3f(params, Properties.scale);
-            mScaleX = scale.x;
-            mScaleY = scale.y;
-            mScaleZ = scale.z;
-            mAdapter = new Adapter(target,
-                    (float) params.getDouble("duration"), mScaleX, mScaleY,
-                    mScaleZ);
+            init(duration, scale.x, scale.y, scale.z);
         } else {
             throw new JSONException("Bad parameters; expected 'scale' (float or Vector3f), got " + params);
+        }
+    }
+
+    protected void init(float duration, float scaleX, float scaleY, float scaleZ) {
+        mScaleX = scaleX;
+        mScaleY = scaleY;
+        mScaleZ = scaleZ;
+
+        if (mScaleX == mScaleY &&  mScaleY == mScaleZ) {
+            mAdapter = new Adapter(getTarget(), duration, mScaleX);
+        } else {
+            mAdapter = new Adapter(getTarget(), duration, scaleX, scaleY, scaleZ);
         }
     }
 
@@ -108,8 +110,8 @@ public class ScaleAnimation extends TransformAnimation {
         }
     }
 
-    private final Adapter mAdapter;
-    private final float mScaleX;
-    private final float mScaleY;
-    private final float mScaleZ;
+    private Adapter mAdapter;
+    private float mScaleX;
+    private float mScaleY;
+    private float mScaleZ;
 }

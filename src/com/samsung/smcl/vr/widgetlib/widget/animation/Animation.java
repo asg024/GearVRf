@@ -310,7 +310,7 @@ public abstract class Animation {
     }
 
     /* package */
-    Widget getTarget() {
+    public Widget getTarget() {
         return mTarget;
     }
 
