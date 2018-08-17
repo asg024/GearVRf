@@ -29,6 +29,18 @@
           }
         }
       }
+    },
+    {
+      "description": "Specify the 'mesh' as an object",
+      "type": "object",
+      "properties": {
+        "mesh": {
+          "id": {
+            "description": "File name relative to 'assets' directory",
+            "type": "string"
+          }
+        }
+      }
     }
   ]
 }

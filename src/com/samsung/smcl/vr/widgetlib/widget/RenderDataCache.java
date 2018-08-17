@@ -6,6 +6,7 @@ import com.samsung.smcl.vr.widgetlib.main.CommandBuffer.Command;
 import org.gearvrf.GVRMaterial;
 import org.gearvrf.GVRMesh;
 import org.gearvrf.GVRRenderData;
+import org.gearvrf.GVRRenderPass;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 
@@ -103,6 +104,13 @@ class RenderDataCache {
         if (mRenderData != null) {
             SET_RENDERING_ORDER.buffer(mExternalRenderData, renderingOrder);
             mRenderData.setRenderingOrder(renderingOrder);
+        }
+    }
+
+    void setCullFace(GVRRenderPass.GVRCullFaceEnum cullFace) {
+        if (mRenderData != null) {
+            SET_CULL_FACE.buffer(mExternalRenderData, cullFace);
+            mRenderData.setCullFace(cullFace);
         }
     }
 
@@ -213,6 +221,21 @@ class RenderDataCache {
                 final GVRRenderData renderData = (GVRRenderData) params[0];
                 final int renderingOrder = (int) params[1];
                 renderData.setRenderingOrder(renderingOrder);
+            }
+        };
+    }
+
+    private static final class SET_CULL_FACE {
+        static void buffer(GVRRenderData renderData, GVRRenderPass.GVRCullFaceEnum cullFace) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, cullFace);
+        }
+
+        private static final Command.Executor sExecutor = new Command.Executor() {
+            @Override
+            public void exec(Object... params) {
+                final GVRRenderData renderData = (GVRRenderData) params[0];
+                final GVRRenderPass.GVRCullFaceEnum cullFace = (GVRRenderPass.GVRCullFaceEnum)params[1];
+                renderData.setCullFace(cullFace);
             }
         };
     }
