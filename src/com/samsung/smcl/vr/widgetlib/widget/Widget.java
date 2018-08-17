@@ -2763,7 +2763,7 @@ public class Widget implements Layout.WidgetContainer {
                     getName());
             return;
         }
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s)", getName());
+        Log.d(Log.SUBSYSTEM.INPUT, TAG, "registerPickable(%s)", getName());
 
         final boolean hasRenderData = mRenderDataCache.hasRenderData();
         final FocusManager focusManager = WidgetLib.getFocusManager();
@@ -2783,29 +2783,29 @@ public class Widget implements Layout.WidgetContainer {
             mTouchHandler = new OnTouchImpl();
         }
 
-        Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+        Log.d(Log.SUBSYSTEM.INPUT, TAG,
                 "registerPickable(%s): mParent: %s, hasRenderData: %b, mIsTouchable: %b, mFocusEnabled: %b",
                 getName(), mParent, hasRenderData, mIsTouchable, mFocusEnabled);
         if (mParent != null && hasRenderData && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): making touchable", getName());
+                Log.d(Log.SUBSYSTEM.INPUT, TAG, "registerPickable(%s): making touchable", getName());
                 touchManager.makeTouchable(getSceneObject(), mTouchHandler);
             } else {
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): making pickable", getName());
+                Log.d(Log.SUBSYSTEM.INPUT, TAG, "registerPickable(%s): making pickable", getName());
                 touchManager.makePickable(getSceneObject());
             }
 
             if (mFocusEnabled) {
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): registering focusable", getName());
+                Log.d(Log.SUBSYSTEM.INPUT, TAG, "registerPickable(%s): registering focusable", getName());
                 focusManager.register(getSceneObject(), mFocusableImpl);
             } else {
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG, "registerPickable(%s): is not focus-enabled",
+                Log.d(Log.SUBSYSTEM.INPUT, TAG, "registerPickable(%s): is not focus-enabled",
                         getName());
                 focusManager.unregister(getSceneObject(), needsOwnFocusable);
             }
         } else {
             touchManager.removeHandlerFor(getSceneObject());
-            Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+            Log.d(Log.SUBSYSTEM.INPUT, TAG,
                     "registerPickable(%s): unregistering; focus-enabled: %b",
                     getName(), mFocusEnabled);
             focusManager.unregister(getSceneObject(), needsOwnFocusable);
@@ -2814,14 +2814,14 @@ public class Widget implements Layout.WidgetContainer {
         if (mParent != null && (mIsTouchable || mFocusEnabled)) {
             if (mIsTouchable) {
                 for (GVRSceneObject child : mMeshChildren) {
-                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG,
                             "registerPickable(%s): making mesh child touchable: %s",
                             getName(), child.getName());
                     touchManager.makeTouchable(child, mTouchHandler);
                 }
             } else {
                 for (GVRSceneObject child : mMeshChildren) {
-                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG,
                             "registerPickable(%s): making mesh child pickable: %s",
                             getName(), child.getName());
                     touchManager.makePickable(child);
@@ -2830,14 +2830,14 @@ public class Widget implements Layout.WidgetContainer {
 
             if (mFocusEnabled) {
                 for (GVRSceneObject child : mMeshChildren) {
-                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG,
                             "registerPickable(%s): making mesh child focusable: %s",
                             getName(), child.getName());
                     focusManager.register(child, mFocusableImpl);
                 }
             } else {
                 for (GVRSceneObject child : mMeshChildren) {
-                    Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG,
                             "registerPickable(%s): making mesh child NOT focusable: %s",
                             getName(), child.getName());
                     focusManager.unregister(child, needsOwnFocusable);
@@ -2845,7 +2845,7 @@ public class Widget implements Layout.WidgetContainer {
             }
         } else {
             for (GVRSceneObject child : mMeshChildren) {
-                Log.d(Log.SUBSYSTEM.WIDGET, TAG,
+                Log.d(Log.SUBSYSTEM.INPUT, TAG,
                         "registerPickable(%s): unregistering mesh child: %s",
                         getName(), child.getName());
                 touchManager.removeHandlerFor(child);
