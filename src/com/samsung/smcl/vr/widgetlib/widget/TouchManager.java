@@ -172,8 +172,12 @@ public class TouchManager {
         boolean isClickableItem = false;
         if (pickedObjectList == null) {
             Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): NULL pickedObjectList!");
+            return event == LEFT_CLICK_EVENT ?
+                    takeDefaultLeftClickAction() : takeDefaultRightClickAction();
         } else if (pickedObjectList.isEmpty()) {
             Log.w(Log.SUBSYSTEM.INPUT, TAG, "handleClick(): EMPTY pickedObjectList!");
+            return event == LEFT_CLICK_EVENT ?
+                    takeDefaultLeftClickAction() : takeDefaultRightClickAction();
         }
 
         // Process result(s)
