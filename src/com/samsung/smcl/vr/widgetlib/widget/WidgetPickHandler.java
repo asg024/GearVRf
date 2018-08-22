@@ -59,11 +59,13 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
         }
 
         public void onExit(GVRSceneObject sceneObj) {
-            Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onExit(%s)", sceneObj.getName());
-            Selection sel = removeSelected(sceneObj);
-            if (sel != null) {
-                sel.focusWidget.dispatchOnFocus(false);
-                Log.e(Log.SUBSYSTEM.FOCUS, TAG, "onExit(%s) deselect", sceneObj.getName());
+            if (sceneObj != null) {
+                Log.d(Log.SUBSYSTEM.FOCUS, TAG, "onExit(%s)", sceneObj.getName());
+                Selection sel = removeSelected(sceneObj);
+                if (sel != null) {
+                    sel.focusWidget.dispatchOnFocus(false);
+                    Log.e(Log.SUBSYSTEM.FOCUS, TAG, "onExit(%s) deselect", sceneObj.getName());
+                }
             }
         }
 

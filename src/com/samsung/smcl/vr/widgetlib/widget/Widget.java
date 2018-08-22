@@ -3284,6 +3284,7 @@ public class Widget implements Layout.WidgetContainer {
         if (sceneObject.getRenderData() != null) {
             Log.d(TAG, "addMeshChild(%s): %s%s", getName(), space, sceneObject.getName());
             mMeshChildren.add(sceneObject);
+            sceneObject.attachComponent(new WidgetBehavior(mContext, this));
         } else {
             Log.w(TAG, "addMeshChild(%s): %s%s -- skipped, no render data", getName(),
                     space, sceneObject.getName());

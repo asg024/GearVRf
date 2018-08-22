@@ -16,7 +16,10 @@ class WidgetBehavior extends GVRBehavior {
 
     static Widget getTarget(GVRSceneObject sceneObject) {
         WidgetBehavior behavior = (WidgetBehavior) sceneObject.getComponent(getComponentType());
-        return behavior.mTarget;
+        if (behavior != null) {
+            return behavior.mTarget;
+        }
+        return null;
     }
 
     private final Widget mTarget;
