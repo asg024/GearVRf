@@ -10,8 +10,6 @@ import org.gearvrf.GVRRenderPass;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRTexture;
 
-import java.util.concurrent.Future;
-
 // TODO: Replace mExternalData references with posting opcodes to command buffer
 // TODO: Extend GVRRenderData for a static "identity" instance for "no render data" scenarios
 // IDEA: With above, once we're buffering operations, have a "postOp()" method that does a
@@ -132,24 +130,24 @@ class RenderDataCache {
         }
     }
 
-    void setStencilTest(boolean flag) {
+    void setStencilTest() {
         if (mRenderData != null) {
-            SET_STENCIL_TEST.buffer(mExternalRenderData, flag);
-            mRenderData.setStencilTest(flag);
+            SET_STENCIL_TEST.buffer(mExternalRenderData);
+            mRenderData.setStencilTest(true);
         }
     }
 
-    void setStencilFunc(int func, int ref, int mask) {
+    void setStencilFunc(int func) {
         if (mRenderData != null) {
-            SET_STENCIL_FUNC.buffer(mExternalRenderData, func, ref, mask);
-            mRenderData.setStencilFunc(func, ref, mask);
+            SET_STENCIL_FUNC.buffer(mExternalRenderData, func);
+            mRenderData.setStencilFunc(func, 1, 0xFF);
         }
     }
 
-    void setStencilMask(int mask) {
+    void setStencilMask() {
         if (mRenderData != null) {
-            SET_STENCIL_MASK.buffer(mExternalRenderData, mask);
-            mRenderData.setStencilMask(mask);
+            SET_STENCIL_MASK.buffer(mExternalRenderData);
+            mRenderData.setStencilMask(0x00);
         }
     }
 
@@ -271,8 +269,8 @@ class RenderDataCache {
     }
 
     private static final class SET_STENCIL_TEST {
-        static void buffer(GVRRenderData renderData, boolean flag) {
-            CommandBuffer.Command.buffer(sExecutor, renderData, flag);
+        static void buffer(GVRRenderData renderData) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, true);
         }
 
         private static final Command.Executor sExecutor = new Command.Executor() {
@@ -286,8 +284,8 @@ class RenderDataCache {
     }
 
     private static final class SET_STENCIL_FUNC {
-        static void buffer(GVRRenderData renderData, int func, int ref, int mask) {
-            CommandBuffer.Command.buffer(sExecutor, renderData, func, ref, mask);
+        static void buffer(GVRRenderData renderData, int func) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, func, 1, 0xFF);
         }
 
         private static final Command.Executor sExecutor = new Command.Executor() {
@@ -303,8 +301,8 @@ class RenderDataCache {
     }
 
     private static final class SET_STENCIL_MASK {
-        static void buffer(GVRRenderData renderData, int mask) {
-            CommandBuffer.Command.buffer(sExecutor, renderData, mask);
+        static void buffer(GVRRenderData renderData) {
+            CommandBuffer.Command.buffer(sExecutor, renderData, 0x00);
         }
 
         private static final Command.Executor sExecutor = new Command.Executor() {
@@ -481,46 +479,12 @@ class RenderDataCache {
             };
         }
 
-        private static final class SET_FUTURE_TEXTURE {
-            public static void buffer(GVRMaterial material, Future<GVRTexture> texture) {
-                CommandBuffer.Command.buffer(sExecutor, material, texture);
-            }
-
-            private static final Command.Executor sExecutor = new Command.Executor() {
-                @SuppressWarnings("unchecked")
-                @Override
-                public void exec(Object... params) {
-                    final GVRMaterial material = (GVRMaterial) params[0];
-                    final GVRTexture texture = (GVRTexture) params[1];
-                    material.setMainTexture(texture);
-                    material.setTexture(MATERIAL_DIFFUSE_TEXTURE, texture);
-                }
-            };
-        }
-
         private static final class SET_NAMED_TEXTURE {
             public static void buffer(GVRMaterial material, String key, GVRTexture texture) {
                 CommandBuffer.Command.buffer(sExecutor, material, key, texture);
             }
 
             private static final Command.Executor sExecutor = new Command.Executor() {
-                @Override
-                public void exec(Object... params) {
-                    final GVRMaterial material = (GVRMaterial) params[0];
-                    final String name = (String) params[1];
-                    final GVRTexture texture = (GVRTexture) params[2];
-                    material.setTexture(name, texture);
-                }
-            };
-        }
-
-        private static final class SET_NAMED_FUTURE_TEXTURE {
-            public static void buffer(GVRMaterial material, String key, Future<GVRTexture> texture) {
-                CommandBuffer.Command.buffer(sExecutor, material, key, texture);
-            }
-
-            private static final Command.Executor sExecutor = new Command.Executor() {
-                @SuppressWarnings("unchecked")
                 @Override
                 public void exec(Object... params) {
                     final GVRMaterial material = (GVRMaterial) params[0];

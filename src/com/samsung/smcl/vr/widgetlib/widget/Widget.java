@@ -53,7 +53,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -217,10 +216,8 @@ public class Widget implements Layout.WidgetContainer {
      *            The {@link GVRSceneObject} to wrap.
      * @param attributes
      *            TODO
-     * @throws InstantiationException
      */
-    public Widget(final GVRContext context, final GVRSceneObject sceneObject,
-            NodeEntry attributes) throws InstantiationException {
+    public Widget(final GVRContext context, final GVRSceneObject sceneObject, NodeEntry attributes) {
         this(context, packageSceneObjectWithAttributes(sceneObject, attributes), false);
     }
 
@@ -657,6 +654,7 @@ public class Widget implements Layout.WidgetContainer {
      *         {@code false} if the specified listener was not previously
      *         registered with this object.
      */
+    @SuppressWarnings("UnusedReturnValue")
     public boolean removeBackKeyListener(final OnBackKeyListener listener) {
         return mBackKeyListeners.remove(listener);
     }
@@ -672,10 +670,7 @@ public class Widget implements Layout.WidgetContainer {
      *         {@code null}.
      */
     public boolean addTouchListener(final OnTouchListener listener) {
-        if (listener != null) {
-            return mTouchListeners.add(listener);
-        }
-        return false;
+        return listener != null && mTouchListeners.add(listener);
     }
 
     /**
@@ -845,14 +840,11 @@ public class Widget implements Layout.WidgetContainer {
     /**
      * Set the (optional) name of the {@link Widget}. {@code Widget} names are
      * not needed: they are only for the application's convenience.
-     *
-     * @param name
      */
     public void setName(String name) {
-        GVRSceneObject owner = getSceneObject();
         mName = name;
-        if (owner != null) {
-            owner.setName(name);
+        if (mSceneObject != null) {
+            mSceneObject.setName(name);
         }
     }
 
@@ -913,7 +905,7 @@ public class Widget implements Layout.WidgetContainer {
                 .setStencilOp(GLES30.GL_KEEP, GLES30.GL_KEEP, GLES30.GL_REPLACE)
                 .setStencilMask(0xFF);
 
-        getSceneObject().addChildObject(clippingObj);
+        mSceneObject.addChildObject(clippingObj);
 
         for (Widget child : getChildren()) {
             setObjectClipped(child);
@@ -960,37 +952,34 @@ public class Widget implements Layout.WidgetContainer {
         setTexture(mContext.getAssetLoader().loadTexture(resource));
     }
 
-    /**
+    /*
      * This group of methods get the mesh size of the Widget. It does not take into account
      * the meshes of child Widgets.
      */
 
-
     /**
-     * Gets Widget mesh width
-     * @return width
+     * @return Widget mesh width
      */
     public float getWidth() {
         return getBoundingBoxInternal().getWidth();
     }
 
     /**
-     * Gets Widget mesh height
-     * @return height
+     * @return Widget mesh height
      */
     public float getHeight() {
         return getBoundingBoxInternal().getHeight();
     }
 
     /**
-     * Gets Widget mesh depth
-     * @return depth
+     * @return Widget mesh depth
      */
     public float getDepth() {
         return getBoundingBoxInternal().getDepth();
     }
 
-    /**
+
+    /*
      * This group of methods get the layout size of the Widget. It might be different from mesh size
      * and bounds size. If Viewport is set up and clipping is enabled, the layout size is equal to
      * viewport size; otherwise the layout size is the actual Widget content size. If more than
@@ -1000,7 +989,7 @@ public class Widget implements Layout.WidgetContainer {
 
     /**
      * Gets Widget layout dimension
-     * @param axis
+     * @param axis The {@linkplain Layout.Axis axis} to obtain layout size for
      * @return dimension
      */
     public float getLayoutSize(final Layout.Axis axis) {
@@ -1037,19 +1026,18 @@ public class Widget implements Layout.WidgetContainer {
     }
 
 
-    /**
+    /*
      * This group of methods get the actual size of the Widget: how much space the Widget occupies
      * including its children. It might be different from mesh size and layout size.
      */
-
 
     /**
      * Gets Widget bounds width
      * @return width
      */
     public float getBoundsWidth() {
-        GVRSceneObject.BoundingVolume v = getSceneObject().getBoundingVolume();
-        if (v != null) {
+        if (mSceneObject != null) {
+            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
             return v.maxCorner.x - v.minCorner.x;
         }
         return 0f;
@@ -1060,8 +1048,8 @@ public class Widget implements Layout.WidgetContainer {
      * @return height
      */
     public float getBoundsHeight(){
-        GVRSceneObject.BoundingVolume v = getSceneObject().getBoundingVolume();
-        if (v != null) {
+        if (mSceneObject != null) {
+            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
             return v.maxCorner.y - v.minCorner.y;
         }
         return 0f;
@@ -1072,17 +1060,17 @@ public class Widget implements Layout.WidgetContainer {
      * @return depth
      */
     public float getBoundsDepth() {
-        GVRSceneObject.BoundingVolume v = getSceneObject().getBoundingVolume();
-        if (v != null) {
+        if (mSceneObject != null) {
+            GVRSceneObject.BoundingVolume v = mSceneObject.getBoundingVolume();
             return v.maxCorner.z - v.minCorner.z;
         }
         return 0f;
     }
 
-    /**
+
+    /*
      * This group of methods set/get the viewport size of the widget
      */
-
 
     /**
      * Gets viewport width
@@ -1110,7 +1098,6 @@ public class Widget implements Layout.WidgetContainer {
 
     /**
      * Sets viewport width
-     * @param viewPortWidth
      */
     public void setViewPortWidth(float viewPortWidth) {
         updateViewPort(viewPortWidth, Layout.Axis.X);
@@ -1118,7 +1105,6 @@ public class Widget implements Layout.WidgetContainer {
 
     /**
      * Sets viewport height
-     * @param viewPortHeight
      */
     public void setViewPortHeight(float viewPortHeight) {
         updateViewPort(viewPortHeight, Layout.Axis.Y);
@@ -1126,7 +1112,6 @@ public class Widget implements Layout.WidgetContainer {
 
     /**
      * Sets viewport depth
-     * @param viewPortDepth
      */
     public void setViewPortDepth(float viewPortDepth) {
         updateViewPort(viewPortDepth, Layout.Axis.Z);
@@ -1702,7 +1687,7 @@ public class Widget implements Layout.WidgetContainer {
 
     /**
      * Modify the Widget's material current color
-     * @param color
+     * @param color One of the Android {@link Color} values.
      */
     public void setColor(final int color) {
         getMaterial().setColor(color);
@@ -1710,24 +1695,29 @@ public class Widget implements Layout.WidgetContainer {
 
     /**
      * Modify the Widget's material current color
-     * @param rgb
+     * @param rgb An array of RGB components, with values between {@code 0.0f} and {@code 1.0f}
+     *            inclusive.
      */
     public void setColor(final float[] rgb) {
         getMaterial().setColor(rgb[0], rgb[1], rgb[2]);
     }
 
     /**
-     * Modify the Widget's material current color
-     * @param r
-     * @param g
-     * @param b
+     * Modify the Widget's material current color.
+     * Values are between {@code 0.0f} and {@code 1.0f}, inclusive.
+     *
+     * @param r Red color component
+     * @param g Green color component
+     * @param b Blue color component
      */
     public void setColor(final float r, final float g, final float b) {
         getMaterial().setColor(r, g, b);
     }
 
     /**
-     * Gets the Widget's material current color
+     * Gets the Widget's material current color as an array of RGB components.
+     * Values are between {@code 0.0f} and {@code 1.0f}, inclusive.
+     *
      * @return color
      */
     public float[] getColor() {
@@ -1965,7 +1955,7 @@ public class Widget implements Layout.WidgetContainer {
      *         {@code false} otherwise.
      */
     public final boolean isSceneObject(GVRSceneObject sceneObject) {
-        return getSceneObject() == sceneObject;
+        return mSceneObject == sceneObject;
     }
 
     /**
@@ -1978,8 +1968,8 @@ public class Widget implements Layout.WidgetContainer {
 
     /**
      * Finds the Widget in hierarchy
-     * @param name
-     * @return
+     * @param name Name of the child to find
+     * @return The named child {@link Widget} or {@code null} if not found.
      */
     public Widget findChildByName(final String name) {
         final List<Widget> groups = new ArrayList<>();
@@ -2122,13 +2112,9 @@ public class Widget implements Layout.WidgetContainer {
         requestLayout();
     }
 
-
-
-
-
     private static void loadAnimations(Context context) throws JSONException, NoSuchMethodException {
         JSONObject json = JSONHelpers.loadJSONAsset(context, "animations.json");
-        if (json != null) {
+        if (json.length() > 0) {
             JSONObject animationMetadata = json.optJSONObject("animations");
             AnimationFactory.init(animationMetadata);
             Log.v(Log.SUBSYSTEM.WIDGET, TAG, "loadAnimations(): loaded animation metadata: %s",
@@ -2215,7 +2201,7 @@ public class Widget implements Layout.WidgetContainer {
         }
     }
 
-    private void setupStatesAndLevels(JSONObject metaData) throws JSONException, NoSuchMethodException {
+    private void setupStatesAndLevels(JSONObject metaData) throws JSONException {
         final boolean hasStates = has(metaData, Properties.states);
         final boolean hasLevels = has(metaData, Properties.levels);
         final boolean hasLevel = has(metaData, Properties.level);
@@ -2443,7 +2429,7 @@ public class Widget implements Layout.WidgetContainer {
      *            The {@link GroupWidget} this instance is being
      *            {@linkplain GroupWidget#addChild(Widget) attached} to.
      */
-    private synchronized final void doOnAttached(final Widget parent) {
+    private synchronized void doOnAttached(final Widget parent) {
         if (parent != mParent) {
             mParent = parent;
             create();
@@ -2478,7 +2464,7 @@ public class Widget implements Layout.WidgetContainer {
      * <li>Invokes {@link #onDetached()}</li>
      * </ul>
      */
-    private synchronized final void doOnDetached() {
+    private synchronized void doOnDetached() {
         mParent = null;
         registerPickable();
         onDetached();
@@ -2522,13 +2508,9 @@ public class Widget implements Layout.WidgetContainer {
         }
         final boolean tookFocus = onFocus(focused);
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "doOnFocus(%s): tookFocus: %b", getName(), tookFocus);
-        if (focused) {
-            // onFocus() can refuse to take focus
-            mIsFocused = tookFocus;
-        } else {
-            // But when we lose focus, we don't get a choice about it
-            mIsFocused = focused;
-        }
+        // onFocus() can refuse to take focus, but when we lose focus, we don't get a choice about it
+        mIsFocused = focused && tookFocus;
+
         updateState();
         if (oldFocus != mIsFocused) {
             final boolean inFollowFocusGroup = isInFollowFocusGroup();
@@ -2601,8 +2583,8 @@ public class Widget implements Layout.WidgetContainer {
         return acceptedTouch;
     }
 
-    private boolean addChildInner(final Widget child) {
-        return addChildInner(child, child.getSceneObject(), -1);
+    private void addChildInner(final Widget child) {
+        addChildInner(child, child.getSceneObject(), -1);
     }
 
     /**
@@ -3072,7 +3054,7 @@ public class Widget implements Layout.WidgetContainer {
      *
      * @param child
      *            The {@code Widget} to remove.
-     * @param childRootSceneObject
+     * @param childRootSceneObject The root {@link GVRSceneObject} of the child
      * @return {@code True} if {@code child} was a child of this instance and
      *         was successfully removed; {@code false} if {@code child} is not a
      *         child of this instance.
@@ -3094,7 +3076,7 @@ public class Widget implements Layout.WidgetContainer {
      *
      * @param child
      *            The {@code Widget} to remove.
-     * @param childRootSceneObject
+     * @param childRootSceneObject The root {@link GVRSceneObject} of the child
      * @param preventLayout
      *            The {@code Widget} whether to call layout().
      * @return {@code True} if {@code child} was a child of this instance and
@@ -3253,8 +3235,7 @@ public class Widget implements Layout.WidgetContainer {
     /* package */
     Widget createChild(GVRContext context, GVRSceneObject sceneObjectChild)
             throws InstantiationException {
-        final Widget child = WidgetFactory.createWidget(sceneObjectChild);
-        return child;
+        return WidgetFactory.createWidget(sceneObjectChild);
     }
 
     /* package */
@@ -3619,8 +3600,8 @@ public class Widget implements Layout.WidgetContainer {
 
 
     /**
-     * Process the layouts happened while the previous layout has been processing
-     * @param widget
+     * Process layouts requested while the previous layout was being processed
+     * @param widget {@link Widget} requesting nested layout
      */
     protected void requestInnerLayout(Widget widget)  {
         if (mParent != null) {
@@ -3643,7 +3624,7 @@ public class Widget implements Layout.WidgetContainer {
      * <p>
      * Override {@link #onCreate()} to implement your initialization.
      */
-    private final void create() {
+    private void create() {
         if (!mIsCreated) {
             // Set the default layout if necessary
             if (mLayouts.isEmpty()) {
@@ -3675,29 +3656,28 @@ public class Widget implements Layout.WidgetContainer {
         }
     }
 
-    private Widget setStencilTest(boolean flag) {
-        mRenderDataCache.setStencilTest(flag);
+    private Widget setStencilTest() {
+        mRenderDataCache.setStencilTest();
         return this;
     }
 
-    private Widget setStencilFunc(int func, int ref, int mask) {
-        mRenderDataCache.setStencilFunc(func, ref, mask);
+    private Widget setStencilFunc(int func) {
+        mRenderDataCache.setStencilFunc(func);
         return this;
     }
 
-    private Widget setStencilMask(int mask) {
-        mRenderDataCache.setStencilMask(mask);
+    private Widget setStencilMask() {
+        mRenderDataCache.setStencilMask();
         return this;
     }
 
     private static void setObjectClipped(Widget widget) {
         Log.d(Log.SUBSYSTEM.WIDGET, TAG, "setObjectClipped for %s", widget.getName());
 
-        widget.setStencilTest(true)
-                .setStencilFunc(GLES30.GL_EQUAL, 1, 0xFF)
-                .setStencilMask(0x00);
-
-        widget.mClippingEnabled = true;
+        widget.setStencilTest()
+                .setStencilFunc(GLES30.GL_EQUAL)
+                .setStencilMask()
+                .mClippingEnabled = true;
 
         for (Widget child : widget.getChildren()) {
             setObjectClipped(child);
@@ -3751,8 +3731,8 @@ public class Widget implements Layout.WidgetContainer {
 
     private FocusableImpl mFocusableImpl = new FocusableImpl();
 
-    private static final GVRSceneObject makeQuad(GVRContext context, final float width,
-                                                 final float height) {
+    private static GVRSceneObject makeQuad(GVRContext context, final float width,
+                                           final float height) {
         GVRSceneObject sceneObject = new GVRSceneObject(context, width, height);
         setupDefaultMaterial(context, sceneObject);
         return sceneObject;
@@ -3769,8 +3749,7 @@ public class Widget implements Layout.WidgetContainer {
     }
 
     private static JSONObject packageSceneObjectWithAttributes(GVRSceneObject sceneObject,
-                                                               NodeEntry attributes)
-            throws InstantiationException {
+                                                               NodeEntry attributes) {
         final JSONObject json;
 
         if (attributes != null) {
@@ -3817,16 +3796,12 @@ public class Widget implements Layout.WidgetContainer {
         } else {
             Log.d("GVRFHierarchy", "%s'%s' <non-rendering>", space, sceneObject.getName());
         }
-        Iterable<GVRSceneObject> i = sceneObject.children();
-        if (i != null) {
-            Iterator<GVRSceneObject> it = i.iterator();
-            while (it.hasNext()) {
-                getGvrfHierarchy(it.next(), space + "  ");
-            }
+        for (GVRSceneObject child : sceneObject.children()) {
+            getGvrfHierarchy(child, space + "  ");
         }
     }
 
-    private void printGvrfHierarchy() {
+    public void printGvrfHierarchy() {
         Log.d("GVRFHierarchy", "========= GVRF Hierarchy for %s =========", getName());
         getGvrfHierarchy(getSceneObject(), "");
     }
