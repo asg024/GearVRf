@@ -1,8 +1,10 @@
 package com.samsung.smcl.vr.widgetlib.widget;
 
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import com.samsung.smcl.vr.widgetlib.log.Log;
+import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
 
 import org.gearvrf.GVRPicker;
 import org.gearvrf.GVRSceneObject;
@@ -21,15 +23,29 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
     public void onCursorControllerSelected(GVRCursorController newController,
                                            GVRCursorController oldController) {
         if (oldController != null) {
-            Log.d(Log.SUBSYSTEM.INPUT, TAG, "onCursorControllerSelected(): removing from old controller");
+            Log.d(Log.SUBSYSTEM.INPUT, TAG,
+                    "onCursorControllerSelected(): removing from old controller (%s)",
+                    oldController.getName());
             oldController.removePickEventListener(this);
         }
-        Log.d(Log.SUBSYSTEM.INPUT, TAG, "onCursorControllerSelected(): adding to new controller");
+        Log.d(Log.SUBSYSTEM.INPUT, TAG,
+                "onCursorControllerSelected(): adding to new controller \"%s\" (%s)",
+                newController.getName(), newController.getClass().getSimpleName());
         GVRPicker picker = newController.getPicker();
         picker.setPickClosest(false);
         newController.addPickEventListener(new PickEventsListener());
         newController.addPickEventListener(new TouchEventsListener());
         newController.setEnable(true);
+
+        newController.addControllerEventListener(new ControllerEvent());
+    }
+
+    private void dispatchKeyEvent(KeyEvent keyEvent) {
+        switch (keyEvent.getKeyCode()) {
+            case KeyEvent.KEYCODE_BACK:
+                WidgetLib.getTouchManager().handleClick(null, KeyEvent.KEYCODE_BACK);
+                break;
+        }
     }
 
     private static class Selection {
@@ -169,6 +185,23 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
         }
 
         public void onInside(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject collision) {
+        }
+    }
+
+    private class ControllerEvent implements GVRCursorController.IControllerEvent {
+        @Override
+        public void onEvent(GVRCursorController controller, boolean isActive) {
+            if (controller != null) {
+                final List<KeyEvent> keyEvents = controller.getKeyEvents();
+                Log.d(Log.SUBSYSTEM.INPUT, TAG, "onEvent(): Key events:");
+                for (KeyEvent keyEvent : keyEvents) {
+                    Log.d(Log.SUBSYSTEM.INPUT, TAG, "onEvent():   keyCode: %d",
+                            keyEvent.getKeyCode());
+                    if (keyEvent.getAction() == KeyEvent.ACTION_UP) {
+                        dispatchKeyEvent(keyEvent);
+                    }
+                }
+            }
         }
     }
 
