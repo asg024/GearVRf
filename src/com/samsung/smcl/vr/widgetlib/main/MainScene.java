@@ -125,13 +125,14 @@ public class MainScene {
         getLeftCamera().addChildObject(mLeftCameraRootObject);
         getRightCamera().addChildObject(mRightCameraRootObject);
         mSceneRootObject.setName(TAG);
+        onFirstStep();
     }
 
     /**
      * Calling on first {@link org.gearvrf.GVRMain#onStep} to process first rendering
      * @return true if it is first rendering, otherwise - false
      */
-    public boolean onFirstStep() {
+    private boolean onFirstStep() {
         if (!mFirstStepDone) {
             Log.d(TAG, "onFirstStep()");
             mFirstStepDone = true;
