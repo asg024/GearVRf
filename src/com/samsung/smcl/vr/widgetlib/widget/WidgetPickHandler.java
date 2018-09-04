@@ -6,6 +6,7 @@ import android.view.MotionEvent;
 import com.samsung.smcl.vr.widgetlib.log.Log;
 import com.samsung.smcl.vr.widgetlib.main.WidgetLib;
 
+import org.gearvrf.GVRContext;
 import org.gearvrf.GVRPicker;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.IPickEvents;
@@ -40,6 +41,10 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
         newController.setEnable(true);
 
         newController.addControllerEventListener(new ControllerEvent());
+    }
+
+    public void onDestroy(GVRContext context) {
+        context.getInputManager().clear();
     }
 
     private void dispatchKeyEvent(KeyEvent keyEvent) {

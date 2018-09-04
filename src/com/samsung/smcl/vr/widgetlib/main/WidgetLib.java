@@ -32,6 +32,7 @@ public class WidgetLib {
     private final MainThread mMainThread;
     private final PropertyManager mPropertyManager;
     private final CommandBuffer mCommandBuffer;
+    private final GVRContext mGVRContext;
 
     /**
      * Initialize an instance of Widget Lib. It has to be done before any usage of library.
@@ -58,6 +59,7 @@ public class WidgetLib {
         if (mInstance != null) {
             getFocusManager().clear();
             getMainThread().quit();
+            Widget.destroy(mInstance.get().mGVRContext);
         }
         mInstance = null;
     }
@@ -159,6 +161,7 @@ public class WidgetLib {
             throws InterruptedException, JSONException, NoSuchMethodException {
         mInstance = new WeakReference<>(this);
 
+        mGVRContext = gvrContext;
         mTextureHelper = new TextureFutureHelper(gvrContext);
         mMainThread = new MainThread(gvrContext);
         mTypefaceManager = new TypefaceManager(gvrContext);

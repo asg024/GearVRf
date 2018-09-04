@@ -93,6 +93,10 @@ public class Widget implements Layout.WidgetContainer {
         gvrContext.getInputManager().selectController(sPickHandler);
     }
 
+    static public void destroy(GVRContext context) {
+        sPickHandler.onDestroy(context);
+    }
+
     /**
      * Implement and {@link Widget#addFocusListener(OnFocusListener) register}
      * this interface to listen for focus changes on widgets.
