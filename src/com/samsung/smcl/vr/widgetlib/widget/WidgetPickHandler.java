@@ -20,7 +20,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListener {
+class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListener,
+        GVRInputManager.ICursorControllerListener {
+    private PickEventsListener mPickEventListener = new PickEventsListener();
+    private TouchEventsListener mTouchEventsListener = new TouchEventsListener();
+    private ControllerEvent mControllerEvent = new ControllerEvent();
 
     @Override
     public void onCursorControllerSelected(GVRCursorController newController,
@@ -29,18 +33,21 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
             Log.d(Log.SUBSYSTEM.INPUT, TAG,
                     "onCursorControllerSelected(): removing from old controller (%s)",
                     oldController.getName());
-            oldController.removePickEventListener(this);
+            oldController.setEnable(false);
+            oldController.removePickEventListener(mPickEventListener);
+            oldController.removePickEventListener(mTouchEventsListener);
+            oldController.removeControllerEventListener(mControllerEvent);
         }
         Log.d(Log.SUBSYSTEM.INPUT, TAG,
                 "onCursorControllerSelected(): adding to new controller \"%s\" (%s)",
                 newController.getName(), newController.getClass().getSimpleName());
         GVRPicker picker = newController.getPicker();
         picker.setPickClosest(false);
-        newController.addPickEventListener(new PickEventsListener());
-        newController.addPickEventListener(new TouchEventsListener());
+        newController.addPickEventListener(mPickEventListener);
+        newController.addPickEventListener(mTouchEventsListener);
+        newController.addControllerEventListener(mControllerEvent);
         newController.setEnable(true);
 
-        newController.addControllerEventListener(new ControllerEvent());
     }
 
     public void onDestroy(GVRContext context) {
@@ -53,6 +60,23 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
                 WidgetLib.getTouchManager().handleClick(null, KeyEvent.KEYCODE_BACK);
                 break;
         }
+    }
+
+    @Override
+    public void onCursorControllerAdded(GVRCursorController gvrCursorController) {
+        Log.d(Log.SUBSYSTEM.INPUT, TAG,"onCursorControllerAdded: %s",
+                gvrCursorController.getClass().getSimpleName());
+
+    }
+
+    @Override
+    public void onCursorControllerRemoved(GVRCursorController gvrCursorController) {
+        Log.d(Log.SUBSYSTEM.INPUT, TAG,"onCursorControllerRemoved: %s",
+                gvrCursorController.getClass().getSimpleName());
+
+        gvrCursorController.removePickEventListener(mPickEventListener);
+        gvrCursorController.removePickEventListener(mTouchEventsListener);
+        gvrCursorController.removeControllerEventListener(mControllerEvent);
     }
 
     static private class PickEventsListener implements IPickEvents {
