@@ -57,7 +57,7 @@ public class OpacityAnimation extends MaterialAnimation {
         }
 
         void superAnimate(Widget target, float ratio) {
-            super.animate(target.getSceneObject(), ratio);
+            super.animate(target.getTransform(), ratio);
         }
     }
 

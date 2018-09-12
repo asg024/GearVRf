@@ -33,7 +33,7 @@ public abstract class MaterialAnimation extends Animation {
     private class Adapter extends GVRMaterialAnimation implements
             Animation.AnimationAdapter {
         public Adapter(final Widget target, float duration) {
-            super(target.getSceneObject(), duration);
+            super(target.getTransform(), duration);
         }
 
         @Override
