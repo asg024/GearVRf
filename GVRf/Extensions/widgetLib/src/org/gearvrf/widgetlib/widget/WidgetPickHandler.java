@@ -5,7 +5,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 
-import org.gearvrf.GVRContext;
 import org.gearvrf.GVRPicker;
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.IPickEvents;
@@ -61,6 +60,7 @@ class WidgetPickHandler implements GVRInputManager.ICursorControllerSelectListen
             case KeyEvent.KEYCODE_BACK:
                 WidgetLib.getTouchManager().handleClick(null, KeyEvent.KEYCODE_BACK);
                 break;
+
         }
     }
 

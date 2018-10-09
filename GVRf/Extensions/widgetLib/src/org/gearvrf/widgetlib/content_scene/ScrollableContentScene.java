@@ -8,9 +8,9 @@ import org.joml.Vector3f;
 import static org.gearvrf.utility.Log.tag;
 import org.gearvrf.widgetlib.widget.FlingHandler;
 
- /**
+/**
  * The basic {@link ContentSceneController.ContentScene} implementation supporting
-  * left-right-up-down fling
+ * left-right-up-down fling
  */
 abstract public class ScrollableContentScene implements ContentSceneController.ContentScene {
     private String TAG = tag(ScrollableContentScene.class);
